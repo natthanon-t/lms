@@ -3,7 +3,7 @@ export default function ExamPage({ examBank, onOpenEditor, onEnterExam }) {
     <section className="workspace-content">
       <header className="content-header">
         <h1>ข้อสอบ</h1>
-        <p>เลือกเข้าสอบได้ทันที หรือกดปุ่มเฝืองเพื่อแก้ไขข้อสอบ</p>
+        <p>เลือกข้อสอบเพื่อดูรายละเอียดก่อนเริ่มสอบ หรือกดปุ่มเฝืองเพื่อแก้ไข</p>
       </header>
 
       <div className="exam-grid">
@@ -23,7 +23,7 @@ export default function ExamPage({ examBank, onOpenEditor, onEnterExam }) {
             </div>
             <p>{exam.description}</p>
             <button type="button" className="enter-button" onClick={() => onEnterExam(exam)}>
-              เข้าสอบ
+              ดูรายละเอียดข้อสอบ
             </button>
           </article>
         ))}

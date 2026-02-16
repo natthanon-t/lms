@@ -70,7 +70,7 @@ export default function LobbyPage({ examples, examBank, onOpenEditor, onEnterCla
             </div>
             <p>{exam.description}</p>
             <button type="button" className="enter-button" onClick={() => onEnterExam(exam)}>
-              เข้าสอบ
+              ดูรายละเอียดข้อสอบ
             </button>
           </article>
         ))}

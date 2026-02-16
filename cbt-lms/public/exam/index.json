@@ -1,0 +1,32 @@
+[
+  {
+    "id": "cc1",
+    "title": "CC Practice Exam",
+    "description": "50 Questions • 120 Minutes",
+    "instructions": "These are custom instructions for this specific exam bank. Read them carefully!",
+    "numberOfQuestions": 50,
+    "defaultTime": 120,
+    "file": "/exam/CC1.json",
+    "image": "https://picsum.photos/seed/cc-practice-exam-1/640/360"
+  },
+  {
+    "id": "cc2",
+    "title": "ISC2 CC Practice Exam",
+    "description": "100 Questions • 120 Minutes",
+    "instructions": "Follow the exam instructions and answer all questions carefully.",
+    "numberOfQuestions": 100,
+    "defaultTime": 120,
+    "file": "/exam/CC2.json",
+    "image": "https://picsum.photos/seed/cc-practice-exam-2/640/360"
+  },
+  {
+    "id": "cc3",
+    "title": "ISC2 CC Practice Exam",
+    "description": "125 Questions • 120 Minutes",
+    "instructions": "Follow the exam instructions and answer all questions carefully.",
+    "numberOfQuestions": 125,
+    "defaultTime": 120,
+    "file": "/exam/CC3.json",
+    "image": "https://picsum.photos/seed/cc-practice-exam-3/640/360"
+  }
+]

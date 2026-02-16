@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const roleOptions = ["Chick", "Beyonder", "Admin"];
+const roleOptions = ["ผู้ใช้งาน", "ผู้สอน", "ผู้ดูแลระบบ"];
 const statusOptions = ["active", "inactive"];
 
 export default function UserManagementPage({ users, onUpdateUserRole, onUpdateUserStatus }) {

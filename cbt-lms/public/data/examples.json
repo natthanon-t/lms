@@ -1,0 +1,20 @@
+[
+  {
+    "id": "ex-1",
+    "title": "ข้อสอบคณิตศาสตร์พื้นฐาน",
+    "image": "https://picsum.photos/seed/math-lesson/640/360",
+    "content": "# ข้อสอบคณิตศาสตร์พื้นฐาน\n\n1. จงหาค่า 12 + 8\n2. จงหาค่า 30 - 17\n3. จงอธิบายวิธีคิดของคุณ"
+  },
+  {
+    "id": "ex-2",
+    "title": "ข้อสอบภาษาอังกฤษเบื้องต้น",
+    "image": "https://picsum.photos/seed/english-lesson/640/360",
+    "content": "# English Basics Test\n\n1. Fill in the blank: I ___ a student.\n2. Translate: \"ฉันชอบอ่านหนังสือ\"\n3. Write 3 simple sentences about yourself."
+  },
+  {
+    "id": "ex-3",
+    "title": "ข้อสอบวิทยาศาสตร์",
+    "image": "https://picsum.photos/seed/science-lesson/640/360",
+    "content": "# ข้อสอบวิทยาศาสตร์\n\n1. น้ำเดือดที่อุณหภูมิกี่องศาเซลเซียส\n2. พืชสร้างอาหารด้วยกระบวนการใด\n3. อธิบายวงจรน้ำแบบย่อ"
+  }
+]

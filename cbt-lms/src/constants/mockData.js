@@ -1,12 +1,12 @@
 export const DEFAULT_USERNAME = "admin";
 export const DEFAULT_PASSWORD = "admin";
 
-export const initialExamples = [
+export const fallbackExamples = [
   {
     id: "ex-1",
     title: "ข้อสอบคณิตศาสตร์พื้นฐาน",
     image: "https://picsum.photos/seed/math-lesson/640/360",
-    content: `# ข้อสอบคณิตศาสตร์พื้นฐาน\n\n1. จงหาค่า 12 + 8\n2. จงหาค่า 30 - 17\n3. จงอธิบายวิธีคิดของคุณ`,
+    content: `# ข้อสอบคณิตศาสตร์พื้นฐาน\n\n1. จงหาค่า 12 + 8\n2. จงหค่า 30 - 17\n3. จงอธิบายวิธีคิดของคุณ`,
   },
   {
     id: "ex-2",
@@ -22,19 +22,72 @@ export const initialExamples = [
   },
 ];
 
-export const initialExamBank = [
-  {
-    id: "bank-1",
-    title: "Midterm Mockup",
-    description: "ตัวอย่างข้อสอบกลางภาค สำหรับห้อง ม.2",
-    image: "https://picsum.photos/seed/midterm-exam/640/360",
-    content: `# Midterm Mockup\n\n## Part A\n- Multiple Choice 20 ข้อ\n\n## Part B\n- อัตนัย 5 ข้อ`,
-  },
-  {
-    id: "bank-2",
-    title: "Final Mockup",
-    description: "ตัวอย่างข้อสอบปลายภาค พร้อม rubric",
-    image: "https://picsum.photos/seed/final-exam/640/360",
-    content: `# Final Mockup\n\n## Section 1\n- Objective Test\n\n## Section 2\n- Essay + Rubric`,
-  },
-];
+const escapePipes = (text) => String(text).replaceAll("|", "\\|");
+const stripHtml = (text) => String(text ?? "").replace(/<[^>]*>/g, "");
+
+const buildExamMarkdown = (examRaw) => {
+  const questions = Array.isArray(examRaw.Questions) ? examRaw.Questions : [];
+  const questionBlocks = questions
+    .map((question, index) => {
+      const choices = Array.isArray(question.Choices) ? question.Choices : [];
+      const choiceText = choices.map((choice) => `- ${choice}`).join("\n");
+
+      return `## ข้อ ${index + 1}
+
+**Domain:** ${question.DomainOfKnowledge ?? "-"}
+
+${question.Question ?? "-"}
+
+${choiceText}
+`;
+    })
+    .join("\n");
+
+  return `# ${examRaw["Exam Name"] ?? "Exam"}
+
+## คำแนะนำ
+${examRaw.Instructions ?? "-"}
+
+${questionBlocks}`;
+};
+
+const buildDomainSummaryMarkdown = (domainPercentages) => {
+  const entries = Object.entries(domainPercentages ?? {});
+  if (!entries.length) {
+    return "";
+  }
+
+  const rows = entries.map(([domain, percent]) => `| ${escapePipes(domain)} | ${percent}% |`).join("\n");
+  return `\n\n## สัดส่วนเนื้อหา\n| Domain | Percentage |\n| --- | --- |\n${rows}`;
+};
+
+export const normalizeExamRaw = (examRaw, meta = {}) => {
+  const normalizedQuestions = (Array.isArray(examRaw.Questions) ? examRaw.Questions : []).map(
+    (question, index) => ({
+      id: `q-${index + 1}`,
+      domain: question.DomainOfKnowledge ?? "-",
+      question: stripHtml(question.Question),
+      choices: Array.isArray(question.Choices)
+        ? question.Choices.map((choice) => stripHtml(choice))
+        : [],
+      answerKey: stripHtml(question.AnswerKey),
+      explanation: stripHtml(question.Explaination),
+    }),
+  );
+
+  const numberOfQuestions = examRaw["Number of Questions"] ?? normalizedQuestions.length;
+  const defaultTime = examRaw["Default Time"] ?? meta.defaultTime ?? 0;
+
+  return {
+    id: meta.id ?? "exam",
+    title: examRaw["Exam Name"] ?? meta.title ?? "Exam",
+    description: meta.description ?? `${numberOfQuestions} Questions • ${defaultTime} Minutes`,
+    image: meta.image ?? "https://picsum.photos/seed/exam-default/640/360",
+    file: meta.file,
+    instructions: examRaw.Instructions ?? meta.instructions ?? "-",
+    numberOfQuestions,
+    defaultTime,
+    questions: normalizedQuestions,
+    content: `${buildExamMarkdown(examRaw)}${buildDomainSummaryMarkdown(examRaw.DomainPercentages)}`,
+  };
+};

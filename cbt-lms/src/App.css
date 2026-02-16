@@ -59,6 +59,18 @@
   background: #2454b8;
 }
 
+.back-home-button {
+  margin-top: 10px;
+  width: 100%;
+  border: 1px solid #b8c4e0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 700;
+  background: #ffffff;
+  color: #1b2f56;
+  cursor: pointer;
+}
+
 .login-message {
   margin: 14px 0 0;
   color: #264d9c;
@@ -244,7 +256,8 @@
 }
 
 .enter-button,
-.back-button {
+.back-button,
+.end-exam-button {
   border: none;
   border-radius: 10px;
   padding: 9px 12px;
@@ -380,6 +393,18 @@
   font-weight: 700;
 }
 
+.exam-order-box {
+  margin: 14px 0;
+  display: grid;
+  gap: 6px;
+}
+
+.exam-order-box label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .leaderboard-card {
   margin-top: 16px;
   background: #ffffff;
@@ -403,6 +428,94 @@
 
 .leaderboard-card th {
   color: #1a2f57;
+}
+
+.exam-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.timer-badge {
+  background: #203d73;
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.question-card h3 {
+  margin: 4px 0 8px;
+  color: #1a2f57;
+}
+
+.choice-list {
+  display: grid;
+  gap: 8px;
+}
+
+.choice-item {
+  border: 1px solid #d5e0f7;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: start;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.choice-item.checked {
+  border-color: #2f66da;
+  background: #eef3ff;
+}
+
+.exam-nav-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.submit-exam-button {
+  border: none;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-weight: 700;
+  background: #1f8d4e;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.exam-end-wrap {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px dashed #c8d6f3;
+}
+
+.result-list {
+  margin-top: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.result-card h3 {
+  margin: 0 0 8px;
+  color: #1a2f57;
+}
+
+.result-card p {
+  margin: 6px 0;
+}
+
+.result-correct {
+  color: #1f8d4e;
+  font-weight: 700;
+}
+
+.result-wrong {
+  color: #b13a3a;
+  font-weight: 700;
 }
 
 .role-select {
@@ -463,5 +576,10 @@
 
   .editor-split {
     grid-template-columns: 1fr;
+  }
+
+  .exam-top-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

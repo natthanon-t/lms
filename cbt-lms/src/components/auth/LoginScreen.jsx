@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function LoginScreen({ onSuccess, onRegister, users }) {
+export default function LoginScreen({ onSuccess, onRegister, users, onCancel }) {
   const [name, setName] = useState("");
   const [user, setUser] = useState("");
   const [password, setPassword] = useState("");
@@ -119,6 +119,11 @@ export default function LoginScreen({ onSuccess, onRegister, users }) {
         </p>
 
         {message ? <p className="login-message">{message}</p> : null}
+        {onCancel ? (
+          <button type="button" className="back-home-button" onClick={onCancel}>
+            กลับหน้าหลัก
+          </button>
+        ) : null}
       </section>
     </main>
   );
