@@ -1,10 +1,15 @@
-export default function LeaderboardPage({ users }) {
+export default function LeaderboardPage({ users, learningStats }) {
   const ranking = Object.entries(users)
-    .map(([username, profile], index) => ({
+    .map(([username, profile]) => ({
       username,
       name: profile.name,
       role: profile.role,
-      score: 100 - index * 8,
+      score: learningStats?.[username]?.score ?? 0,
+      completedCourses: learningStats?.[username]?.completedCourses ?? 0,
+      solvedQuestions: learningStats?.[username]?.solvedQuestions ?? 0,
+      topSkills: Object.entries(learningStats?.[username]?.skillScores ?? {})
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3),
     }))
     .sort((a, b) => b.score - a.score);
 
@@ -12,7 +17,7 @@ export default function LeaderboardPage({ users }) {
     <section className="workspace-content">
       <header className="content-header">
         <h1>ลีดเดอร์บอร์ด</h1>
-        <p>อันดับคะแนนตัวอย่างของผู้ใช้งานในระบบ</p>
+        <p>คะแนนรวมจากการตอบคำถามและการเรียนจบเนื้อหา</p>
       </header>
 
       <div className="leaderboard-card">
@@ -23,6 +28,9 @@ export default function LeaderboardPage({ users }) {
               <th>ชื่อ</th>
               <th>Username</th>
               <th>ตำแหน่ง</th>
+              <th>คำถามที่ตอบถูก</th>
+              <th>เนื้อหาที่เรียนจบ</th>
+              <th>ทักษะเด่น</th>
               <th>คะแนน</th>
             </tr>
           </thead>
@@ -33,6 +41,13 @@ export default function LeaderboardPage({ users }) {
                 <td>{item.name}</td>
                 <td>{item.username}</td>
                 <td>{item.role}</td>
+                <td>{item.solvedQuestions}</td>
+                <td>{item.completedCourses}</td>
+                <td>
+                  {item.topSkills.length
+                    ? item.topSkills.map(([skill, points]) => `${skill} (${points})`).join(", ")
+                    : "-"}
+                </td>
                 <td>{item.score}</td>
               </tr>
             ))}

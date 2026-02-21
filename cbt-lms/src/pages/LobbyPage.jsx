@@ -1,15 +1,38 @@
 import { useState } from "react";
 
-export default function LobbyPage({ examples, examBank, onOpenEditor, onEnterClass, onEnterExam }) {
+const CONTENT_STATUS_OPTIONS = ["inprogress", "active", "inactive"];
+const isActiveItem = (item) => String(item?.status ?? "active").toLowerCase() === "active";
+
+const toStatusLabel = (status) => {
+  if (status === "inprogress") {
+    return "inprogress";
+  }
+  if (status === "inactive") {
+    return "inactive";
+  }
+  return "active";
+};
+
+export default function LobbyPage({
+  examples,
+  examBank,
+  onOpenEditor,
+  onEnterClass,
+  onEnterExam,
+  onUpdateContentStatus,
+}) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [managingContentId, setManagingContentId] = useState("");
 
   const keyword = searchTerm.trim().toLowerCase();
-  const filteredExamples = examples.filter((example) =>
-    keyword ? example.title.toLowerCase().includes(keyword) : true,
+  const filteredExamples = examples.filter(
+    (example) => isActiveItem(example) && (keyword ? example.title.toLowerCase().includes(keyword) : true),
   );
-  const filteredExams = examBank.filter((exam) =>
-    keyword ? exam.title.toLowerCase().includes(keyword) : true,
+  const filteredExams = examBank.filter(
+    (exam) => isActiveItem(exam) && (keyword ? exam.title.toLowerCase().includes(keyword) : true),
   );
+  const limitedExamples = filteredExamples.slice(0, 3);
+  const limitedExams = filteredExams.slice(0, 3);
 
   return (
     <section className="workspace-content">
@@ -31,22 +54,64 @@ export default function LobbyPage({ examples, examBank, onOpenEditor, onEnterCla
 
       <p className="section-label">ตัวอย่างเนื้อหา</p>
       <div className="example-grid">
-        {filteredExamples.map((example) => (
+        {limitedExamples.map((example) => (
           <article key={example.id} className="example-card">
             <img src={example.image} alt={example.title} className="card-image" />
             <div className="example-head">
               <h3 className="example-title">{example.title}</h3>
-              <button
-                type="button"
-                className="gear-button"
-                aria-label={`แก้ไข ${example.title}`}
-                onClick={() => onOpenEditor(example)}
-              >
-                ⚙
-              </button>
+              <div className="example-action-box">
+                <span className={`content-status-badge ${example.status ?? "active"}`}>
+                  {toStatusLabel(example.status)}
+                </span>
+                <button
+                  type="button"
+                  className="gear-button"
+                  aria-label={`จัดการ ${example.title}`}
+                  onClick={() =>
+                    setManagingContentId((prevId) => (prevId === example.id ? "" : example.id))
+                  }
+                >
+                  ⚙
+                </button>
+              </div>
             </div>
+            {managingContentId === example.id ? (
+              <div className="content-manage-menu">
+                <button
+                  type="button"
+                  className="manage-button"
+                  onClick={() => {
+                    onOpenEditor(example);
+                    setManagingContentId("");
+                  }}
+                >
+                  แก้ไขเนื้อหา
+                </button>
+                <label htmlFor={`status-${example.id}`}>สถานะ</label>
+                <select
+                  id={`status-${example.id}`}
+                  value={example.status ?? "active"}
+                  onChange={(event) => onUpdateContentStatus?.(example.id, event.target.value)}
+                >
+                  {CONTENT_STATUS_OPTIONS.map((status) => (
+                    <option key={`${example.id}-${status}`} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+            {example.skills?.length ? (
+              <div className="skill-tags">
+                {example.skills.map((skill) => (
+                  <span key={`${example.id}-${skill}`} className="skill-tag">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            ) : null}
             <button type="button" className="enter-button" onClick={() => onEnterClass(example)}>
-              เข้าเรียน
+              ดูรายละเอียด
             </button>
           </article>
         ))}
@@ -54,7 +119,7 @@ export default function LobbyPage({ examples, examBank, onOpenEditor, onEnterCla
 
       <p className="section-label">ตัวอย่างข้อสอบ</p>
       <div className="exam-grid">
-        {filteredExams.map((exam) => (
+        {limitedExams.map((exam) => (
           <article key={exam.id} className="exam-card">
             <img src={exam.image} alt={exam.title} className="card-image" />
             <div className="example-head">

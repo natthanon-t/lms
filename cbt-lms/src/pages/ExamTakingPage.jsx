@@ -18,11 +18,97 @@ const formatTime = (seconds) => {
 
 const normalizeText = (text) => String(text ?? "").trim().toLowerCase();
 
+const allocateDomainCounts = (totalQuestions, domainPercentages) => {
+  const domains = Object.entries(domainPercentages ?? {});
+  if (!domains.length || totalQuestions <= 0) {
+    return {};
+  }
+
+  const raw = domains.map(([domain, percent]) => ({
+    domain,
+    exact: (totalQuestions * Number(percent || 0)) / 100,
+  }));
+  const base = raw.map((item) => ({
+    domain: item.domain,
+    count: Math.floor(item.exact),
+    remainder: item.exact - Math.floor(item.exact),
+  }));
+
+  let used = base.reduce((sum, item) => sum + item.count, 0);
+  let remaining = Math.max(0, totalQuestions - used);
+
+  base
+    .sort((a, b) => b.remainder - a.remainder)
+    .forEach((item) => {
+      if (remaining <= 0) {
+        return;
+      }
+      item.count += 1;
+      remaining -= 1;
+      used += 1;
+    });
+
+  return Object.fromEntries(base.map((item) => [item.domain, item.count]));
+};
+
+const pickQuestionsByDomainPercentage = (questions, totalQuestions, domainPercentages) => {
+  const base = Array.isArray(questions) ? questions : [];
+  if (!base.length) {
+    return [];
+  }
+
+  const limit = Math.min(Math.max(0, Number(totalQuestions) || 0), base.length);
+  if (!limit) {
+    return [];
+  }
+
+  const targets = allocateDomainCounts(limit, domainPercentages);
+  if (!Object.keys(targets).length) {
+    return base.slice(0, limit);
+  }
+
+  const grouped = base.reduce((acc, question) => {
+    const domain = question.domain || "-";
+    if (!acc[domain]) {
+      acc[domain] = [];
+    }
+    acc[domain].push(question);
+    return acc;
+  }, {});
+
+  const selected = [];
+
+  Object.entries(targets).forEach(([domain, needed]) => {
+    const pool = grouped[domain] ?? [];
+    const take = Math.min(needed, pool.length);
+    for (let i = 0; i < take; i += 1) {
+      selected.push(pool[i]);
+    }
+  });
+
+  if (selected.length < limit) {
+    const seen = new Set(selected.map((item) => item.id));
+    const fallback = base.filter((question) => !seen.has(question.id));
+    for (const question of fallback) {
+      selected.push(question);
+      if (selected.length >= limit) {
+        break;
+      }
+    }
+  }
+
+  return selected;
+};
+
 export default function ExamTakingPage({ draft, onEndExam, orderMode, durationSeconds }) {
+  const selectedQuestions = useMemo(() => {
+    return pickQuestionsByDomainPercentage(draft.questions, draft.numberOfQuestions, draft.domainPercentages);
+  }, [draft.questions, draft.numberOfQuestions, draft.domainPercentages]);
+
   const orderedQuestions = useMemo(() => {
-    const base = Array.isArray(draft.questions) ? draft.questions : [];
+    const base = Array.isArray(selectedQuestions) ? selectedQuestions : [];
     return orderMode === "random" ? shuffleArray(base) : base;
-  }, [draft.sourceId, draft.questions, orderMode]);
+  }, [draft.sourceId, selectedQuestions, orderMode]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -53,12 +139,30 @@ export default function ExamTakingPage({ draft, onEndExam, orderMode, durationSe
 
     const correctCount = details.filter((item) => item.isCorrect).length;
     const scorePercent = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
+    const domainStatsMap = details.reduce((acc, item) => {
+      const domain = item.question.domain || "-";
+      if (!acc[domain]) {
+        acc[domain] = { domain, total: 0, correct: 0 };
+      }
+      acc[domain].total += 1;
+      if (item.isCorrect) {
+        acc[domain].correct += 1;
+      }
+      return acc;
+    }, {});
+    const domainStats = Object.values(domainStatsMap)
+      .map((entry) => ({
+        ...entry,
+        percent: entry.total > 0 ? Math.round((entry.correct / entry.total) * 100) : 0,
+      }))
+      .sort((a, b) => a.domain.localeCompare(b.domain));
 
     setSubmittedResult({
       correctCount,
       totalQuestions,
       scorePercent,
       details,
+      domainStats,
     });
   }, [answers, orderedQuestions, totalQuestions]);
 
@@ -117,6 +221,25 @@ export default function ExamTakingPage({ draft, onEndExam, orderMode, durationSe
         </header>
 
         <div className="result-list">
+          <article className="info-card result-card">
+            <h3>สถิติราย DomainOfKnowledge</h3>
+            <div className="domain-result-list">
+              {submittedResult.domainStats.map((entry) => (
+                <div key={entry.domain} className="domain-result-item">
+                  <div className="domain-result-head">
+                    <p>{entry.domain}</p>
+                    <p>
+                      {entry.correct}/{entry.total}
+                    </p>
+                  </div>
+                  <div className="domain-result-bar">
+                    <div className="domain-result-fill" style={{ width: `${entry.percent}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
+
           {submittedResult.details.map((item) => (
             <article key={item.question.id} className="info-card result-card">
               <h3>

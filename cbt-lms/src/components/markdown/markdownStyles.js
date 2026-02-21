@@ -38,6 +38,22 @@ const markdownStyles = {
     padding: "8px 10px",
     borderBottom: "1px solid #1f2a3a",
   },
+  videoWrap: {
+    margin: "12px 0",
+    borderRadius: 12,
+    overflow: "hidden",
+    border: "1px solid #1f2a3a",
+    background: "#050a12",
+  },
+  videoFrame: {
+    width: "100%",
+    maxWidth: 720,
+    minHeight: 220,
+    border: "0",
+    aspectRatio: "16 / 9",
+    margin: "0 auto",
+    display: "block",
+  },
 };
 
 export default markdownStyles;

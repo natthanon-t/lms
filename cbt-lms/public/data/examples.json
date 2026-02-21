@@ -1,20 +1,95 @@
 [
   {
     "id": "ex-1",
-    "title": "ข้อสอบคณิตศาสตร์พื้นฐาน",
-    "image": "https://picsum.photos/seed/math-lesson/640/360",
-    "content": "# ข้อสอบคณิตศาสตร์พื้นฐาน\n\n1. จงหาค่า 12 + 8\n2. จงหาค่า 30 - 17\n3. จงอธิบายวิธีคิดของคุณ"
+    "title": "Cyber Analyst: SOC Foundations",
+    "creator": "Blue Team Academy",
+    "description": "เดโมพื้นฐาน SOC Analyst: monitoring, triage, investigation, response และการสรุปผลเหตุการณ์",
+    "image": "https://picsum.photos/seed/soc-analyst/640/360",
+    "subtopicCompletionScore": 20,
+    "courseCompletionScore": 80,
+    "content": "# Cyber Analyst: SOC Foundations\n\n## SOC Core Workflow\nเส้นทางงานหลักของ SOC Analyst ตั้งแต่เห็นสัญญาณผิดปกติจนปิดเหตุการณ์\n\n### Security Monitoring\nSOC เฝ้าระวังเหตุการณ์จาก SIEM, EDR และ Firewall เพื่อตรวจจับพฤติกรรมที่ผิดปกติแบบ near real-time\n[video: SOC Monitoring Basics](https://www.youtube.com/watch?v=JMY6fYL6l1Y)\n- [SCORE] 15\n- [Q] เครื่องมือรวม log จากหลายระบบเพื่อตรวจจับเหตุผิดปกติเรียกว่าอะไร :: SIEM :: 10\n- [Q] Endpoint Detection and Response ใช้ตัวย่อว่าอะไร :: EDR :: 10\n\n### Alert Triage\nเมื่อมี Alert เข้ามา Analyst ต้องคัดแยกตาม Severity, Asset Criticality และความเป็นไปได้ที่จะเป็น True Positive\n- [SCORE] 20\n- [Q] ขั้นตอนคัดแยกแจ้งเตือนตามความเสี่ยงเรียกว่าอะไร :: triage :: 10\n- [Q] แจ้งเตือนที่เกิดขึ้นแต่ไม่ใช่ภัยจริงเรียกว่าอะไร :: false positive :: 10\n\n### Investigation & Correlation\nนำ log หลายแหล่งมาวิเคราะห์ร่วมกันเพื่อสร้าง timeline และยืนยันขอบเขตของเหตุการณ์\n- [SCORE] 20\n- [Q] การเชื่อมเหตุการณ์จากหลายแหล่งเพื่อหาภาพรวมเรียกว่าอะไร :: correlation :: 10\n- [Q] ตัวบ่งชี้การโจมตี เช่น IP, Hash, Domain เรียกรวมว่าอะไร :: IOC :: 10\n\n## Incident Response Foundations\nพื้นฐานการตอบสนองเหตุการณ์แบบเป็นขั้นตอนและตรวจสอบย้อนหลังได้\n\n### Initial Containment\nจำกัดผลกระทบทันที เช่น isolate เครื่องที่น่าสงสัย, block IOC สำคัญ และป้องกัน lateral movement\n- [SCORE] 20\n- [Q] การแยกเครื่องออกจากเครือข่ายเพื่อลดความเสี่ยงเรียกว่าอะไร :: isolate :: 10\n- [Q] ขั้นตอนลดผลกระทบระยะแรกของเหตุการณ์เรียกว่าอะไร :: containment :: 10\n\n### Escalation & Communication\nถ้าเหตุการณ์กระทบธุรกิจสูง ต้อง escalate ไป Incident Commander และแจ้งทีมที่เกี่ยวข้องตาม playbook\n- [SCORE] 10\n- [Q] การส่งต่อเหตุที่รุนแรงไปทีมระดับสูงเรียกว่าอะไร :: escalation :: 10\n- [Q] เอกสารขั้นตอนรับมือเหตุการณ์มาตรฐานเรียกว่าอะไร :: playbook :: 10\n\n### Reporting & Lessons Learned\nหลังปิดเหตุการณ์ ต้องสรุป root cause, timeline, impact และ action items เพื่อป้องกันเหตุซ้ำ\n- [SCORE] 15\n- [Q] สรุปสาเหตุหลักของเหตุการณ์เรียกว่าอะไร :: root cause :: 10\n- [Q] สิ่งที่ต้องปรับปรุงหลังจบเหตุการณ์มักบันทึกเป็นอะไร :: action items :: 10",
+    "skills": [
+      "Log Analysis",
+      "Alert Triage",
+      "Incident Response"
+    ],
+    "skillPoints": 20,
+    "status": "active",
+    "skillRewards": [
+      {
+        "skill": "Log Analysis",
+        "points": 30
+      },
+      {
+        "skill": "Alert Triage",
+        "points": 25
+      },
+      {
+        "skill": "Incident Response",
+        "points": 20
+      }
+    ]
   },
   {
     "id": "ex-2",
-    "title": "ข้อสอบภาษาอังกฤษเบื้องต้น",
-    "image": "https://picsum.photos/seed/english-lesson/640/360",
-    "content": "# English Basics Test\n\n1. Fill in the blank: I ___ a student.\n2. Translate: \"ฉันชอบอ่านหนังสือ\"\n3. Write 3 simple sentences about yourself."
+    "title": "Pentester: Engagement Basics",
+    "creator": "Red Team Workshop",
+    "description": "เข้าใจวงจรงาน Pentest ตั้งแต่กำหนดขอบเขต สำรวจระบบ ทดสอบ และเก็บหลักฐาน",
+    "image": "https://picsum.photos/seed/pentester-basic/640/360",
+    "subtopicCompletionScore": 25,
+    "courseCompletionScore": 90,
+    "content": "# Pentester: Engagement Basics\n\n## วงจรงาน Pentest\nลำดับการทดสอบตั้งแต่ก่อนเริ่มจนส่งรายงาน\n\n### Scoping\nกำหนดขอบเขต เป้าหมาย และข้อจำกัดให้ชัดเจนเพื่อให้การทดสอบปลอดภัยและวัดผลได้\n- [SCORE] 20\n- [Q] เอกสารกำหนดขอบเขตก่อนเริ่มทดสอบคือขั้นตอนไหน :: scoping :: 10\n\n### Reconnaissance\nเก็บข้อมูลเป้าหมายจากแหล่งเปิดและบริการที่เปิดใช้งานเพื่อระบุ attack surface\n- [SCORE] 20\n- [Q] ขั้นตอนเก็บข้อมูลระบบเป้าหมายเรียกว่าอะไร :: reconnaissance :: 10\n\n## เทคนิคประเมินช่องโหว่\nแนวทางทดสอบเชิงเทคนิคที่ใช้บ่อย\n\n### Exploitation Validation\nทดสอบการใช้ประโยชน์จากช่องโหว่แบบควบคุมได้ เพื่อพิสูจน์ผลกระทบจริงโดยไม่ทำระบบล่ม\n- [SCORE] 25\n- [Q] การพิสูจน์ผลกระทบช่องโหว่แบบควบคุมเรียกว่าอะไร :: exploitation :: 10\n\n### Evidence Collection\nเก็บหลักฐานผลทดสอบ เช่น screenshot, request/response และ payload ที่ใช้ เพื่อแนบในรายงาน\n- [SCORE] 25\n- [Q] สิ่งที่ต้องมีในรายงานเพื่อยืนยันผลทดสอบเรียกว่าอะไร :: evidence :: 10",
+    "skills": [
+      "Web Security",
+      "Vulnerability Validation",
+      "Evidence Reporting"
+    ],
+    "skillPoints": 20,
+    "status": "active",
+    "skillRewards": [
+      {
+        "skill": "Web Security",
+        "points": 30
+      },
+      {
+        "skill": "Vulnerability Validation",
+        "points": 25
+      },
+      {
+        "skill": "Evidence Reporting",
+        "points": 20
+      }
+    ]
   },
   {
     "id": "ex-3",
-    "title": "ข้อสอบวิทยาศาสตร์",
-    "image": "https://picsum.photos/seed/science-lesson/640/360",
-    "content": "# ข้อสอบวิทยาศาสตร์\n\n1. น้ำเดือดที่อุณหภูมิกี่องศาเซลเซียส\n2. พืชสร้างอาหารด้วยกระบวนการใด\n3. อธิบายวงจรน้ำแบบย่อ"
+    "title": "Cyber Analyst + Pentester Collaboration",
+    "creator": "Purple Team Lab",
+    "description": "การทำงานร่วมกันของ Blue Team และ Red Team เพื่อยกระดับการตรวจจับและป้องกัน",
+    "image": "https://picsum.photos/seed/blue-red-collab/640/360",
+    "subtopicCompletionScore": 30,
+    "courseCompletionScore": 120,
+    "content": "# Cyber Analyst + Pentester Collaboration\n\n## การทำงานร่วมกันของ Blue Team และ Red Team\nเป้าหมายคือเพิ่มความพร้อมขององค์กรแบบต่อเนื่อง\n\n### Detection Gap Review\nใช้ผล pentest ย้อนกลับไปตรวจว่า SOC ตรวจจับเทคนิคเดียวกันได้หรือไม่\n- [SCORE] 25\n- [Q] การทบทวนช่องว่างการตรวจจับเรียกว่าอะไร :: detection gap review :: 10\n\n### Rule Tuning\nปรับปรุงกฎ SIEM/EDR จากพฤติกรรมจริงที่พบทดสอบ เพื่อเพิ่มความแม่นยำในการแจ้งเตือน\n- [SCORE] 25\n- [Q] การปรับกฎเพื่อให้แจ้งเตือนแม่นขึ้นเรียกว่าอะไร :: rule tuning :: 10\n\n## การวัดผลหลังปรับปรุง\nติดตามผลเพื่อยืนยันว่าระบบป้องกันดีขึ้นจริง\n\n### Retest Prioritized Findings\nทดสอบซ้ำช่องโหว่ระดับสูงที่เคยพบเพื่อยืนยันว่าปิดความเสี่ยงได้แล้ว\n- [SCORE] 30\n- [Q] การทดสอบซ้ำหลังแก้ไขเรียกว่าอะไร :: retest :: 10\n\n### Lessons Learned\nสรุปสิ่งที่ได้เรียนรู้ทั้งฝั่งตรวจจับและฝั่งทดสอบเพื่อวางแผนรอบถัดไป\n- [SCORE] 30\n- [Q] การสรุปบทเรียนหลังจบกิจกรรมเรียกว่าอะไร :: lessons learned :: 10",
+    "skills": [
+      "Detection Engineering",
+      "Threat Hunting",
+      "Purple Team Collaboration"
+    ],
+    "skillPoints": 20,
+    "status": "active",
+    "skillRewards": [
+      {
+        "skill": "Detection Engineering",
+        "points": 30
+      },
+      {
+        "skill": "Threat Hunting",
+        "points": 30
+      },
+      {
+        "skill": "Purple Team Collaboration",
+        "points": 25
+      }
+    ]
   }
 ]
