@@ -3,6 +3,16 @@ import "./App.css";
 import LoginScreen from "./components/auth/LoginScreen";
 import WorkspaceSidebar from "./components/layout/WorkspaceSidebar";
 import { DEFAULT_PASSWORD, DEFAULT_USERNAME, fallbackExamples, normalizeExamRaw } from "./constants/mockData";
+import {
+  CONTENT_STATUS_OPTIONS,
+  EXAM_STATUS_OPTIONS,
+  EMPTY_EXAM_DRAFT,
+  EXAMPLES_SEED_VERSION,
+  EXAMPLES_SEED_VERSION_KEY,
+  EXAMPLES_STORAGE_KEY,
+  EXAMS_STORAGE_KEY,
+  LEARNING_PROGRESS_STORAGE_KEY,
+} from "./constants/appConfig";
 import ContentPage from "./pages/ContentPage";
 import ContentDetailPage from "./pages/ContentDetailPage";
 import EditorPage from "./pages/EditorPage";
@@ -16,204 +26,33 @@ import ProfilePage from "./pages/ProfilePage";
 import StudyPage from "./pages/StudyPage";
 import SummaryPage from "./pages/SummaryPage";
 import UserManagementPage from "./pages/UserManagementPage";
-import { getSubtopicPages } from "./components/markdown/headingUtils";
-
-const emptyExamDraft = {
-  sourceId: "",
-  title: "",
-  description: "",
-  instructions: "",
-  numberOfQuestions: 0,
-  defaultTime: 0,
-  domainPercentages: {},
-  questions: [],
-  content: "",
-};
-
-const EXAMPLES_STORAGE_KEY = "cbt_lms_examples";
-const EXAMPLES_SEED_VERSION_KEY = "cbt_lms_examples_seed_version";
-const EXAMPLES_SEED_VERSION = "2026-02-21-soc-foundations-demo-v5";
-const EXAMS_STORAGE_KEY = "cbt_lms_exam_bank";
-const LEARNING_PROGRESS_STORAGE_KEY = "cbt_lms_learning_progress";
-const CONTENT_STATUS_OPTIONS = ["active", "inprogress", "inactive"];
-const EXAM_STATUS_OPTIONS = ["active", "inprogress", "inactive"];
-
-const normalizeSkillRewardList = (item) => {
-  if (Array.isArray(item.skillRewards)) {
-    return item.skillRewards
-      .map((entry) => ({
-        skill: String(entry?.skill ?? "").trim(),
-        points: Number(entry?.points ?? 0),
-      }))
-      .filter((entry) => entry.skill && entry.points > 0);
-  }
-
-  if (item.skillRewards && typeof item.skillRewards === "object") {
-    return Object.entries(item.skillRewards)
-      .map(([skill, points]) => ({
-        skill: String(skill ?? "").trim(),
-        points: Number(points ?? 0),
-      }))
-      .filter((entry) => entry.skill && entry.points > 0);
-  }
-
-  return [];
-};
-
-const normalizeExampleRecord = (item) => {
-  const normalizedStatus = String(item.status ?? "active").toLowerCase();
-  const normalizedSkills = Array.isArray(item.skills)
-    ? item.skills.map((skill) => String(skill).trim()).filter(Boolean)
-    : [];
-  const normalizedSkillRewards = normalizeSkillRewardList(item);
-  const fallbackSkillPoints = Number(item.skillPoints ?? 20);
-  const mergedSkills = Array.from(
-    new Set([...normalizedSkills, ...normalizedSkillRewards.map((reward) => reward.skill)]),
-  );
-  const skillRewards = normalizedSkillRewards.length
-    ? normalizedSkillRewards
-    : mergedSkills.map((skill) => ({ skill, points: fallbackSkillPoints }));
-  const ensuredSkillRewards = skillRewards.length
-    ? skillRewards
-    : [{ skill: "Cyber Fundamentals", points: fallbackSkillPoints > 0 ? fallbackSkillPoints : 20 }];
-  const ensuredSkills = Array.from(new Set(ensuredSkillRewards.map((reward) => reward.skill)));
-
-  return {
-    ...item,
-    status: CONTENT_STATUS_OPTIONS.includes(normalizedStatus) ? normalizedStatus : "active",
-    creator: item.creator ?? "Cyber Training Team",
-    description: item.description ?? "คอร์สเนื้อหาด้าน Cyber Security",
-    skills: ensuredSkills,
-    skillRewards: ensuredSkillRewards,
-    skillPoints: fallbackSkillPoints,
-    subtopicCompletionScore: Number(item.subtopicCompletionScore ?? 20),
-    courseCompletionScore: Number(item.courseCompletionScore ?? 100),
-  };
-};
-
-const normalizeExamRecord = (item) => {
-  const normalizedStatus = String(item.status ?? "active").toLowerCase();
-  const questions = Array.isArray(item.questions)
-    ? item.questions.map((question, index) => ({
-        id: question.id ?? `q-${index + 1}`,
-        domain: question.domain ?? question.DomainOfKnowledge ?? "-",
-        question: question.question ?? question.Question ?? "",
-        choices: Array.isArray(question.choices)
-          ? question.choices
-          : Array.isArray(question.Choices)
-            ? question.Choices
-            : [],
-        answerKey: question.answerKey ?? question.AnswerKey ?? "",
-        explanation: question.explanation ?? question.Explaination ?? "",
-      }))
-    : [];
-
-  return {
-    ...item,
-    status: EXAM_STATUS_OPTIONS.includes(normalizedStatus) ? normalizedStatus : "active",
-    title: item.title ?? "Exam",
-    description: item.description ?? "",
-    instructions: item.instructions ?? "",
-    image: item.image ?? "https://picsum.photos/seed/exam-default/640/360",
-    numberOfQuestions: Number(item.numberOfQuestions ?? questions.length ?? 0),
-    defaultTime: Number(item.defaultTime ?? 0),
-    domainPercentages: item.domainPercentages ?? {},
-    questions,
-  };
-};
-
-const readStoredJson = (key) => {
-  try {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) {
-      return null;
-    }
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-};
-
-const readStoredObject = (key) => {
-  try {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) {
-      return null;
-    }
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-};
-
-const calculateLearningStats = (users, examples, learningProgress) => {
-  const stats = {};
-
-  Object.keys(users).forEach((username) => {
-    const userProgress = learningProgress?.[username] ?? {};
-    let totalScore = 0;
-    let solvedQuestions = 0;
-    let completedCourses = 0;
-    const skillScores = {};
-
-    examples.forEach((course) => {
-      const courseProgress = userProgress?.[course.id] ?? {};
-      const subtopics = getSubtopicPages(course.content, course.title);
-      const completedSubtopics = courseProgress.completedSubtopics ?? {};
-      const answers = courseProgress.answers ?? {};
-      let allDone = subtopics.length > 0;
-
-      subtopics.forEach((subtopic) => {
-        const isDone = Boolean(completedSubtopics[subtopic.id]);
-        if (!isDone) {
-          allDone = false;
-          return;
-        }
-
-        totalScore += Number(subtopic.baseScore ?? course.subtopicCompletionScore ?? 20);
-        const subtopicAnswers = answers[subtopic.id] ?? {};
-        subtopic.questions.forEach((question) => {
-          if (subtopicAnswers[question.id]?.isCorrect) {
-            totalScore += Number(question.points ?? 0);
-            solvedQuestions += 1;
-          }
-        });
-      });
-
-      if (allDone && subtopics.length > 0) {
-        totalScore += Number(course.courseCompletionScore ?? 100);
-        completedCourses += 1;
-        const rewards = Array.isArray(course.skillRewards)
-          ? course.skillRewards
-          : (Array.isArray(course.skills) ? course.skills : []).map((skill) => ({
-              skill,
-              points: Number(course.skillPoints ?? 20),
-            }));
-        rewards.forEach((reward) => {
-          const skill = String(reward?.skill ?? "").trim();
-          const points = Number(reward?.points ?? 0);
-          if (!skill || points <= 0) {
-            return;
-          }
-          skillScores[skill] = Number(skillScores[skill] ?? 0) + points;
-        });
-      }
-    });
-
-    stats[username] = {
-      score: totalScore,
-      solvedQuestions,
-      completedCourses,
-      skillScores,
-    };
-  });
-
-  return stats;
-};
+import {
+  buildNewCourseRecord,
+  normalizeExampleRecord,
+  toCourseDraft,
+} from "./services/courseService";
+import { buildNewExamRecord, normalizeExamRecord, toExamTakingDraft } from "./services/examService";
+import { calculateLearningStats } from "./services/learningStatsService";
+import { ensureCoverImage } from "./services/imageService";
+import { withCompletedSubtopic, withSubmittedSubtopicAnswer } from "./services/progressService";
+import {
+  readStoredJsonArray,
+  readStoredObject,
+  writeStoredJson,
+  writeStoredValue,
+} from "./services/storageService";
+import {
+  validateAndCreateUser,
+  validateAndChangePassword,
+  withResetUserPassword,
+  withUpdatedUserName,
+  withUpdatedUserRole,
+  withUpdatedUserStatus,
+} from "./services/userService";
+import { canManageOwnedItem, canViewItemByStatus } from "./services/accessControlService";
 
 export default function App() {
+  const initialCourse = normalizeExampleRecord(fallbackExamples[0]);
   const [currentUserKey, setCurrentUserKey] = useState("");
   const [showLogin, setShowLogin] = useState(false);
   const [accessMessage, setAccessMessage] = useState("");
@@ -233,59 +72,48 @@ export default function App() {
       status: "active",
     },
   });
+  const [defaultUserPassword, setDefaultUserPassword] = useState(DEFAULT_PASSWORD);
 
-  const [editorDraft, setEditorDraft] = useState({
-    sourceId: fallbackExamples[0].id,
-    title: fallbackExamples[0].title,
-    content: fallbackExamples[0].content,
-    creator: fallbackExamples[0].creator,
-    description: fallbackExamples[0].description,
-    image: fallbackExamples[0].image,
-    status: fallbackExamples[0].status,
-    skills: fallbackExamples[0].skills,
-    skillRewards: fallbackExamples[0].skillRewards,
-    skillPoints: fallbackExamples[0].skillPoints,
-    subtopicCompletionScore: fallbackExamples[0].subtopicCompletionScore,
-    courseCompletionScore: fallbackExamples[0].courseCompletionScore,
-  });
-  const [studyDraft, setStudyDraft] = useState({
-    sourceId: fallbackExamples[0].id,
-    title: fallbackExamples[0].title,
-    content: fallbackExamples[0].content,
-    creator: fallbackExamples[0].creator,
-    description: fallbackExamples[0].description,
-    image: fallbackExamples[0].image,
-    status: fallbackExamples[0].status,
-    skills: fallbackExamples[0].skills,
-    skillRewards: fallbackExamples[0].skillRewards,
-    skillPoints: fallbackExamples[0].skillPoints,
-    subtopicCompletionScore: fallbackExamples[0].subtopicCompletionScore,
-    courseCompletionScore: fallbackExamples[0].courseCompletionScore,
-  });
-  const [examDraft, setExamDraft] = useState(emptyExamDraft);
-  const [examEditorDraft, setExamEditorDraft] = useState(normalizeExamRecord(emptyExamDraft));
+  const [editorDraft, setEditorDraft] = useState(toCourseDraft(initialCourse));
+  const [studyDraft, setStudyDraft] = useState(toCourseDraft(initialCourse));
+  const [examDraft, setExamDraft] = useState(EMPTY_EXAM_DRAFT);
+  const [examEditorDraft, setExamEditorDraft] = useState(normalizeExamRecord(EMPTY_EXAM_DRAFT));
 
   const currentUser = currentUserKey ? users[currentUserKey] : null;
   const isAdmin = currentUser?.role === "ผู้ดูแลระบบ";
+  const canManageItem = useCallback(
+    (item) => canManageOwnedItem({ item, currentUser, currentUserKey, isAdmin }),
+    [currentUser, currentUserKey, isAdmin],
+  );
+  const canViewItem = useCallback(
+    (item) => canViewItemByStatus({ item, currentUserKey, isAdmin }),
+    [currentUserKey, isAdmin],
+  );
+
+  const syncPrimaryCourseDrafts = useCallback((course) => {
+    if (!course) {
+      return;
+    }
+    setEditorDraft(toCourseDraft(course));
+    setStudyDraft(toCourseDraft(course));
+  }, []);
+
+  const persistExamples = useCallback((nextExamples) => {
+    writeStoredJson(EXAMPLES_STORAGE_KEY, nextExamples);
+    writeStoredValue(EXAMPLES_SEED_VERSION_KEY, EXAMPLES_SEED_VERSION);
+  }, []);
 
   const loadExamples = useCallback(async () => {
     if (examples.length > 0) {
       return;
     }
 
-    const storedExamples = readStoredJson(EXAMPLES_STORAGE_KEY);
+    const storedExamples = readStoredJsonArray(EXAMPLES_STORAGE_KEY);
     const storedSeedVersion = window.localStorage.getItem(EXAMPLES_SEED_VERSION_KEY);
     if (storedExamples?.length && storedSeedVersion === EXAMPLES_SEED_VERSION) {
       const normalizedExamples = storedExamples.map(normalizeExampleRecord);
       setExamples(normalizedExamples);
-      setEditorDraft({
-        sourceId: normalizedExamples[0].id,
-        ...normalizedExamples[0],
-      });
-      setStudyDraft({
-        sourceId: normalizedExamples[0].id,
-        ...normalizedExamples[0],
-      });
+      syncPrimaryCourseDrafts(normalizedExamples[0]);
       return;
     }
 
@@ -297,38 +125,28 @@ export default function App() {
       const data = await response.json();
       const list = (Array.isArray(data) ? data : []).map(normalizeExampleRecord);
       setExamples(list);
-      window.localStorage.setItem(EXAMPLES_STORAGE_KEY, JSON.stringify(list));
-      window.localStorage.setItem(EXAMPLES_SEED_VERSION_KEY, EXAMPLES_SEED_VERSION);
-      if (list[0]) {
-        setEditorDraft({ sourceId: list[0].id, ...list[0] });
-        setStudyDraft({ sourceId: list[0].id, ...list[0] });
-      }
+      persistExamples(list);
+      syncPrimaryCourseDrafts(list[0]);
     } catch {
       if (storedExamples?.length) {
         const normalizedStored = storedExamples.map(normalizeExampleRecord);
         setExamples(normalizedStored);
-        if (normalizedStored[0]) {
-          setEditorDraft({ sourceId: normalizedStored[0].id, ...normalizedStored[0] });
-          setStudyDraft({ sourceId: normalizedStored[0].id, ...normalizedStored[0] });
-        }
+        syncPrimaryCourseDrafts(normalizedStored[0]);
         return;
       }
 
       const normalizedFallback = fallbackExamples.map(normalizeExampleRecord);
       setExamples(normalizedFallback);
-      if (normalizedFallback[0]) {
-        setEditorDraft({ sourceId: normalizedFallback[0].id, ...normalizedFallback[0] });
-        setStudyDraft({ sourceId: normalizedFallback[0].id, ...normalizedFallback[0] });
-      }
+      syncPrimaryCourseDrafts(normalizedFallback[0]);
     }
-  }, [examples.length]);
+  }, [examples.length, persistExamples, syncPrimaryCourseDrafts]);
 
   const loadExamCatalog = useCallback(async () => {
     if (examBank.length > 0) {
       return;
     }
 
-    const storedExamBank = readStoredJson(EXAMS_STORAGE_KEY);
+    const storedExamBank = readStoredJsonArray(EXAMS_STORAGE_KEY);
     if (storedExamBank?.length) {
       setExamBank(storedExamBank.map(normalizeExamRecord));
       return;
@@ -366,11 +184,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(LEARNING_PROGRESS_STORAGE_KEY, JSON.stringify(learningProgress));
-    } catch {
-      // noop
-    }
+    writeStoredJson(LEARNING_PROGRESS_STORAGE_KEY, learningProgress);
   }, [learningProgress]);
 
   const ensureFullExam = useCallback(async (item) => {
@@ -397,20 +211,17 @@ export default function App() {
   }, []);
 
   const openContentEditor = (item) => {
-    if (!isAdmin) {
+    if (!canManageItem(item)) {
       return;
     }
     const nextItem = normalizeExampleRecord(item);
-    setEditorDraft({
-      sourceId: nextItem.id,
-      ...nextItem,
-    });
+    setEditorDraft(toCourseDraft(nextItem));
     setActiveTab("home");
     setHomeView("editor");
   };
 
   const openExamEditor = async (item) => {
-    if (!isAdmin) {
+    if (!canManageItem(item)) {
       return;
     }
     let nextItem = normalizeExamRecord(item);
@@ -430,33 +241,13 @@ export default function App() {
   };
 
   const createExam = () => {
-    if (!isAdmin) {
+    if (!currentUserKey) {
       return;
     }
-    const now = Date.now();
-    const nextExam = normalizeExamRecord({
-      id: `exam-${now}`,
-      sourceId: `exam-${now}`,
-      title: "New Practice Exam",
-      description: "Custom exam created by admin",
-      instructions: "Read all questions carefully.",
-      image: `https://picsum.photos/seed/exam-${now}/640/360`,
-      status: "inprogress",
-      numberOfQuestions: 1,
-      defaultTime: 60,
-      domainPercentages: {
-        "ISC2 CC Domain 1: Security Principles": 100,
-      },
-      questions: [
-        {
-          id: "q-1",
-          domain: "ISC2 CC Domain 1: Security Principles",
-          question: "Sample question",
-          choices: ["A. Choice 1", "B. Choice 2", "C. Choice 3", "D. Choice 4"],
-          answerKey: "A. Choice 1",
-          explanation: "Sample explanation",
-        },
-      ],
+    const nextExam = buildNewExamRecord({
+      now: Date.now(),
+      creator: currentUser?.name,
+      ownerUsername: currentUserKey,
     });
 
     setExamEditorDraft(nextExam);
@@ -480,25 +271,11 @@ export default function App() {
       const nextExamBank = exists
         ? prevExamBank.map((exam) => (exam.id === normalizedDraft.id ? normalizedDraft : exam))
         : [normalizedDraft, ...prevExamBank];
-      try {
-        window.localStorage.setItem(EXAMS_STORAGE_KEY, JSON.stringify(nextExamBank));
-      } catch {
-        // noop
-      }
+      writeStoredJson(EXAMS_STORAGE_KEY, nextExamBank);
       return nextExamBank;
     });
 
-    setExamDraft({
-      sourceId: normalizedDraft.id,
-      title: normalizedDraft.title,
-      description: normalizedDraft.description,
-      instructions: normalizedDraft.instructions,
-      numberOfQuestions: normalizedDraft.numberOfQuestions,
-      defaultTime: normalizedDraft.defaultTime,
-      domainPercentages: normalizedDraft.domainPercentages ?? {},
-      questions: normalizedDraft.questions ?? [],
-      content: normalizedDraft.content ?? "",
-    });
+    setExamDraft(toExamTakingDraft(normalizedDraft));
     setExamEditorDraft(normalizedDraft);
     setExamView("list");
   };
@@ -506,6 +283,12 @@ export default function App() {
   const openContentDetail = (item) => {
     if (!currentUser) {
       setAccessMessage("กรุณา Login ก่อนใช้งานหน้านี้");
+      setActiveTab("home");
+      setHomeView("auth-required");
+      return;
+    }
+    if (!canViewItem(item)) {
+      setAccessMessage("ไม่มีสิทธิ์เข้าถึงเนื้อหานี้");
       setActiveTab("home");
       setHomeView("auth-required");
       return;
@@ -518,10 +301,13 @@ export default function App() {
   };
 
   const enterStudy = (item) => {
-    setStudyDraft({
-      sourceId: item.id,
-      ...normalizeExampleRecord(item),
-    });
+    if (!canViewItem(item)) {
+      setAccessMessage("ไม่มีสิทธิ์เข้าถึงเนื้อหานี้");
+      setActiveTab("home");
+      setHomeView("auth-required");
+      return;
+    }
+    setStudyDraft(toCourseDraft(normalizeExampleRecord(item)));
     setAccessMessage("");
     setActiveTab("home");
     setHomeView("study");
@@ -534,20 +320,16 @@ export default function App() {
       setExamView("auth-required");
       return;
     }
+    if (!canViewItem(item)) {
+      setAccessMessage("ไม่มีสิทธิ์เข้าถึงข้อสอบนี้");
+      setActiveTab("exam");
+      setExamView("auth-required");
+      return;
+    }
 
     try {
       const fullExam = await ensureFullExam(item);
-      setExamDraft({
-        sourceId: fullExam.id,
-        title: fullExam.title,
-        description: fullExam.description,
-        instructions: fullExam.instructions,
-        numberOfQuestions: fullExam.numberOfQuestions,
-        defaultTime: fullExam.defaultTime,
-        domainPercentages: fullExam.domainPercentages ?? {},
-        questions: fullExam.questions ?? [],
-        content: fullExam.content,
-      });
+      setExamDraft(toExamTakingDraft(fullExam));
       setExamOrderMode("sequential");
       setAccessMessage("");
       setActiveTab("exam");
@@ -571,11 +353,15 @@ export default function App() {
   };
 
   const updateEditorDraft = (field, value) => {
-    setEditorDraft((prevDraft) => ({ ...prevDraft, [field]: value }));
+    const nextValue =
+      field === "image"
+        ? ensureCoverImage(value, editorDraft.sourceId || editorDraft.id || `course-${Date.now()}`)
+        : value;
+    setEditorDraft((prevDraft) => ({ ...prevDraft, [field]: nextValue }));
 
     setExamples((prevExamples) =>
       prevExamples.map((example) =>
-        example.id === editorDraft.sourceId ? { ...example, [field]: value } : example,
+        example.id === editorDraft.sourceId ? { ...example, [field]: nextValue } : example,
       ),
     );
 
@@ -583,12 +369,12 @@ export default function App() {
       if (prevDraft.sourceId !== editorDraft.sourceId) {
         return prevDraft;
       }
-      return { ...prevDraft, [field]: value };
+      return { ...prevDraft, [field]: nextValue };
     });
 
     setExamBank((prevExams) =>
       prevExams.map((exam) =>
-        exam.id === editorDraft.sourceId ? { ...exam, [field]: value } : exam,
+        exam.id === editorDraft.sourceId ? { ...exam, [field]: nextValue } : exam,
       ),
     );
 
@@ -596,50 +382,29 @@ export default function App() {
       if (prevDraft.sourceId !== editorDraft.sourceId) {
         return prevDraft;
       }
-      return { ...prevDraft, [field]: value };
+      return { ...prevDraft, [field]: nextValue };
     });
   };
 
   const createContent = () => {
-    const now = Date.now();
-    const newContent = normalizeExampleRecord({
-      id: `course-${now}`,
-      title: `เนื้อหาใหม่ ${examples.length + 1}`,
-      creator: currentUser?.name ?? "Cyber Training Team",
-      description: "เนื้อหาใหม่สำหรับฝึกการเรียนรู้ด้าน Cyber Security",
-      image: `https://picsum.photos/seed/course-${now}/640/360`,
-      status: "inprogress",
-      skills: ["Log Analysis"],
-      skillRewards: [
-        { skill: "Log Analysis", points: 20 },
-        { skill: "Threat Detection", points: 15 },
-      ],
-      skillPoints: 20,
-      subtopicCompletionScore: 20,
-      courseCompletionScore: 100,
-      content: `# เนื้อหาใหม่
-
-## หัวข้อหลัก 1
-อธิบายภาพรวมหัวข้อหลัก
-
-### หัวข้อย่อย 1
-ใส่รายละเอียดหัวข้อย่อย
-- [SCORE] 20`,
+    if (!currentUserKey) {
+      return;
+    }
+    const newContent = buildNewCourseRecord({
+      now: Date.now(),
+      courseIndex: examples.length + 1,
+      creator: currentUser?.name,
+      ownerUsername: currentUserKey,
     });
 
     setExamples((prevExamples) => {
       const nextExamples = [newContent, ...prevExamples];
-      try {
-        window.localStorage.setItem(EXAMPLES_STORAGE_KEY, JSON.stringify(nextExamples));
-        window.localStorage.setItem(EXAMPLES_SEED_VERSION_KEY, EXAMPLES_SEED_VERSION);
-      } catch {
-        // noop
-      }
+      persistExamples(nextExamples);
       return nextExamples;
     });
 
-    setEditorDraft({ sourceId: newContent.id, ...newContent });
-    setStudyDraft({ sourceId: newContent.id, ...newContent });
+    setEditorDraft(toCourseDraft(newContent));
+    setStudyDraft(toCourseDraft(newContent));
     setSelectedContent(newContent);
     setActiveTab("home");
     setHomeView("editor");
@@ -650,17 +415,16 @@ export default function App() {
     if (!CONTENT_STATUS_OPTIONS.includes(normalizedStatus)) {
       return;
     }
+    const targetContent = examples.find((example) => example.id === contentId);
+    if (!canManageItem(targetContent)) {
+      return;
+    }
 
     setExamples((prevExamples) => {
       const nextExamples = prevExamples.map((example) =>
         example.id === contentId ? { ...example, status: normalizedStatus } : example,
       );
-      try {
-        window.localStorage.setItem(EXAMPLES_STORAGE_KEY, JSON.stringify(nextExamples));
-        window.localStorage.setItem(EXAMPLES_SEED_VERSION_KEY, EXAMPLES_SEED_VERSION);
-      } catch {
-        // noop
-      }
+      persistExamples(nextExamples);
       return nextExamples;
     });
 
@@ -672,6 +436,36 @@ export default function App() {
     );
     setSelectedContent((prevContent) =>
       prevContent?.id === contentId ? { ...prevContent, status: normalizedStatus } : prevContent,
+    );
+  };
+
+  const updateExamStatus = (examId, nextStatus) => {
+    const normalizedStatus = String(nextStatus ?? "").toLowerCase();
+    if (!EXAM_STATUS_OPTIONS.includes(normalizedStatus)) {
+      return;
+    }
+    const targetExam = examBank.find((exam) => exam.id === examId);
+    if (!canManageItem(targetExam)) {
+      return;
+    }
+
+    setExamBank((prevExamBank) => {
+      const nextExamBank = prevExamBank.map((exam) =>
+        exam.id === examId ? { ...exam, status: normalizedStatus } : exam,
+      );
+      writeStoredJson(EXAMS_STORAGE_KEY, nextExamBank);
+      return nextExamBank;
+    });
+
+    setExamEditorDraft((prevDraft) =>
+      prevDraft.id === examId || prevDraft.sourceId === examId
+        ? { ...prevDraft, status: normalizedStatus }
+        : prevDraft,
+    );
+    setExamDraft((prevDraft) =>
+      prevDraft.sourceId === examId
+        ? { ...prevDraft, status: normalizedStatus }
+        : prevDraft,
     );
   };
 
@@ -708,45 +502,59 @@ export default function App() {
     if (!currentUserKey) {
       return;
     }
+    setUsers((prevUsers) => withUpdatedUserName(prevUsers, currentUserKey, name));
+  };
 
-    setUsers((prevUsers) => ({
-      ...prevUsers,
-      [currentUserKey]: {
-        ...prevUsers[currentUserKey],
-        name,
-      },
-    }));
+  const handleChangePassword = (username, currentPassword, nextPassword) => {
+    const result = validateAndChangePassword(users, username, currentPassword, nextPassword);
+    if (result.success) {
+      setUsers(result.nextUsers);
+    }
+    return { success: result.success, message: result.message };
+  };
+
+  const handleResetUserPassword = (username) => {
+    setUsers((prevUsers) => withResetUserPassword(prevUsers, username, defaultUserPassword));
+  };
+
+  const handleUpdateDefaultPassword = (nextPassword) => {
+    const trimmed = String(nextPassword ?? "").trim();
+    if (!trimmed) {
+      return false;
+    }
+    setDefaultUserPassword(trimmed);
+    return true;
+  };
+
+  const handleCreateUser = ({ name, username, role, status, password }) => {
+    const result = validateAndCreateUser({
+      users,
+      name,
+      username,
+      role,
+      status,
+      password,
+      fallbackPassword: defaultUserPassword,
+    });
+    if (result.success) {
+      setUsers(result.nextUsers);
+    }
+    return { success: result.success, message: result.message };
   };
 
   const handleUpdateUserRole = (username, role) => {
-    setUsers((prevUsers) => ({
-      ...prevUsers,
-      [username]: {
-        ...prevUsers[username],
-        role,
-      },
-    }));
+    setUsers((prevUsers) => withUpdatedUserRole(prevUsers, username, role));
   };
 
   const handleUpdateUserStatus = (username, status) => {
-    setUsers((prevUsers) => ({
-      ...prevUsers,
-      [username]: {
-        ...prevUsers[username],
-        status,
-      },
-    }));
+    setUsers((prevUsers) => withUpdatedUserStatus(prevUsers, username, status));
   };
 
   const saveEditorDraft = useCallback(() => {
-    try {
-      window.localStorage.setItem(EXAMPLES_STORAGE_KEY, JSON.stringify(examples));
-      window.localStorage.setItem(EXAMPLES_SEED_VERSION_KEY, EXAMPLES_SEED_VERSION);
-      window.localStorage.setItem(EXAMS_STORAGE_KEY, JSON.stringify(examBank));
-      return true;
-    } catch {
-      return false;
-    }
+    const savedExamples = writeStoredJson(EXAMPLES_STORAGE_KEY, examples);
+    const savedSeed = writeStoredValue(EXAMPLES_SEED_VERSION_KEY, EXAMPLES_SEED_VERSION);
+    const savedExams = writeStoredJson(EXAMS_STORAGE_KEY, examBank);
+    return savedExamples && savedSeed && savedExams;
   }, [examples, examBank]);
 
   const handleSubmitSubtopicAnswer = (courseId, subtopicId, answerResult) => {
@@ -754,28 +562,15 @@ export default function App() {
       return;
     }
 
-    setLearningProgress((prevProgress) => ({
-      ...prevProgress,
-      [currentUserKey]: {
-        ...(prevProgress[currentUserKey] ?? {}),
-        [courseId]: {
-          ...((prevProgress[currentUserKey] ?? {})[courseId] ?? {}),
-          completedSubtopics: {
-            ...(((prevProgress[currentUserKey] ?? {})[courseId] ?? {}).completedSubtopics ?? {}),
-          },
-          answers: {
-            ...(((prevProgress[currentUserKey] ?? {})[courseId] ?? {}).answers ?? {}),
-            [subtopicId]: {
-              ...((((prevProgress[currentUserKey] ?? {})[courseId] ?? {}).answers ?? {})[subtopicId] ?? {}),
-              [answerResult.id]: {
-                typedAnswer: answerResult.typedAnswer,
-                isCorrect: answerResult.isCorrect,
-              },
-            },
-          },
-        },
-      },
-    }));
+    setLearningProgress((prevProgress) =>
+      withSubmittedSubtopicAnswer({
+        prevProgress,
+        username: currentUserKey,
+        courseId,
+        subtopicId,
+        answerResult,
+      }),
+    );
   };
 
   const handleMarkSubtopicComplete = (courseId, subtopicId) => {
@@ -783,22 +578,14 @@ export default function App() {
       return;
     }
 
-    setLearningProgress((prevProgress) => ({
-      ...prevProgress,
-      [currentUserKey]: {
-        ...(prevProgress[currentUserKey] ?? {}),
-        [courseId]: {
-          ...((prevProgress[currentUserKey] ?? {})[courseId] ?? {}),
-          answers: {
-            ...(((prevProgress[currentUserKey] ?? {})[courseId] ?? {}).answers ?? {}),
-          },
-          completedSubtopics: {
-            ...(((prevProgress[currentUserKey] ?? {})[courseId] ?? {}).completedSubtopics ?? {}),
-            [subtopicId]: true,
-          },
-        },
-      },
-    }));
+    setLearningProgress((prevProgress) =>
+      withCompletedSubtopic({
+        prevProgress,
+        username: currentUserKey,
+        courseId,
+        subtopicId,
+      }),
+    );
   };
 
   const learningStats = useMemo(
@@ -854,6 +641,7 @@ export default function App() {
           currentUser={currentUser}
           username={currentUserKey}
           onSaveName={handleSaveName}
+          onChangePassword={handleChangePassword}
           examples={examples}
           learningStats={learningStats}
           currentUserProgress={learningProgress[currentUserKey] ?? {}}
@@ -877,6 +665,10 @@ export default function App() {
           users={users}
           onUpdateUserRole={handleUpdateUserRole}
           onUpdateUserStatus={handleUpdateUserStatus}
+          defaultPassword={defaultUserPassword}
+          onUpdateDefaultPassword={handleUpdateDefaultPassword}
+          onResetUserPassword={handleResetUserPassword}
+          onCreateUser={handleCreateUser}
         />
       ) : activeTab === "leaderboard" && !currentUser ? (
         <section className="workspace-content">
@@ -936,7 +728,9 @@ export default function App() {
             onOpenEditor={openExamEditor}
             onEnterExam={openExam}
             onCreateExam={createExam}
-            canManage={isAdmin}
+            onUpdateExamStatus={updateExamStatus}
+            currentUserKey={currentUserKey}
+            isAdmin={isAdmin}
           />
         )
       ) : activeTab === "content" ? (
@@ -946,7 +740,8 @@ export default function App() {
           onOpenDetail={openContentDetail}
           onCreateContent={createContent}
           onUpdateContentStatus={updateContentStatus}
-          canManage={isAdmin}
+          currentUserKey={currentUserKey}
+          isAdmin={isAdmin}
         />
       ) : homeView === "auth-required" ? (
         <section className="workspace-content">
@@ -988,7 +783,8 @@ export default function App() {
           onEnterClass={openContentDetail}
           onEnterExam={openExam}
           onUpdateContentStatus={updateContentStatus}
-          canManage={isAdmin}
+          currentUserKey={currentUserKey}
+          isAdmin={isAdmin}
         />
       )}
     </main>

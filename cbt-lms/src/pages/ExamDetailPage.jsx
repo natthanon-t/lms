@@ -20,6 +20,9 @@ export default function ExamDetailPage({ exam, onBack, onStartExam }) {
           <strong>ชื่อข้อสอบ:</strong> {exam.title}
         </p>
         <p>
+          <strong>ผู้สร้าง:</strong> {exam.creator ?? "-"}
+        </p>
+        <p>
           <strong>รายละเอียด:</strong> {exam.description}
         </p>
         <p>

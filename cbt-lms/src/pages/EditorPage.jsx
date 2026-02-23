@@ -11,6 +11,7 @@ import {
   renameHeadingById,
   updateSubtopicBodyMarkdown,
 } from "../components/markdown/headingUtils";
+import { ensureCoverImage, fileToDataUrl } from "../services/imageService";
 
 const getSkillRewards = (draft) => {
   if (Array.isArray(draft.skillRewards) && draft.skillRewards.length > 0) {
@@ -139,8 +140,28 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft }
   };
 
   const handleSave = () => {
+    const fallbackSeed = draft.sourceId || draft.id || `course-${Date.now()}`;
+    const nextImage = ensureCoverImage(draft.image, fallbackSeed);
+    if (nextImage !== draft.image) {
+      onChangeDraft("image", nextImage);
+    }
     const success = onSaveDraft?.();
     setSaveMessage(success ? "บันทึกเนื้อหาเรียบร้อยแล้ว" : "บันทึกไม่สำเร็จ");
+  };
+
+  const handleUploadCoverImage = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) {
+      return;
+    }
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      onChangeDraft("image", dataUrl);
+      setSaveMessage("");
+    } catch {
+      setSaveMessage("อัปโหลดรูปไม่สำเร็จ");
+    }
   };
 
   const handleMoveMainBefore = (sourceHeadingId, targetHeadingId) => {
@@ -270,6 +291,16 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft }
             onChange={(event) => onChangeDraft("image", event.target.value)}
             placeholder="https://..."
           />
+          <div className="default-password-row">
+            <input id="editor-image-upload" type="file" accept="image/*" onChange={handleUploadCoverImage} />
+            <button
+              type="button"
+              className="manage-button"
+              onClick={() => onChangeDraft("image", "")}
+            >
+              ล้างรูป (ใช้รูปสุ่ม)
+            </button>
+          </div>
         </div>
       </div>
 

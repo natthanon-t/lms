@@ -21,17 +21,32 @@ export default function LobbyPage({
   onEnterClass,
   onEnterExam,
   onUpdateContentStatus,
-  canManage = false,
+  currentUserKey = "",
+  isAdmin = false,
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [managingContentId, setManagingContentId] = useState("");
+  const isExampleOwner = (example) =>
+    Boolean(currentUserKey) && String(example?.ownerUsername ?? "").trim() === currentUserKey;
+  const isExamOwner = (exam) =>
+    Boolean(currentUserKey) && String(exam?.ownerUsername ?? "").trim() === currentUserKey;
+  const canManageExample = (example) =>
+    isAdmin || isExampleOwner(example);
+  const canManageExam = (exam) =>
+    isAdmin || isExamOwner(exam);
+  const canViewExample = (example) =>
+    isAdmin || isActiveItem(example) || isExampleOwner(example);
+  const canViewExam = (exam) =>
+    isAdmin || isActiveItem(exam) || isExamOwner(exam);
 
   const keyword = searchTerm.trim().toLowerCase();
-  const filteredExamples = examples.filter(
-    (example) => isActiveItem(example) && (keyword ? example.title.toLowerCase().includes(keyword) : true),
+  const baseExamples = examples.filter(canViewExample);
+  const baseExams = examBank.filter(canViewExam);
+  const filteredExamples = baseExamples.filter((example) =>
+    keyword ? example.title.toLowerCase().includes(keyword) : true,
   );
-  const filteredExams = examBank.filter(
-    (exam) => isActiveItem(exam) && (keyword ? exam.title.toLowerCase().includes(keyword) : true),
+  const filteredExams = baseExams.filter((exam) =>
+    keyword ? exam.title.toLowerCase().includes(keyword) : true,
   );
   const limitedExamples = filteredExamples.slice(0, 3);
   const limitedExams = filteredExams.slice(0, 3);
@@ -65,7 +80,7 @@ export default function LobbyPage({
                 <span className={`content-status-badge ${example.status ?? "active"}`}>
                   {toStatusLabel(example.status)}
                 </span>
-                {canManage ? (
+                {canManageExample(example) ? (
                   <button
                     type="button"
                     className="gear-button"
@@ -79,7 +94,7 @@ export default function LobbyPage({
                 ) : null}
               </div>
             </div>
-            {canManage && managingContentId === example.id ? (
+            {canManageExample(example) && managingContentId === example.id ? (
               <div className="content-manage-menu">
                 <button
                   type="button"
@@ -128,7 +143,7 @@ export default function LobbyPage({
             <img src={exam.image} alt={exam.title} className="card-image" />
             <div className="example-head">
               <h3>{exam.title}</h3>
-              {canManage ? (
+              {canManageExam(exam) ? (
                 <button
                   type="button"
                   className="gear-button"

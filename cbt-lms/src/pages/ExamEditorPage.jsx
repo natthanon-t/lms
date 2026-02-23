@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { ensureCoverImage, fileToDataUrl } from "../services/imageService";
 
 const toDomainRows = (domainPercentages) => {
   const entries = Object.entries(domainPercentages ?? {});
@@ -112,11 +113,26 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft }) {
 
     onSaveDraft?.({
       ...exam,
+      image: ensureCoverImage(exam.image, exam.id ?? exam.sourceId ?? `exam-${Date.now()}`),
       domainPercentages,
       numberOfQuestions: Number(exam.numberOfQuestions ?? 0),
       defaultTime: Number(exam.defaultTime ?? 0),
       questions: normalizedQuestions,
     });
+  };
+
+  const handleUploadCoverImage = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) {
+      return;
+    }
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      setExam((prev) => ({ ...prev, image: dataUrl }));
+    } catch {
+      // noop
+    }
   };
 
   return (
@@ -158,6 +174,14 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft }) {
           </select>
         </div>
         <div className="editor-title-box">
+          <label htmlFor="exam-creator">Creator</label>
+          <input
+            id="exam-creator"
+            value={exam.creator ?? ""}
+            onChange={(event) => setExam((prev) => ({ ...prev, creator: event.target.value }))}
+          />
+        </div>
+        <div className="editor-title-box">
           <label htmlFor="exam-number-of-questions">Number of Questions</label>
           <input
             id="exam-number-of-questions"
@@ -176,6 +200,25 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft }) {
             value={Number(exam.defaultTime ?? 0)}
             onChange={(event) => setExam((prev) => ({ ...prev, defaultTime: Number(event.target.value) }))}
           />
+        </div>
+        <div className="editor-title-box editor-meta-full">
+          <label htmlFor="exam-image-url">Cover Image URL</label>
+          <input
+            id="exam-image-url"
+            value={exam.image ?? ""}
+            onChange={(event) => setExam((prev) => ({ ...prev, image: event.target.value }))}
+            placeholder="https://..."
+          />
+          <div className="default-password-row">
+            <input id="exam-image-upload" type="file" accept="image/*" onChange={handleUploadCoverImage} />
+            <button
+              type="button"
+              className="manage-button"
+              onClick={() => setExam((prev) => ({ ...prev, image: "" }))}
+            >
+              ล้างรูป (ใช้รูปสุ่ม)
+            </button>
+          </div>
         </div>
         <div className="editor-title-box editor-meta-full">
           <label htmlFor="exam-description">Description</label>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getSubtopicPages } from "../components/markdown/headingUtils";
+import { getCourseSkillRewards } from "../services/skillRewardsService";
 
 const RADAR_SIZE = 520;
 const RADAR_CENTER = RADAR_SIZE / 2;
@@ -14,35 +15,23 @@ const toRadarLabel = (value) => {
   return `${text.slice(0, 16)}...`;
 };
 
-const getCourseSkillRewards = (course) => {
-  if (Array.isArray(course?.skillRewards) && course.skillRewards.length > 0) {
-    return course.skillRewards
-      .map((reward) => ({
-        skill: String(reward?.skill ?? "").trim(),
-        points: Number(reward?.points ?? 0),
-      }))
-      .filter((reward) => reward.skill && reward.points > 0);
-  }
-
-  const fallbackSkills = Array.isArray(course?.skills) ? course.skills : [];
-  return fallbackSkills
-    .map((skill) => ({
-      skill: String(skill ?? "").trim(),
-      points: Number(course?.skillPoints ?? 20),
-    }))
-    .filter((reward) => reward.skill && reward.points > 0);
-};
-
 export default function ProfilePage({
   currentUser,
   username,
   onSaveName,
+  onChangePassword,
   examples,
   learningStats,
   currentUserProgress,
 }) {
   const [name, setName] = useState(currentUser.name);
   const [message, setMessage] = useState("");
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    nextPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordMessage, setPasswordMessage] = useState("");
   const userSkillScores = learningStats?.[username]?.skillScores ?? {};
   const safeExamples = Array.isArray(examples) ? examples : [];
 
@@ -196,6 +185,12 @@ export default function ProfilePage({
   useEffect(() => {
     setName(currentUser.name);
     setMessage("");
+    setPasswordForm({
+      currentPassword: "",
+      nextPassword: "",
+      confirmPassword: "",
+    });
+    setPasswordMessage("");
   }, [currentUser.name]);
 
   const handleSubmit = (event) => {
@@ -209,6 +204,33 @@ export default function ProfilePage({
 
     onSaveName(trimmedName);
     setMessage("บันทึกชื่อเรียบร้อย");
+  };
+
+  const handleChangePasswordSubmit = (event) => {
+    event.preventDefault();
+
+    const currentPassword = passwordForm.currentPassword;
+    const nextPassword = passwordForm.nextPassword;
+    const confirmPassword = passwordForm.confirmPassword;
+
+    if (!currentPassword || !nextPassword || !confirmPassword) {
+      setPasswordMessage("กรุณากรอกข้อมูลรหัสผ่านให้ครบ");
+      return;
+    }
+    if (nextPassword.length < 4) {
+      setPasswordMessage("รหัสผ่านใหม่ต้องอย่างน้อย 4 ตัวอักษร");
+      return;
+    }
+    if (nextPassword !== confirmPassword) {
+      setPasswordMessage("ยืนยันรหัสผ่านใหม่ไม่ตรงกัน");
+      return;
+    }
+
+    const result = onChangePassword?.(username, currentPassword, nextPassword);
+    if (result?.success) {
+      setPasswordForm({ currentPassword: "", nextPassword: "", confirmPassword: "" });
+    }
+    setPasswordMessage(result?.message ?? "ไม่สามารถเปลี่ยนรหัสผ่านได้");
   };
 
   return (
@@ -241,6 +263,43 @@ export default function ProfilePage({
         </form>
 
         {message ? <p className="profile-message">{message}</p> : null}
+      </article>
+
+      <article className="info-card">
+        <h3>เปลี่ยนรหัสผ่าน</h3>
+        <form className="profile-form" onSubmit={handleChangePasswordSubmit}>
+          <label htmlFor="current-password">รหัสผ่านปัจจุบัน</label>
+          <input
+            id="current-password"
+            type="password"
+            value={passwordForm.currentPassword}
+            onChange={(event) =>
+              setPasswordForm((prev) => ({ ...prev, currentPassword: event.target.value }))
+            }
+          />
+          <label htmlFor="next-password">รหัสผ่านใหม่</label>
+          <input
+            id="next-password"
+            type="password"
+            value={passwordForm.nextPassword}
+            onChange={(event) =>
+              setPasswordForm((prev) => ({ ...prev, nextPassword: event.target.value }))
+            }
+          />
+          <label htmlFor="confirm-password">ยืนยันรหัสผ่านใหม่</label>
+          <input
+            id="confirm-password"
+            type="password"
+            value={passwordForm.confirmPassword}
+            onChange={(event) =>
+              setPasswordForm((prev) => ({ ...prev, confirmPassword: event.target.value }))
+            }
+          />
+          <button type="submit" className="enter-button">
+            บันทึกรหัสผ่านใหม่
+          </button>
+        </form>
+        {passwordMessage ? <p className="profile-message">{passwordMessage}</p> : null}
       </article>
 
       <section className="profile-dashboard-grid">

@@ -18,9 +18,19 @@ export default function ContentPage({
   onOpenDetail,
   onCreateContent,
   onUpdateContentStatus,
-  canManage = false,
+  currentUserKey = "",
+  isAdmin = false,
 }) {
   const [managingContentId, setManagingContentId] = useState("");
+  const isOwner = (example) =>
+    Boolean(currentUserKey) && String(example?.ownerUsername ?? "").trim() === currentUserKey;
+  const canManageExample = (example) =>
+    isAdmin || isOwner(example);
+  const canViewExample = (example) =>
+    isAdmin ||
+    String(example?.status ?? "active").toLowerCase() === "active" ||
+    isOwner(example);
+  const visibleExamples = examples.filter(canViewExample);
 
   return (
     <section className="workspace-content content-theme-exam">
@@ -29,15 +39,19 @@ export default function ContentPage({
         <p>รายการบทเรียนสำหรับเข้าเรียนหรือแก้ไขเนื้อหา</p>
       </header>
 
-      <div className="section-row">
+      {currentUserKey ? (
+        <div className="section-row">
+          <p className="section-label">รายการคอร์ส</p>
+          <button type="button" className="create-content-button" onClick={onCreateContent}>
+            + สร้างเนื้อหา
+          </button>
+        </div>
+      ) : (
         <p className="section-label">รายการคอร์ส</p>
-        <button type="button" className="create-content-button" onClick={onCreateContent}>
-          + สร้างเนื้อหา
-        </button>
-      </div>
+      )}
 
       <div className="example-grid">
-        {examples.map((example) => (
+        {visibleExamples.map((example) => (
           <article key={example.id} className="example-card">
             <img src={example.image} alt={example.title} className="card-image" />
             <div className="example-head">
@@ -46,7 +60,7 @@ export default function ContentPage({
                 <span className={`content-status-badge ${example.status ?? "active"}`}>
                   {toStatusLabel(example.status)}
                 </span>
-                {canManage ? (
+                {canManageExample(example) ? (
                   <button
                     type="button"
                     className="gear-button"
@@ -60,7 +74,7 @@ export default function ContentPage({
                 ) : null}
               </div>
             </div>
-            {canManage && managingContentId === example.id ? (
+            {canManageExample(example) && managingContentId === example.id ? (
               <div className="content-manage-menu">
                 <button
                   type="button"

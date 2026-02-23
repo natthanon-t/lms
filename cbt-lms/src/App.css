@@ -1484,6 +1484,28 @@
   border-color: #2f66da;
 }
 
+.default-password-row {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.default-password-row input {
+  min-width: 280px;
+  flex: 1;
+  border: 1px solid #b8c4e0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.98rem;
+  font-family: inherit;
+}
+
+.default-password-row input:focus {
+  outline: 2px solid #2f66da;
+  border-color: #2f66da;
+}
+
 .metric-grid {
   margin-top: 16px;
   display: grid;
