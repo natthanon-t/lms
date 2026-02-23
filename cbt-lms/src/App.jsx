@@ -8,6 +8,7 @@ import ContentDetailPage from "./pages/ContentDetailPage";
 import EditorPage from "./pages/EditorPage";
 import ExamPage from "./pages/ExamPage";
 import ExamDetailPage from "./pages/ExamDetailPage";
+import ExamEditorPage from "./pages/ExamEditorPage";
 import ExamTakingPage from "./pages/ExamTakingPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import LobbyPage from "./pages/LobbyPage";
@@ -35,6 +36,7 @@ const EXAMPLES_SEED_VERSION = "2026-02-21-soc-foundations-demo-v5";
 const EXAMS_STORAGE_KEY = "cbt_lms_exam_bank";
 const LEARNING_PROGRESS_STORAGE_KEY = "cbt_lms_learning_progress";
 const CONTENT_STATUS_OPTIONS = ["active", "inprogress", "inactive"];
+const EXAM_STATUS_OPTIONS = ["active", "inprogress", "inactive"];
 
 const normalizeSkillRewardList = (item) => {
   if (Array.isArray(item.skillRewards)) {
@@ -86,6 +88,37 @@ const normalizeExampleRecord = (item) => {
     skillPoints: fallbackSkillPoints,
     subtopicCompletionScore: Number(item.subtopicCompletionScore ?? 20),
     courseCompletionScore: Number(item.courseCompletionScore ?? 100),
+  };
+};
+
+const normalizeExamRecord = (item) => {
+  const normalizedStatus = String(item.status ?? "active").toLowerCase();
+  const questions = Array.isArray(item.questions)
+    ? item.questions.map((question, index) => ({
+        id: question.id ?? `q-${index + 1}`,
+        domain: question.domain ?? question.DomainOfKnowledge ?? "-",
+        question: question.question ?? question.Question ?? "",
+        choices: Array.isArray(question.choices)
+          ? question.choices
+          : Array.isArray(question.Choices)
+            ? question.Choices
+            : [],
+        answerKey: question.answerKey ?? question.AnswerKey ?? "",
+        explanation: question.explanation ?? question.Explaination ?? "",
+      }))
+    : [];
+
+  return {
+    ...item,
+    status: EXAM_STATUS_OPTIONS.includes(normalizedStatus) ? normalizedStatus : "active",
+    title: item.title ?? "Exam",
+    description: item.description ?? "",
+    instructions: item.instructions ?? "",
+    image: item.image ?? "https://picsum.photos/seed/exam-default/640/360",
+    numberOfQuestions: Number(item.numberOfQuestions ?? questions.length ?? 0),
+    defaultTime: Number(item.defaultTime ?? 0),
+    domainPercentages: item.domainPercentages ?? {},
+    questions,
   };
 };
 
@@ -230,8 +263,10 @@ export default function App() {
     courseCompletionScore: fallbackExamples[0].courseCompletionScore,
   });
   const [examDraft, setExamDraft] = useState(emptyExamDraft);
+  const [examEditorDraft, setExamEditorDraft] = useState(normalizeExamRecord(emptyExamDraft));
 
   const currentUser = currentUserKey ? users[currentUserKey] : null;
+  const isAdmin = currentUser?.role === "ผู้ดูแลระบบ";
 
   const loadExamples = useCallback(async () => {
     if (examples.length > 0) {
@@ -295,7 +330,7 @@ export default function App() {
 
     const storedExamBank = readStoredJson(EXAMS_STORAGE_KEY);
     if (storedExamBank?.length) {
-      setExamBank(storedExamBank);
+      setExamBank(storedExamBank.map(normalizeExamRecord));
       return;
     }
 
@@ -305,7 +340,7 @@ export default function App() {
         throw new Error("failed to load exam catalog");
       }
       const data = await response.json();
-      setExamBank(Array.isArray(data) ? data : []);
+      setExamBank((Array.isArray(data) ? data : []).map(normalizeExamRecord));
     } catch {
       setExamBank([]);
     }
@@ -352,7 +387,7 @@ export default function App() {
     }
 
     const examRaw = await response.json();
-    const normalizedExam = normalizeExamRaw(examRaw, item);
+    const normalizedExam = normalizeExamRecord(normalizeExamRaw(examRaw, item));
 
     setExamBank((prevExamBank) =>
       prevExamBank.map((exam) => (exam.id === normalizedExam.id ? { ...exam, ...normalizedExam } : exam)),
@@ -361,22 +396,111 @@ export default function App() {
     return normalizedExam;
   }, []);
 
-  const openEditor = async (item) => {
-    let nextItem = normalizeExampleRecord(item);
-    if (item?.file) {
-      try {
-        nextItem = normalizeExampleRecord(await ensureFullExam(item));
-      } catch {
-        return;
-      }
+  const openContentEditor = (item) => {
+    if (!isAdmin) {
+      return;
     }
-
+    const nextItem = normalizeExampleRecord(item);
     setEditorDraft({
       sourceId: nextItem.id,
       ...nextItem,
     });
     setActiveTab("home");
     setHomeView("editor");
+  };
+
+  const openExamEditor = async (item) => {
+    if (!isAdmin) {
+      return;
+    }
+    let nextItem = normalizeExamRecord(item);
+    if (item?.file) {
+      try {
+        nextItem = normalizeExamRecord(await ensureFullExam(item));
+      } catch {
+        return;
+      }
+    }
+    setExamEditorDraft({
+      sourceId: nextItem.id ?? item?.id ?? "",
+      ...nextItem,
+    });
+    setActiveTab("exam");
+    setExamView("editor");
+  };
+
+  const createExam = () => {
+    if (!isAdmin) {
+      return;
+    }
+    const now = Date.now();
+    const nextExam = normalizeExamRecord({
+      id: `exam-${now}`,
+      sourceId: `exam-${now}`,
+      title: "New Practice Exam",
+      description: "Custom exam created by admin",
+      instructions: "Read all questions carefully.",
+      image: `https://picsum.photos/seed/exam-${now}/640/360`,
+      status: "inprogress",
+      numberOfQuestions: 1,
+      defaultTime: 60,
+      domainPercentages: {
+        "ISC2 CC Domain 1: Security Principles": 100,
+      },
+      questions: [
+        {
+          id: "q-1",
+          domain: "ISC2 CC Domain 1: Security Principles",
+          question: "Sample question",
+          choices: ["A. Choice 1", "B. Choice 2", "C. Choice 3", "D. Choice 4"],
+          answerKey: "A. Choice 1",
+          explanation: "Sample explanation",
+        },
+      ],
+    });
+
+    setExamEditorDraft(nextExam);
+    setActiveTab("exam");
+    setExamView("editor");
+  };
+
+  const saveExamEditorDraft = (nextDraft) => {
+    const normalizedDraft = normalizeExamRecord({
+      ...nextDraft,
+      numberOfQuestions:
+        Number(nextDraft.numberOfQuestions ?? 0) > 0
+          ? Number(nextDraft.numberOfQuestions)
+          : Array.isArray(nextDraft.questions)
+            ? nextDraft.questions.length
+            : 0,
+    });
+
+    setExamBank((prevExamBank) => {
+      const exists = prevExamBank.some((exam) => exam.id === normalizedDraft.id);
+      const nextExamBank = exists
+        ? prevExamBank.map((exam) => (exam.id === normalizedDraft.id ? normalizedDraft : exam))
+        : [normalizedDraft, ...prevExamBank];
+      try {
+        window.localStorage.setItem(EXAMS_STORAGE_KEY, JSON.stringify(nextExamBank));
+      } catch {
+        // noop
+      }
+      return nextExamBank;
+    });
+
+    setExamDraft({
+      sourceId: normalizedDraft.id,
+      title: normalizedDraft.title,
+      description: normalizedDraft.description,
+      instructions: normalizedDraft.instructions,
+      numberOfQuestions: normalizedDraft.numberOfQuestions,
+      defaultTime: normalizedDraft.defaultTime,
+      domainPercentages: normalizedDraft.domainPercentages ?? {},
+      questions: normalizedDraft.questions ?? [],
+      content: normalizedDraft.content ?? "",
+    });
+    setExamEditorDraft(normalizedDraft);
+    setExamView("list");
   };
 
   const openContentDetail = (item) => {
@@ -715,6 +839,7 @@ export default function App() {
         onSelectTab={handleSelectTab}
         onAuthAction={handleAuthAction}
         isAuthenticated={Boolean(currentUser)}
+        isAdmin={isAdmin}
       />
 
       {activeTab === "profile" && !currentUser ? (
@@ -740,6 +865,13 @@ export default function App() {
             <p>กรุณา Login ก่อนใช้งานหน้านี้</p>
           </header>
         </section>
+      ) : activeTab === "user-management" && !isAdmin ? (
+        <section className="workspace-content">
+          <header className="content-header">
+            <h1>จัดการ user</h1>
+            <p>หน้านี้สำหรับผู้ดูแลระบบเท่านั้น</p>
+          </header>
+        </section>
       ) : activeTab === "user-management" ? (
         <UserManagementPage
           users={users}
@@ -755,8 +887,22 @@ export default function App() {
         </section>
       ) : activeTab === "leaderboard" ? (
         <LeaderboardPage users={users} learningStats={learningStats} />
+      ) : activeTab === "summary" && !isAdmin ? (
+        <section className="workspace-content">
+          <header className="content-header">
+            <h1>สรุปผล</h1>
+            <p>หน้านี้สำหรับผู้ดูแลระบบเท่านั้น</p>
+          </header>
+        </section>
       ) : activeTab === "summary" ? (
-        <SummaryPage lessonCount={examples.length} examCount={examBank.length} />
+        <SummaryPage
+          lessonCount={examples.length}
+          examCount={examBank.length}
+          users={users}
+          learningStats={learningStats}
+          examples={examples}
+          learningProgress={learningProgress}
+        />
       ) : activeTab === "exam" ? (
         examView === "taking" ? (
           <ExamTakingPage
@@ -778,16 +924,29 @@ export default function App() {
               <p>{accessMessage || "กรุณา Login ก่อนใช้งานหน้านี้"}</p>
             </header>
           </section>
+        ) : examView === "editor" ? (
+          <ExamEditorPage
+            draft={examEditorDraft}
+            onBack={() => setExamView("list")}
+            onSaveDraft={saveExamEditorDraft}
+          />
         ) : (
-          <ExamPage examBank={examBank} onOpenEditor={openEditor} onEnterExam={openExam} />
+          <ExamPage
+            examBank={examBank}
+            onOpenEditor={openExamEditor}
+            onEnterExam={openExam}
+            onCreateExam={createExam}
+            canManage={isAdmin}
+          />
         )
       ) : activeTab === "content" ? (
         <ContentPage
           examples={examples}
-          onOpenEditor={openEditor}
+          onOpenEditor={openContentEditor}
           onOpenDetail={openContentDetail}
           onCreateContent={createContent}
           onUpdateContentStatus={updateContentStatus}
+          canManage={isAdmin}
         />
       ) : homeView === "auth-required" ? (
         <section className="workspace-content">
@@ -824,10 +983,12 @@ export default function App() {
         <LobbyPage
           examples={examples}
           examBank={examBank}
-          onOpenEditor={openEditor}
+          onOpenEditor={openContentEditor}
+          onOpenExamEditor={openExamEditor}
           onEnterClass={openContentDetail}
           onEnterExam={openExam}
           onUpdateContentStatus={updateContentStatus}
+          canManage={isAdmin}
         />
       )}
     </main>

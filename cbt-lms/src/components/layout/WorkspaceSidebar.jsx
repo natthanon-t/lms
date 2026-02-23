@@ -14,7 +14,15 @@ export default function WorkspaceSidebar({
   onSelectTab,
   onAuthAction,
   isAuthenticated,
+  isAdmin = false,
 }) {
+  const visibleTabs = tabs.filter((tab) => {
+    if (!isAdmin && (tab.key === "user-management" || tab.key === "summary")) {
+      return false;
+    }
+    return true;
+  });
+
   return (
     <aside className="workspace-sidebar">
       <div>
@@ -24,7 +32,7 @@ export default function WorkspaceSidebar({
       </div>
 
       <nav className="sidebar-nav" aria-label="main navigation">
-        {tabs.map((tab) => (
+        {visibleTabs.map((tab) => (
           <button
             key={tab.key}
             type="button"

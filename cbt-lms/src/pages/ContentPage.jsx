@@ -18,6 +18,7 @@ export default function ContentPage({
   onOpenDetail,
   onCreateContent,
   onUpdateContentStatus,
+  canManage = false,
 }) {
   const [managingContentId, setManagingContentId] = useState("");
 
@@ -45,19 +46,21 @@ export default function ContentPage({
                 <span className={`content-status-badge ${example.status ?? "active"}`}>
                   {toStatusLabel(example.status)}
                 </span>
-                <button
-                  type="button"
-                  className="gear-button"
-                  aria-label={`จัดการ ${example.title}`}
-                  onClick={() =>
-                    setManagingContentId((prevId) => (prevId === example.id ? "" : example.id))
-                  }
-                >
-                  ⚙
-                </button>
+                {canManage ? (
+                  <button
+                    type="button"
+                    className="gear-button"
+                    aria-label={`จัดการ ${example.title}`}
+                    onClick={() =>
+                      setManagingContentId((prevId) => (prevId === example.id ? "" : example.id))
+                    }
+                  >
+                    ⚙
+                  </button>
+                ) : null}
               </div>
             </div>
-            {managingContentId === example.id ? (
+            {canManage && managingContentId === example.id ? (
               <div className="content-manage-menu">
                 <button
                   type="button"

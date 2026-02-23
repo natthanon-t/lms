@@ -17,9 +17,11 @@ export default function LobbyPage({
   examples,
   examBank,
   onOpenEditor,
+  onOpenExamEditor,
   onEnterClass,
   onEnterExam,
   onUpdateContentStatus,
+  canManage = false,
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [managingContentId, setManagingContentId] = useState("");
@@ -63,19 +65,21 @@ export default function LobbyPage({
                 <span className={`content-status-badge ${example.status ?? "active"}`}>
                   {toStatusLabel(example.status)}
                 </span>
-                <button
-                  type="button"
-                  className="gear-button"
-                  aria-label={`จัดการ ${example.title}`}
-                  onClick={() =>
-                    setManagingContentId((prevId) => (prevId === example.id ? "" : example.id))
-                  }
-                >
-                  ⚙
-                </button>
+                {canManage ? (
+                  <button
+                    type="button"
+                    className="gear-button"
+                    aria-label={`จัดการ ${example.title}`}
+                    onClick={() =>
+                      setManagingContentId((prevId) => (prevId === example.id ? "" : example.id))
+                    }
+                  >
+                    ⚙
+                  </button>
+                ) : null}
               </div>
             </div>
-            {managingContentId === example.id ? (
+            {canManage && managingContentId === example.id ? (
               <div className="content-manage-menu">
                 <button
                   type="button"
@@ -124,14 +128,16 @@ export default function LobbyPage({
             <img src={exam.image} alt={exam.title} className="card-image" />
             <div className="example-head">
               <h3>{exam.title}</h3>
-              <button
-                type="button"
-                className="gear-button"
-                aria-label={`แก้ไข ${exam.title}`}
-                onClick={() => onOpenEditor(exam)}
-              >
-                ⚙
-              </button>
+              {canManage ? (
+                <button
+                  type="button"
+                  className="gear-button"
+                  aria-label={`แก้ไข ${exam.title}`}
+                  onClick={() => onOpenExamEditor(exam)}
+                >
+                  ⚙
+                </button>
+              ) : null}
             </div>
             <p>{exam.description}</p>
             <button type="button" className="enter-button" onClick={() => onEnterExam(exam)}>
