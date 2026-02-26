@@ -6,8 +6,20 @@
   background: linear-gradient(140deg, #f5f7fb, #dce5ff);
 }
 
-.login-card {
+.login-shell {
   width: min(100%, 360px);
+}
+
+.login-shell.register-mode {
+  width: min(100%, 860px);
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(260px, 320px);
+  gap: 16px;
+  align-items: start;
+}
+
+.login-card {
+  width: 100%;
   background: #ffffff;
   border: 1px solid #d7dff1;
   border-radius: 16px;
@@ -24,6 +36,30 @@
 .login-form {
   display: grid;
   gap: 10px;
+}
+
+.register-criteria-card {
+  border: 1px solid #d7dff1;
+  background: #f7faff;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.register-criteria-card h3 {
+  margin: 0 0 10px;
+  color: #1b2f56;
+  font-size: 1rem;
+}
+
+.register-criteria-card p {
+  margin: 0 0 8px;
+  color: #324e7f;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.register-criteria-card p:last-child {
+  margin-bottom: 0;
 }
 
 .login-form label {
@@ -84,6 +120,13 @@
   cursor: pointer;
   width: fit-content;
   margin-left: auto;
+}
+
+@media (max-width: 840px) {
+  .login-shell.register-mode {
+    width: min(100%, 520px);
+    grid-template-columns: 1fr;
+  }
 }
 
 .workspace-shell {
@@ -510,6 +553,54 @@
 .editor-question-head h4 {
   margin: 0;
   color: #16315d;
+}
+
+.editor-question-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-question-tools label {
+  font-weight: 600;
+  color: #16315d;
+}
+
+.editor-question-tools select {
+  border: 1px solid #b8c4e0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-family: inherit;
+}
+
+.editor-question-card-active {
+  border-color: #3b7bef;
+  box-shadow: 0 0 0 2px rgba(59, 123, 239, 0.15);
+}
+
+.exam-json-import-row {
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.exam-json-import-row p {
+  margin: 0;
+  color: #375587;
+  font-size: 0.9rem;
+}
+
+.exam-json-import-message {
+  margin: 8px 0 0;
+  font-weight: 700;
+}
+
+.exam-json-import-message.is-success {
+  color: #1f8d4e;
+}
+
+.exam-json-import-message.is-error {
+  color: #bf2a2a;
 }
 
 .editor-choice-list {
@@ -1622,6 +1713,12 @@
 
   .editor-skill-row {
     grid-template-columns: 1fr;
+  }
+
+  .editor-question-tools {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .exam-top-actions {

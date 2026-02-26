@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ensureCoverImage, fileToDataUrl } from "../services/imageService";
+import { parseExamUploadJson } from "../services/examService";
 
 const toDomainRows = (domainPercentages) => {
   const entries = Object.entries(domainPercentages ?? {});
@@ -39,17 +40,39 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft }) {
   const [exam, setExam] = useState(draft);
   const [domainRows, setDomainRows] = useState(() => toDomainRows(draft.domainPercentages));
   const [questions, setQuestions] = useState(() => toQuestions(draft.questions));
+  const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
+  const [importStatus, setImportStatus] = useState({ type: "", message: "" });
+  const questionRefs = useRef({});
 
   useEffect(() => {
     setExam(draft);
     setDomainRows(toDomainRows(draft.domainPercentages));
     setQuestions(toQuestions(draft.questions));
+    setSelectedQuestionIndex(0);
+    setImportStatus({ type: "", message: "" });
   }, [draft]);
 
   const domainTotal = useMemo(
     () => domainRows.reduce((sum, row) => sum + Number(row.percent || 0), 0),
     [domainRows],
   );
+
+  useEffect(() => {
+    if (!questions.length) {
+      setSelectedQuestionIndex(0);
+      return;
+    }
+    setSelectedQuestionIndex((prevIndex) => Math.min(prevIndex, questions.length - 1));
+  }, [questions.length]);
+
+  const jumpToQuestion = (index) => {
+    const nextIndex = Number(index);
+    if (!Number.isFinite(nextIndex) || nextIndex < 0 || nextIndex >= questions.length) {
+      return;
+    }
+    setSelectedQuestionIndex(nextIndex);
+    questionRefs.current[nextIndex]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const updateQuestion = (index, field, value) => {
     setQuestions((prevQuestions) =>
@@ -85,10 +108,20 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft }) {
         explanation: "",
       },
     ]);
+    setSelectedQuestionIndex(questions.length);
   };
 
   const removeQuestion = (index) => {
     setQuestions((prevQuestions) => prevQuestions.filter((_, questionIndex) => questionIndex !== index));
+    setSelectedQuestionIndex((prevIndex) => {
+      if (prevIndex === index) {
+        return Math.max(0, index - 1);
+      }
+      if (prevIndex > index) {
+        return prevIndex - 1;
+      }
+      return prevIndex;
+    });
   };
 
   const handleSave = () => {
@@ -132,6 +165,36 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft }) {
       setExam((prev) => ({ ...prev, image: dataUrl }));
     } catch {
       // noop
+    }
+  };
+
+  const handleImportExamJson = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) {
+      return;
+    }
+    try {
+      const text = await file.text();
+      const parsedJson = JSON.parse(text);
+      const importedExam = parseExamUploadJson(parsedJson, exam);
+      if (!Array.isArray(importedExam.questions) || importedExam.questions.length === 0) {
+        throw new Error("ไม่พบคำถามในไฟล์");
+      }
+
+      setExam(importedExam);
+      setDomainRows(toDomainRows(importedExam.domainPercentages));
+      setQuestions(toQuestions(importedExam.questions));
+      setSelectedQuestionIndex(0);
+      setImportStatus({
+        type: "success",
+        message: `นำเข้าไฟล์สำเร็จ: ${importedExam.questions.length} ข้อ`,
+      });
+    } catch {
+      setImportStatus({
+        type: "error",
+        message: "ไฟล์ไม่ถูกต้อง หรือไม่ตรงโครงสร้าง CC1.json",
+      });
     }
   };
 
@@ -242,6 +305,21 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft }) {
 
       <div className="editor-skill-card">
         <div className="editor-skill-head">
+          <h3>Import JSON (CC1 format)</h3>
+        </div>
+        <div className="exam-json-import-row">
+          <input id="exam-json-upload" type="file" accept=".json,application/json" onChange={handleImportExamJson} />
+          <p>อัปโหลดไฟล์ข้อสอบครั้งเดียว แล้วแก้รายข้อได้เลย</p>
+        </div>
+        {importStatus.message ? (
+          <p className={`exam-json-import-message ${importStatus.type === "error" ? "is-error" : "is-success"}`}>
+            {importStatus.message}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="editor-skill-card">
+        <div className="editor-skill-head">
           <h3>DomainPercentages (รวม {domainTotal}%)</h3>
           <button
             type="button"
@@ -293,16 +371,44 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft }) {
       <div className="editor-skill-card">
         <div className="editor-skill-head">
           <h3>Questions</h3>
-          <button type="button" className="create-content-button" onClick={addQuestion}>
-            + เพิ่มคำถาม
-          </button>
+          <div className="editor-question-tools">
+            <label htmlFor="question-jump">แก้ข้อที่</label>
+            <select
+              id="question-jump"
+              value={selectedQuestionIndex}
+              onChange={(event) => jumpToQuestion(Number(event.target.value))}
+            >
+              {questions.map((_, index) => (
+                <option key={`jump-${index}`} value={index}>
+                  Question {index + 1}
+                </option>
+              ))}
+            </select>
+            <button type="button" className="create-content-button" onClick={addQuestion}>
+              + เพิ่มคำถาม
+            </button>
+          </div>
         </div>
         <div className="editor-question-list">
           {questions.map((question, index) => (
-            <article key={`question-${index}`} className="editor-question-card">
+            <article
+              key={`question-${index}`}
+              ref={(element) => {
+                questionRefs.current[index] = element;
+              }}
+              className={`editor-question-card ${selectedQuestionIndex === index ? "editor-question-card-active" : ""}`}
+              onClick={() => setSelectedQuestionIndex(index)}
+            >
               <div className="editor-question-head">
                 <h4>Question {index + 1}</h4>
-                <button type="button" className="toc-delete-button" onClick={() => removeQuestion(index)}>
+                <button
+                  type="button"
+                  className="toc-delete-button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    removeQuestion(index);
+                  }}
+                >
                   ลบข้อ
                 </button>
               </div>

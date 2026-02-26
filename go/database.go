@@ -2,135 +2,159 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
-	"image/jpeg"
-	"os"
-	"strconv"
+	"errors"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/skip2/go-qrcode"
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"golang.org/x/crypto/bcrypt"
 )
 
-func getUserPermissions(email string) ([]Permission, error) {
-	fmt.Println("getUserPermissions")
-	var permiss []Permission
-	query := `SELECT employee_role_id, menu_id FROM permission 
-				WHERE employee_role_id=(SELECT role_id FROM employee WHERE email=:1)`
-	rows, err := db.Query(query, email)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
-	for rows.Next() {
-		var permis Permission
-		err = rows.Scan(&permis.EmployeeRoleID, &permis.MenuID)
-		if err != nil {
-			fmt.Println("Scan", err)
+var db *sql.DB
 
-			return nil, err
-		}
-		permiss = append(permiss, permis)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-	return permiss, nil
-}
-
-/*func getDepartments() ([]Department, error) {
-	var departments []Department
-	rows, err := db.Query("SELECT id, name FROM department")
-	if err != nil {
-		return nil, err
-	}
-	for rows.Next() {
-		var dept Department
-		err := rows.Scan(&dept.ID, &dept.Name)
-		if err != nil {
-			return nil, err
-		}
-		departments = append(departments, dept)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-	return departments, nil
-}*/
-
-func getRoles() ([]EmployeeRole, error) {
-	var roles []EmployeeRole
-	rows, err := db.Query("SELECT id, name FROM employee_role")
-	if err != nil {
-		return nil, err
-	}
-	for rows.Next() {
-		var role EmployeeRole
-		err = rows.Scan(&role.ID, &role.Name)
-		if err != nil {
-			return nil, err
-		}
-		roles = append(roles, role)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-	return roles, nil
-}
-
-func getEmployees() ([]Employee, error) {
-	var employees []Employee
-	query := `SELECT id, name, role_id FROM employee`
-	rows, err := db.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	for rows.Next() {
-		var employee Employee
-		err = rows.Scan(&employee.ID, &employee.Name, &employee.RoleID)
-		if err != nil {
-			return nil, err
-		}
-		employees = append(employees, employee)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return employees, nil
-}
-
-func getEmployee(id int) (Employee, error) {
-	var employee Employee
-	query := `SELECT name, lname, sex, email, dept_id, role_id FROM employee WHERE id:1`
-	err := db.QueryRow(query, id).Scan(&employee.Name, &employee.LName, &employee.Sex, &employee.Email, &employee.DeptID, &employee.RoleID)
-	if err != nil {
-		return Employee{}, err
-	}
-	return employee, err
-}
-
-func verifyUser(email string, password string) error {
-	var user User
-	row := db.QueryRow("SELECT email, password FROM employee WHERE email=:1 AND password=:2", email, password)
-	err := row.Scan(&user.Email, &user.Password)
-	if err != nil {
-		return fiber.ErrUnauthorized
+func connectPostgres(databaseURL string) error {
+	if strings.TrimSpace(databaseURL) == "" {
+		return errors.New("DATABASE_URL is required")
 	}
 
-	return nil
-}
-
-func updateEmployee(id int, employee *Employee) error {
-	query := `UPDATE employee
-			SET name=:1, lname=:2, sex=:3, email=:4, dept_id=:4, role_id=:5
-			WHERE id=:7`
-	_, err := db.Exec(query, employee.Name, employee.LName,
-		employee.Sex, employee.Email, employee.DeptID,
-		employee.RoleID, id)
+	conn, err := sql.Open("pgx", databaseURL)
 	if err != nil {
 		return err
 	}
+	conn.SetConnMaxLifetime(15 * time.Minute)
+	conn.SetMaxOpenConns(15)
+	conn.SetMaxIdleConns(5)
+
+	if err := conn.Ping(); err != nil {
+		_ = conn.Close()
+		return err
+	}
+
+	db = conn
 	return nil
+}
+
+func ensureAuthSchema() error {
+	_, err := db.Exec(`
+CREATE TABLE IF NOT EXISTS users (
+  id BIGSERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'user',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);`)
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(`
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  revoked_at TIMESTAMPTZ NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);`)
+	return err
+}
+
+func normalizeUsername(username string) string {
+	return strings.ToLower(strings.TrimSpace(username))
+}
+
+func createUser(name, username, password, role string) (AuthUser, error) {
+	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return AuthUser{}, err
+	}
+
+	normalizedUsername := normalizeUsername(username)
+	var user AuthUser
+	err = db.QueryRow(
+		`INSERT INTO users (name, email, password_hash, role)
+		 VALUES ($1, $2, $3, $4)
+		 RETURNING id, name, email, role, created_at`,
+		name,
+		normalizedUsername,
+		string(hashed),
+		role,
+	).Scan(&user.ID, &user.Name, &user.Username, &user.Role, &user.CreatedAt)
+	return user, err
+}
+
+func findUserByUsername(username string) (AuthUserRecord, error) {
+	var user AuthUserRecord
+	err := db.QueryRow(
+		`SELECT id, name, email, password_hash, role, created_at
+		 FROM users
+		 WHERE email = $1`,
+		normalizeUsername(username),
+	).Scan(&user.ID, &user.Name, &user.Username, &user.PasswordHash, &user.Role, &user.CreatedAt)
+	return user, err
+}
+
+func ensureDefaultAdminUser(name, username, password string) error {
+	normalizedUsername := normalizeUsername(username)
+	if normalizedUsername == "" || strings.TrimSpace(password) == "" {
+		return errors.New("APP_ADMIN_USERNAME and APP_ADMIN_PASSWORD are required")
+	}
+
+	var existingID int64
+	err := db.QueryRow(`SELECT id FROM users WHERE email = $1`, normalizedUsername).Scan(&existingID)
+	if err == nil {
+		return nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+
+	_, err = createUser(strings.TrimSpace(name), normalizedUsername, password, "admin")
+	return err
+}
+
+func findUserByID(id int64) (AuthUserRecord, error) {
+	var user AuthUserRecord
+	err := db.QueryRow(
+		`SELECT id, name, email, password_hash, role, created_at
+		 FROM users
+		 WHERE id = $1`,
+		id,
+	).Scan(&user.ID, &user.Name, &user.Username, &user.PasswordHash, &user.Role, &user.CreatedAt)
+	return user, err
+}
+
+func createRefreshToken(userID int64, tokenHash string, expiresAt time.Time) error {
+	_, err := db.Exec(
+		`INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
+		 VALUES ($1, $2, $3)`,
+		userID,
+		tokenHash,
+		expiresAt,
+	)
+	return err
+}
+
+func getActiveRefreshTokenUser(tokenHash string) (int64, error) {
+	var userID int64
+	err := db.QueryRow(
+		`SELECT user_id
+		 FROM refresh_tokens
+		 WHERE token_hash = $1
+		   AND revoked_at IS NULL
+		   AND expires_at > NOW()`,
+		tokenHash,
+	).Scan(&userID)
+	return userID, err
+}
+
+func revokeRefreshToken(tokenHash string) error {
+	_, err := db.Exec(
+		`UPDATE refresh_tokens
+		 SET revoked_at = NOW()
+		 WHERE token_hash = $1
+		   AND revoked_at IS NULL`,
+		tokenHash,
+	)
+	return err
 }

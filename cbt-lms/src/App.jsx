@@ -50,11 +50,20 @@ import {
   withUpdatedUserStatus,
 } from "./services/userService";
 import { canManageOwnedItem, canViewItemByStatus } from "./services/accessControlService";
+import {
+  clearTokens,
+  loginAuth,
+  logoutAuth,
+  meAuth,
+  refreshAuth,
+  registerAuth,
+} from "./services/authService";
 
 export default function App() {
   const initialCourse = normalizeExampleRecord(fallbackExamples[0]);
   const [currentUserKey, setCurrentUserKey] = useState("");
   const [showLogin, setShowLogin] = useState(false);
+  const [authBootstrapped, setAuthBootstrapped] = useState(false);
   const [accessMessage, setAccessMessage] = useState("");
   const [activeTab, setActiveTab] = useState("home");
   const [homeView, setHomeView] = useState("lobby");
@@ -80,7 +89,7 @@ export default function App() {
   const [examEditorDraft, setExamEditorDraft] = useState(normalizeExamRecord(EMPTY_EXAM_DRAFT));
 
   const currentUser = currentUserKey ? users[currentUserKey] : null;
-  const isAdmin = currentUser?.role === "ผู้ดูแลระบบ";
+  const isAdmin = currentUser?.role === "ผู้ดูแลระบบ" || currentUser?.role === "admin";
   const canManageItem = useCallback(
     (item) => canManageOwnedItem({ item, currentUser, currentUserKey, isAdmin }),
     [currentUser, currentUserKey, isAdmin],
@@ -186,6 +195,41 @@ export default function App() {
   useEffect(() => {
     writeStoredJson(LEARNING_PROGRESS_STORAGE_KEY, learningProgress);
   }, [learningProgress]);
+
+  useEffect(() => {
+    let mounted = true;
+    const bootstrapAuth = async () => {
+      try {
+        const payload = await refreshAuth();
+        const profile = payload?.user ?? (await meAuth());
+        const username = String(profile?.username ?? "").trim().toLowerCase();
+        if (!mounted || !username) {
+          return;
+        }
+        setUsers((prevUsers) => ({
+          ...prevUsers,
+          [username]: {
+            ...(prevUsers[username] ?? {}),
+            name: profile?.name ?? profile?.username ?? username,
+            password: prevUsers[username]?.password ?? DEFAULT_PASSWORD,
+            role: profile?.role ?? prevUsers[username]?.role ?? "ผู้ใช้งาน",
+            status: prevUsers[username]?.status ?? "active",
+          },
+        }));
+        setCurrentUserKey(username);
+      } catch {
+        clearTokens();
+      } finally {
+        if (mounted) {
+          setAuthBootstrapped(true);
+        }
+      }
+    };
+    void bootstrapAuth();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const ensureFullExam = useCallback(async (item) => {
     if (item?.questions?.length) {
@@ -469,7 +513,8 @@ export default function App() {
     );
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logoutAuth();
     setCurrentUserKey("");
     setShowLogin(false);
     setAccessMessage("");
@@ -480,7 +525,7 @@ export default function App() {
 
   const handleAuthAction = () => {
     if (currentUser) {
-      handleLogout();
+      void handleLogout();
       return;
     }
     setShowLogin(true);
@@ -593,26 +638,60 @@ export default function App() {
     [users, examples, learningProgress],
   );
 
+  const handleLoginFromBackend = async ({ username, password }) => {
+    try {
+      const payload = await loginAuth({ username, password });
+      const profile = payload?.user ?? {};
+      const normalizedUsername = String(profile?.username ?? username ?? "").trim().toLowerCase();
+      if (!normalizedUsername) {
+        return { success: false, message: "ไม่พบข้อมูลผู้ใช้" };
+      }
+      setUsers((prevUsers) => ({
+        ...prevUsers,
+        [normalizedUsername]: {
+          ...(prevUsers[normalizedUsername] ?? {}),
+          name: profile?.name ?? normalizedUsername,
+          password: prevUsers[normalizedUsername]?.password ?? DEFAULT_PASSWORD,
+          role: profile?.role ?? "ผู้ใช้งาน",
+          status: "active",
+        },
+      }));
+      setCurrentUserKey(normalizedUsername);
+      setAccessMessage("");
+      setShowLogin(false);
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error?.message ?? "เข้าสู่ระบบไม่สำเร็จ" };
+    }
+  };
+
+  const handleRegisterFromBackend = async ({ name, username, password }) => {
+    try {
+      await registerAuth({ name, username, password });
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error?.message ?? "สมัครสมาชิกไม่สำเร็จ" };
+    }
+  };
+
+  if (!authBootstrapped) {
+    return (
+      <main className="workspace-shell">
+        <section className="workspace-content">
+          <header className="content-header">
+            <h1>กำลังตรวจสอบสิทธิ์ผู้ใช้</h1>
+            <p>Loading...</p>
+          </header>
+        </section>
+      </main>
+    );
+  }
+
   if (!currentUser && showLogin) {
     return (
       <LoginScreen
-        onSuccess={(username) => {
-          setCurrentUserKey(username);
-          setAccessMessage("");
-          setShowLogin(false);
-        }}
-        onRegister={(name, user, password) =>
-          setUsers((prevUsers) => ({
-            ...prevUsers,
-            [user]: {
-              name,
-              password,
-              role: "ผู้ใช้งาน",
-              status: "active",
-            },
-          }))
-        }
-        users={users}
+        onLogin={handleLoginFromBackend}
+        onRegister={handleRegisterFromBackend}
         onCancel={() => setShowLogin(false)}
       />
     );

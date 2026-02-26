@@ -1,17 +1,83 @@
-networks:
-  academy_network:
-    driver: bridge 
-
 services:
-  db:
-    build: database
-    container_name: database
+  postgres:
+    image: postgres:17-alpine
+    container_name: cbt_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres-ui:
+    image: dpage/pgadmin4:8
+    container_name: cbt_postgres_ui
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      PGADMIN_DB_HOST: ${PGADMIN_DB_HOST}
+      PGADMIN_DB_PORT: ${PGADMIN_DB_PORT}
+      PGADMIN_DB_NAME: ${PGADMIN_DB_NAME}
+      PGADMIN_DB_USER: ${PGADMIN_DB_USER}
+      PGADMIN_DB_PASSWORD: ${PGADMIN_DB_PASSWORD}
+      PGADMIN_SERVER_NAME: ${PGADMIN_SERVER_NAME}
+      PGADMIN_SERVER_JSON_FILE: /var/lib/pgadmin/servers.json
     ports:
-      - "5432:5432"
-    networks:
-      - academy_network
-    
+      - "${PGADMIN_PORT}:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./scripts/pgadmin-init.sh:/opt/scripts/pgadmin-init.sh:ro
+    entrypoint:
+      - /bin/sh
+      - /opt/scripts/pgadmin-init.sh
+
+  fiber-api:
+    build:
+      context: ./go
+    container_name: cbt_fiber_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: ${API_PORT}
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      ACCESS_TOKEN_MINUTES: ${ACCESS_TOKEN_MINUTES}
+      REFRESH_TOKEN_HOURS: ${REFRESH_TOKEN_HOURS}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      APP_ADMIN_NAME: ${APP_ADMIN_NAME}
+      APP_ADMIN_USERNAME: ${APP_ADMIN_USERNAME}
+      APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD}
+    ports:
+      - "${API_PORT}:5020"
+
+  react-app:
+    build:
+      context: ./cbt-lms
+    container_name: cbt_react_app
+    restart: unless-stopped
+    depends_on:
+      - fiber-api
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+    ports:
+      - "${FRONTEND_PORT}:5173"
+
 volumes:
   postgres-data:
+  pgadmin-data:

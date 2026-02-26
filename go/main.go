@@ -1,244 +1,108 @@
 package main
 
 import (
-	"database/sql"
-	"fmt"
+	"log"
 	"os"
-	"time"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-
 	jwtware "github.com/gofiber/jwt/v2"
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/joho/godotenv"
-	_ "github.com/sijms/go-ora/v2"
 )
 
-var db *sql.DB
+var appCfg appConfig
 
 func main() {
+	_ = godotenv.Load()
+
+	cfg := loadConfig()
+	appCfg = cfg
+	if cfg.JWTSecret == "" {
+		log.Fatal("JWT_SECRET is required")
+	}
+
+	if err := connectPostgres(cfg.DatabaseURL); err != nil {
+		log.Fatalf("connect postgres failed: %v", err)
+	}
+	defer db.Close()
+
+	if err := ensureAuthSchema(); err != nil {
+		log.Fatalf("ensure auth schema failed: %v", err)
+	}
+	if err := ensureDefaultAdminUser(cfg.AdminName, cfg.AdminUser, cfg.AdminPass); err != nil {
+		log.Fatalf("ensure default admin failed: %v", err)
+	}
 
 	app := fiber.New()
-
-	// Load environment variables
-	err := godotenv.Load()
-	if err != nil {
-		panic(err)
-	}
-	// Get DSN from environment variable
-	dsn := os.Getenv("DSN")
-	if dsn == "" {
-		panic("DSN environment variable is not set")
-	}
-	// Initialize the database connection
-	db, err = sql.Open("oracle", dsn)
-	if err != nil {
-		panic(err)
-	}
-
-	defer db.Close()
-	// Ping the database to verify connection
-	if err := db.Ping(); err != nil {
-		panic(err)
-	}
-	fmt.Println("Connected to Oracle Database using go-ora")
-
-	// Apply CORS middleware
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*", // Adjust this to be more restrictive if needed
-		AllowMethods: "GET,POST,HEAD,PUT,DELETE,PATCH",
+		AllowOrigins: cfg.CORSOrigins,
+		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 	}))
 
-	app.Get("/home", home)
-	app.Get("/departments", getDepartmentsHandler)
-	app.Get("/roomTypes", getRoomTypesHandler)
-	app.Get("/menus", getMenusHandler)
-	app.Post("/uploadImageRoom/:id", uploadImageRoomHandler)
-	app.Get("/getImageRoom/:id", getImageRoomHandler)
-	app.Post("/uploadImageProfile/:id", uploadImageProfileHandler)
-	app.Get("/getImageProfile/:id", getImageProfileHandler)
-	app.Get("/getImageQr/:id", getImageQrHandler)
-	app.Get("/addresses", getAddressesHandler)
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"status": "ok"})
+	})
 
-	// Login
-	app.Post("/login", loginHandler)
-	app.Post("/register", registerHandler)
-	app.Get("/home", home)
-	app.Get("/buildingtype", getbuildingtype)
-	app.Get("/roomtype", getroomtype)
-	app.Get("/floortype", getfloortype)
-	app.Get("/statustype", getstatustype)
-	app.Get("/address", getAddress_id)
-	app.Get("/rooms", getRoomsHandler)
+	api := app.Group("/api")
+	auth := api.Group("/auth")
+	auth.Post("/register", registerHandler)
+	auth.Post("/login", loginHandler)
+	auth.Post("/refresh", refreshHandler)
+	auth.Post("/logout", logoutHandler)
 
-	// JWT Middleware
-	app.Use(jwtware.New(jwtware.Config{
-		SigningKey: []byte(os.Getenv("JWT_SECRET")),
+	authProtected := auth.Group("")
+	authProtected.Use(jwtware.New(jwtware.Config{
+		SigningKey: []byte(cfg.JWTSecret),
 	}))
-	// Middleware to extract user data from JWT
-	app.Use(extractDataFromJWT)
+	authProtected.Get("/me", meHandler)
 
-	/* API HANDLER */
-	app.Get("/userBooking", getUserBookingHandler)
-	app.Get("/historyBooking", getHistoryBookingHandler)
-	app.Get("/userPermissions", getUserPermissionsHandler) // get permisvsion of jwt (user)
-	app.Get("/roles", getRolesHandler)
-	app.Get("/Profile", Profile)
-	app.Put("/Profile", EditProfile)
-	app.Get("/amILocked", amILocked)
-
-	// Employees
-	employeesGroupApi := app.Group("/employees")
-	employeesGroupApi.Use(checkPermissionEmployees)
-	employeesGroupApi.Get("/", ManageEmployee)
-	employeesGroupApi.Get("/:id", getEmployeeHandler)
-	employeesGroupApi.Post("/", AddEmployee)
-	employeesGroupApi.Put("/:id", UpdateEmployee)
-	employeesGroupApi.Delete("/:id", DeleteEmployee)
-
-	// Permissions
-	/*permissionsGroupApi := app.Group("/permissions")
-	permissionsGroupApi.Use(checkPermissionRoles)
-	permissionsGroupApi.Get("/", GetPositions)
-	permissionsGroupApi.Get("/all", GetallPositions)
-	permissionsGroupApi.Post("/", AddPosition)
-	permissionsGroupApi.Put("/:id", UpdatePosition)
-	permissionsGroupApi.Delete("/:id", DeletePermision)
-
-	deleterole := app.Group("/deleterole")
-	deleterole.Use(checkPermissionRoles)
-	deleterole.Delete("/:id", DeleteRole)*/
-
-	// Departments
-	departmentsGroupApi := app.Group("/departments")
-	departmentsGroupApi.Use(checkPermissionDepartments)
-	departmentsGroupApi.Get("/", GetDepartments)
-	departmentsGroupApi.Post("/", AddDepartment)
-	departmentsGroupApi.Put("/:id", UpdatePosition)
-	departmentsGroupApi.Delete("/:id", DeleteDepartment)
-
-	// Roles
-	/*rolesGroupApi := app.Group("/roles")
-	rolesGroupApi.Use(checkPermissionRoles)
-
-	app.Get("/positions", GetPositions)
-	app.Post("/positions", AddPosition)
-	app.Put("/positions/:id", UpdatePosition)
-	app.Delete("/positions/:id", DeletePosition)
-	app.Delete("/positions/:id", DeletePermision)*/
-
-	app.Listen(":5020")
+	addr := ":" + cfg.Port
+	log.Printf("fiber listening on %s", addr)
+	log.Fatal(app.Listen(addr))
 }
 
-// userContextKey is the key used to store user data in the Fiber context
-const userContextKey = "user"
-
-// extractUserFromJWT is a middleware that extracts user data from the JWT token
-func extractDataFromJWT(c *fiber.Ctx) error {
-	user := &Auth{}
-	// Extract the token from the Fiber context (inserted by the JWT middleware)
-	token := c.Locals("user").(*jwt.Token)
-	claims := token.Claims.(jwt.MapClaims)
-	user.Email = claims["Email"].(string)
-	expFloat64 := claims["Exp"].(float64)
-	user.ExpiredAt = time.Unix(int64(expFloat64), 0) // Convert Unix timestamp to time.Time
-	// Store the user data in the Fiber context
-	c.Locals(userContextKey, user)
-	return c.Next()
-}
-
-func checkPermissionLocks(c *fiber.Ctx) error {
-	token := c.Locals(userContextKey).(*Auth)
-	userEmail := token.Email
-	query := `SELECT employee_role_id, menu_id
-				FROM permission   
-				WHERE employee_role_id=(SELECT role_id FROM employee WHERE email=:1)
-				AND menu_id=(SELECT id FROM menu WHERE name=:2)`
-	var permission Permission
-	err := db.QueryRow(query, userEmail, "Lock Management").Scan(&permission.EmployeeRoleID, &permission.MenuID)
-	if err != nil {
-		return c.SendStatus(fiber.StatusUnauthorized)
-	}
-	return c.Next()
-}
-
-func checkPermissionReports(c *fiber.Ctx) error {
-	token := c.Locals(userContextKey).(*Auth)
-	userEmail := token.Email
-	query := `SELECT employee_role_id, menu_id
-				FROM permission  
-				WHERE employee_role_id=(SELECT role_id FROM employee WHERE email=:1)
-				AND menu_id=(SELECT id FROM menu WHERE name=:2)`
-	var permission Permission
-	err := db.QueryRow(query, userEmail, "Report Management").Scan(&permission.EmployeeRoleID, &permission.MenuID)
-	if err != nil {
-		return c.SendStatus(fiber.StatusUnauthorized)
-	}
-	return c.Next()
-}
-
-func checkPermissionRooms(c *fiber.Ctx) error {
-	token := c.Locals(userContextKey).(*Auth)
-	userEmail := token.Email
-
-	query := `SELECT employee_role_id, menu_id  
-				FROM permission
-				WHERE employee_role_id=(SELECT role_id FROM employee WHERE email=:1)
-				AND menu_id=(SELECT id FROM menu WHERE name=:2)`
-	var permission Permission
-	err := db.QueryRow(query, userEmail, "Room Management").Scan(&permission.EmployeeRoleID, &permission.MenuID)
-	if err != nil {
-		fmt.Println("checkPermissionRooms")
-		return c.SendStatus(fiber.StatusUnauthorized)
+func loadConfig() appConfig {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "5020"
 	}
 
-	return c.Next()
+	corsOrigins := os.Getenv("CORS_ORIGINS")
+	if corsOrigins == "" {
+		corsOrigins = "*"
+	}
+
+	return appConfig{
+		Port:        port,
+		DatabaseURL: os.Getenv("DATABASE_URL"),
+		JWTSecret:   os.Getenv("JWT_SECRET"),
+		CORSOrigins: corsOrigins,
+		AccessTTL:   getIntEnv("ACCESS_TOKEN_MINUTES", 15),
+		RefreshTTL:  getIntEnv("REFRESH_TOKEN_HOURS", 168),
+		AdminName:   getStringEnv("APP_ADMIN_NAME", "System Admin"),
+		AdminUser:   getStringEnv("APP_ADMIN_USERNAME", getStringEnv("APP_ADMIN_EMAIL", "admin")),
+		AdminPass:   getStringEnv("APP_ADMIN_PASSWORD", "admin12345"),
+	}
 }
 
-func checkPermissionRoles(c *fiber.Ctx) error {
-	token := c.Locals(userContextKey).(*Auth)
-	userEmail := token.Email
-	query := `SELECT employee_role_id, menu_id  
-				FROM permission
-				WHERE employee_role_id=(SELECT role_id FROM employee WHERE email=:1)
-				AND menu_id=(SELECT id FROM menu WHERE name=:2)`
-	var permission Permission
-	err := db.QueryRow(query, userEmail, "Role Management").Scan(&permission.EmployeeRoleID, &permission.MenuID)
-	if err != nil {
-		return c.SendStatus(fiber.StatusUnauthorized)
+func getIntEnv(key string, fallback int) int {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return fallback
 	}
-	return c.Next()
+	value, err := strconv.Atoi(raw)
+	if err != nil || value <= 0 {
+		return fallback
+	}
+	return value
 }
 
-func checkPermissionDepartments(c *fiber.Ctx) error {
-	token := c.Locals(userContextKey).(*Auth)
-	userEmail := token.Email
-	query := `SELECT employee_role_id, menu_id  
-				FROM permission
-				WHERE employee_role_id=(SELECT role_id FROM employee WHERE email=:1)
-				AND menu_id=(SELECT id FROM menu WHERE name=:2)`
-	var permission Permission
-	err := db.QueryRow(query, userEmail, "Department Management").Scan(&permission.EmployeeRoleID, &permission.MenuID)
-	if err != nil {
-		return c.SendStatus(fiber.StatusUnauthorized)
+func getStringEnv(key, fallback string) string {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return fallback
 	}
-	return c.Next()
-}
-
-func checkPermissionEmployees(c *fiber.Ctx) error {
-	token := c.Locals(userContextKey).(*Auth)
-	fmt.Println("checkPermissionEmployees")
-	userEmail := token.Email
-	query := `SELECT employee_role_id, menu_id 
-				FROM permission
-				WHERE employee_role_id=(SELECT role_id FROM employee WHERE email=:1)
-				AND menu_id=(SELECT id FROM menu WHERE name=:2)`
-	var permission Permission
-	err := db.QueryRow(query, userEmail, "Employee Management").Scan(&permission.EmployeeRoleID, &permission.MenuID)
-	if err != nil {
-		return c.SendStatus(fiber.StatusUnauthorized)
-	}
-	return c.Next()
+	return raw
 }

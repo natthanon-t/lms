@@ -1,6 +1,28 @@
 import { EXAM_STATUS_OPTIONS } from "../constants/appConfig";
 import { ensureCoverImage } from "./imageService";
 
+const safeText = (value) => String(value ?? "").replace(/<[^>]*>/g, "").trim();
+
+const normalizeQuestionChoices = (question) => {
+  if (Array.isArray(question.choices)) {
+    return question.choices.map((choice) => safeText(choice));
+  }
+  if (Array.isArray(question.Choices)) {
+    return question.Choices.map((choice) => safeText(choice));
+  }
+  return [];
+};
+
+const normalizeUploadedQuestions = (questions) =>
+  (Array.isArray(questions) ? questions : []).map((question, index) => ({
+    id: `q-${index + 1}`,
+    domain: safeText(question.domain ?? question.DomainOfKnowledge) || "-",
+    question: safeText(question.question ?? question.Question),
+    choices: normalizeQuestionChoices(question),
+    answerKey: safeText(question.answerKey ?? question.AnswerKey),
+    explanation: safeText(question.explanation ?? question.Explaination),
+  }));
+
 export const normalizeExamRecord = (item) => {
   const normalizedStatus = String(item.status ?? "active").toLowerCase();
   const questions = Array.isArray(item.questions)
@@ -32,6 +54,27 @@ export const normalizeExamRecord = (item) => {
     domainPercentages: item.domainPercentages ?? {},
     questions,
   };
+};
+
+export const parseExamUploadJson = (rawExam, baseExam = {}) => {
+  const rawQuestions = Array.isArray(rawExam?.Questions) ? rawExam.Questions : rawExam?.questions;
+  const questions = normalizeUploadedQuestions(rawQuestions);
+  const domainPercentages = rawExam?.DomainPercentages ?? rawExam?.domainPercentages ?? {};
+  const numberOfQuestions = Number(rawExam?.["Number of Questions"] ?? rawExam?.numberOfQuestions ?? questions.length);
+  const defaultTime = Number(rawExam?.["Default Time"] ?? rawExam?.defaultTime ?? 0);
+  const parsedExam = {
+    ...baseExam,
+    title: safeText(rawExam?.["Exam Name"] ?? rawExam?.title) || baseExam.title || "Exam",
+    description: safeText(rawExam?.Description ?? rawExam?.description) || baseExam.description || "",
+    instructions: safeText(rawExam?.Instructions ?? rawExam?.instructions) || baseExam.instructions || "",
+    creator: safeText(rawExam?.Creator ?? rawExam?.creator) || baseExam.creator || "",
+    numberOfQuestions,
+    defaultTime,
+    domainPercentages,
+    questions,
+  };
+
+  return normalizeExamRecord(parsedExam);
 };
 
 export const toExamTakingDraft = (exam) => ({

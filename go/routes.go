@@ -2,216 +2,185 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
-	"os"
-	"strconv"
+	"errors"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
+	"golang.org/x/crypto/bcrypt"
 )
 
-/*func getDepartmentsHandler(c *fiber.Ctx) error {
-	departments, err := getDepartments()
+func registerHandler(c *fiber.Ctx) error {
+	var req registerRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+
+	req.Name = strings.TrimSpace(req.Name)
+	req.Username = normalizeUsername(req.Username)
+	req.Password = strings.TrimSpace(req.Password)
+
+	if req.Name == "" || req.Username == "" || req.Password == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "name, username and password are required")
+	}
+	if len(req.Password) < 8 {
+		return fiber.NewError(fiber.StatusBadRequest, "password must be at least 8 characters")
+	}
+
+	user, err := createUser(req.Name, req.Username, req.Password, "user")
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return c.SendStatus(fiber.StatusNotFound)
+		if strings.Contains(strings.ToLower(err.Error()), "duplicate") || strings.Contains(strings.ToLower(err.Error()), "unique") {
+			return fiber.NewError(fiber.StatusConflict, "username already exists")
 		}
-		return c.SendStatus(fiber.StatusInternalServerError)
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot create user")
 	}
-	return c.JSON(departments)
-}*/
 
-func Profile(c *fiber.Ctx) error {
-	token := c.Locals(userContextKey).(*Auth)
-	fmt.Println("Profile")
-	userEmail := token.Email
-	profile, err := getProfile(userEmail)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return c.SendStatus(fiber.StatusNotFound)
-		}
-		return c.SendStatus(fiber.StatusInternalServerError)
-	}
-	return c.JSON(profile)
-}
-func getRolesHandler(c *fiber.Ctx) error {
-
-	roles, err := getRoles()
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return c.SendStatus(fiber.StatusNotFound)
-		}
-		return c.SendStatus(fiber.StatusInternalServerError)
-	}
-	return c.JSON(roles)
-}
-
-func getAddressesHandler(c *fiber.Ctx) error {
-	address, err := getAddresses()
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return c.SendStatus(fiber.StatusNotFound)
-		}
-		return c.SendStatus(fiber.StatusInternalServerError)
-	}
-	return c.JSON(address)
-}
-
-func getMenusHandler(c *fiber.Ctx) error {
-	menus, err := getMenus()
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return c.SendStatus(fiber.StatusNotFound)
-		}
-		return c.SendStatus(fiber.StatusInternalServerError)
-	}
-	return c.JSON(menus)
-}
-
-func getEmployeesHandler(c *fiber.Ctx) error {
-	employees, err := getEmployees()
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return c.SendStatus(fiber.StatusNotFound)
-		}
-		return c.SendStatus(fiber.StatusInternalServerError)
-	}
-	return c.JSON(employees)
-}
-
-func getEmployeeHandler(c *fiber.Ctx) error {
-	id, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
-		return c.SendStatus(fiber.StatusBadRequest)
-	}
-	employees, err := getEmployee(id)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return c.SendStatus(fiber.StatusNotFound)
-		}
-		return c.SendStatus(fiber.StatusInternalServerError)
-	}
-	return c.JSON(employees)
-}
-
-func createEmployeeHandler(c *fiber.Ctx) error {
-	employee := new(Employee)
-	err := c.BodyParser(&employee)
-	if err != nil {
-		return err
-	}
-	err = createEmployeeInDB(employee)
-	if err != nil {
-		return err
-	}
-	return c.JSON(employee)
-}
-
-func updateEmployeeHandler(c *fiber.Ctx) error {
-	id, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
-		return c.SendStatus(fiber.StatusBadRequest)
-	}
-	var employee Employee
-	err = c.BodyParser(employee)
-	if err != nil {
-		return c.SendStatus(fiber.StatusBadRequest)
-	}
-	err = updateEmployee(id, &employee)
-	if err != nil {
-		return c.SendStatus(fiber.StatusInternalServerError)
-	}
-	return c.JSON(employee)
-}
-
-func getPermissionsHandler(c *fiber.Ctx) error {
-	permissions, err := getPermissions()
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return c.SendStatus(fiber.StatusNotFound)
-		}
-		return c.SendStatus(fiber.StatusInternalServerError)
-	}
-	return c.JSON(permissions)
-}
-
-func getUserPermissionsHandler(c *fiber.Ctx) error {
-	fmt.Println("getUserPermissionsHandler")
-	token := c.Locals(userContextKey).(*Auth)
-	userEmail := token.Email
-	fmt.Println("userEmail", userEmail)
-
-	permissions, err := getUserPermissions(userEmail)
-	if err != nil {
-		return c.SendStatus(fiber.StatusNotFound)
-	}
-	return c.JSON(permissions)
-}
-
-func updatePermissionsHandler(c *fiber.Ctx) error {
-	var permissions []Permission
-	err := c.BodyParser(&permissions)
-	if err != nil {
-		return c.SendStatus(fiber.StatusBadRequest)
-	}
-	id, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
-		return c.SendStatus(fiber.StatusBadRequest)
-	}
-	err = updatePermission(id, permissions)
-	if err != nil {
-		return c.SendStatus(fiber.StatusInternalServerError)
-	}
-	return c.JSON(fiber.Map{
-		"message": "Update Permission Successfully",
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"message": "register success",
+		"user":    user,
 	})
 }
 
 func loginHandler(c *fiber.Ctx) error {
-	user := new(User)
-	if err := c.BodyParser(user); err != nil {
-		return c.Status(fiber.StatusBadRequest).SendString(err.Error())
+	var req loginRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	req.Username = normalizeUsername(req.Username)
+	req.Password = strings.TrimSpace(req.Password)
+	if req.Username == "" || req.Password == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "username and password are required")
 	}
 
-	if err := verifyUser(user.Email, user.Password); err != nil {
-		return err
-	}
-
-	// Create token
-	token := jwt.New(jwt.SigningMethodHS256)
-
-	// Set claims
-	claims := token.Claims.(jwt.MapClaims)
-	claims["Email"] = user.Email
-	claims["Exp"] = time.Now().Add(time.Hour * 72).Unix()
-
-	// Generate encoded token and send it as response.
-	t, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	user, err := findUserByUsername(req.Username)
 	if err != nil {
-		return c.SendStatus(fiber.StatusInternalServerError)
+		if errors.Is(err, sql.ErrNoRows) {
+			return fiber.NewError(fiber.StatusUnauthorized, "invalid credentials")
+		}
+		return fiber.NewError(fiber.StatusInternalServerError, "login failed")
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid credentials")
+	}
+
+	accessToken, err := generateAccessToken(user)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot generate token")
+	}
+	refreshToken, refreshHash, err := generateRefreshToken()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot generate refresh token")
+	}
+	refreshExpiresAt := time.Now().Add(time.Duration(appCfg.RefreshTTL) * time.Hour)
+	if err := createRefreshToken(user.ID, refreshHash, refreshExpiresAt); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot store refresh token")
 	}
 
 	return c.JSON(fiber.Map{
-		"message": "Login Success",
-		"token":   t,
+		"message":       "login success",
+		"token":         accessToken,
+		"refresh_token": refreshToken,
+		"token_type":    "Bearer",
+		"expires_in":    appCfg.AccessTTL * 60,
+		"user": fiber.Map{
+			"id":       user.ID,
+			"name":     user.Name,
+			"username": user.Username,
+			"role":     user.Role,
+		},
 	})
 }
 
-func amILocked(c *fiber.Ctx) error {
-	token := c.Locals(userContextKey).(*Auth)
-	userEmail := token.Email
-	var nlock int
-	err := db.QueryRow("SELECT nlock FROM employee WHERE email=:1", userEmail).Scan(&nlock)
+func refreshHandler(c *fiber.Ctx) error {
+	var req refreshRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	rawToken := strings.TrimSpace(req.RefreshToken)
+	if rawToken == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "refresh token is required")
+	}
+
+	currentHash := hashRefreshToken(rawToken)
+	userID, err := getActiveRefreshTokenUser(currentHash)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+		if errors.Is(err, sql.ErrNoRows) {
+			return fiber.NewError(fiber.StatusUnauthorized, "invalid refresh token")
+		}
+		return fiber.NewError(fiber.StatusInternalServerError, "refresh failed")
 	}
-	if nlock >= 3 {
-		return c.JSON(fiber.Map{
-			"state": "locked",
-		})
+
+	user, err := findUserByID(userID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid refresh token")
 	}
+
+	if err := revokeRefreshToken(currentHash); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot rotate refresh token")
+	}
+
+	nextRefreshToken, nextRefreshHash, err := generateRefreshToken()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot generate refresh token")
+	}
+	nextRefreshExpiresAt := time.Now().Add(time.Duration(appCfg.RefreshTTL) * time.Hour)
+	if err := createRefreshToken(user.ID, nextRefreshHash, nextRefreshExpiresAt); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot store refresh token")
+	}
+
+	accessToken, err := generateAccessToken(user)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot generate token")
+	}
+
 	return c.JSON(fiber.Map{
-		"state": "free",
+		"message":       "refresh success",
+		"token":         accessToken,
+		"refresh_token": nextRefreshToken,
+		"token_type":    "Bearer",
+		"expires_in":    appCfg.AccessTTL * 60,
+		"user": fiber.Map{
+			"id":       user.ID,
+			"name":     user.Name,
+			"username": user.Username,
+			"role":     user.Role,
+		},
+	})
+}
+
+func logoutHandler(c *fiber.Ctx) error {
+	var req logoutRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+
+	rawToken := strings.TrimSpace(req.RefreshToken)
+	if rawToken == "" {
+		return c.JSON(fiber.Map{"message": "logout success"})
+	}
+
+	if err := revokeRefreshToken(hashRefreshToken(rawToken)); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "logout failed")
+	}
+
+	return c.JSON(fiber.Map{"message": "logout success"})
+}
+
+func meHandler(c *fiber.Ctx) error {
+	token, ok := c.Locals("user").(*jwt.Token)
+	if !ok {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
+	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid token claims")
+	}
+
+	return c.JSON(fiber.Map{
+		"id":       claims["sub"],
+		"username": claims["username"],
+		"role":     claims["role"],
 	})
 }
