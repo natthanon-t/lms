@@ -41,14 +41,6 @@ import {
   writeStoredJson,
   writeStoredValue,
 } from "./services/storageService";
-import {
-  validateAndCreateUser,
-  validateAndChangePassword,
-  withResetUserPassword,
-  withUpdatedUserName,
-  withUpdatedUserRole,
-  withUpdatedUserStatus,
-} from "./services/userService";
 import { canManageOwnedItem, canViewItemByStatus } from "./services/accessControlService";
 import {
   clearTokens,
@@ -58,8 +50,32 @@ import {
   refreshAuth,
   registerAuth,
 } from "./services/authService";
+import {
+  changeProfilePassword,
+  createUserAdmin,
+  listUsersAdmin,
+  resetUserPasswordAdmin,
+  updateProfileName,
+  updateUserAdmin,
+} from "./services/userApiService";
 
 export default function App() {
+  const toUserMap = useCallback((userList) => {
+    const rows = Array.isArray(userList) ? userList : [];
+    return rows.reduce((acc, user) => {
+      const username = String(user?.username ?? "").trim().toLowerCase();
+      if (!username) {
+        return acc;
+      }
+      acc[username] = {
+        name: user?.name ?? username,
+        role: user?.role ?? "ผู้ใช้งาน",
+        status: user?.status ?? "active",
+      };
+      return acc;
+    }, {});
+  }, []);
+
   const initialCourse = normalizeExampleRecord(fallbackExamples[0]);
   const [currentUserKey, setCurrentUserKey] = useState("");
   const [showLogin, setShowLogin] = useState(false);
@@ -76,7 +92,6 @@ export default function App() {
   const [users, setUsers] = useState({
     [DEFAULT_USERNAME]: {
       name: "Admin",
-      password: DEFAULT_PASSWORD,
       role: "ผู้ดูแลระบบ",
       status: "active",
     },
@@ -211,9 +226,8 @@ export default function App() {
           [username]: {
             ...(prevUsers[username] ?? {}),
             name: profile?.name ?? profile?.username ?? username,
-            password: prevUsers[username]?.password ?? DEFAULT_PASSWORD,
             role: profile?.role ?? prevUsers[username]?.role ?? "ผู้ใช้งาน",
-            status: prevUsers[username]?.status ?? "active",
+            status: profile?.status ?? prevUsers[username]?.status ?? "active",
           },
         }));
         setCurrentUserKey(username);
@@ -230,6 +244,23 @@ export default function App() {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!currentUserKey || !isAdmin) {
+      return;
+    }
+    void (async () => {
+      try {
+        const apiUsers = await listUsersAdmin();
+        setUsers((prevUsers) => ({
+          ...prevUsers,
+          ...toUserMap(apiUsers),
+        }));
+      } catch {
+        // noop
+      }
+    })();
+  }, [currentUserKey, isAdmin, toUserMap]);
 
   const ensureFullExam = useCallback(async (item) => {
     if (item?.questions?.length) {
@@ -543,23 +574,64 @@ export default function App() {
     }
   };
 
-  const handleSaveName = (name) => {
+  const handleSaveName = async (name) => {
     if (!currentUserKey) {
+      return { success: false, message: "ไม่พบผู้ใช้ที่ล็อกอิน" };
+    }
+    try {
+      const payload = await updateProfileName(name);
+      const user = payload?.user ?? {};
+      const username = String(user?.username ?? currentUserKey).trim().toLowerCase();
+      setUsers((prevUsers) => ({
+        ...prevUsers,
+        [username]: {
+          ...(prevUsers[username] ?? {}),
+          name: user?.name ?? name,
+          role: user?.role ?? prevUsers[username]?.role ?? "ผู้ใช้งาน",
+          status: user?.status ?? prevUsers[username]?.status ?? "active",
+        },
+      }));
+      return { success: true, message: "บันทึกชื่อเรียบร้อย" };
+    } catch (error) {
+      return { success: false, message: error?.message ?? "ไม่สามารถบันทึกชื่อได้" };
+    }
+  };
+
+  const handleChangePassword = async (username, currentPassword, nextPassword) => {
+    if (!username || username !== currentUserKey) {
+      return { success: false, message: "ไม่สามารถเปลี่ยนรหัสผ่านได้" };
+    }
+    try {
+      await changeProfilePassword(currentPassword, nextPassword);
+      return { success: true, message: "เปลี่ยนรหัสผ่านเรียบร้อย" };
+    } catch (error) {
+      return { success: false, message: error?.message ?? "ไม่สามารถเปลี่ยนรหัสผ่านได้" };
+    }
+  };
+
+  const refreshUsersForAdmin = useCallback(async () => {
+    if (!isAdmin) {
       return;
     }
-    setUsers((prevUsers) => withUpdatedUserName(prevUsers, currentUserKey, name));
-  };
-
-  const handleChangePassword = (username, currentPassword, nextPassword) => {
-    const result = validateAndChangePassword(users, username, currentPassword, nextPassword);
-    if (result.success) {
-      setUsers(result.nextUsers);
+    try {
+      const apiUsers = await listUsersAdmin();
+      setUsers((prevUsers) => ({
+        ...prevUsers,
+        ...toUserMap(apiUsers),
+      }));
+    } catch {
+      // noop
     }
-    return { success: result.success, message: result.message };
-  };
+  }, [isAdmin, toUserMap]);
 
-  const handleResetUserPassword = (username) => {
-    setUsers((prevUsers) => withResetUserPassword(prevUsers, username, defaultUserPassword));
+  const handleResetUserPassword = async (username) => {
+    try {
+      await resetUserPasswordAdmin(username, defaultUserPassword);
+      await refreshUsersForAdmin();
+      return { success: true, message: `รีเซ็ตรหัสผ่านของ ${username} สำเร็จ` };
+    } catch (error) {
+      return { success: false, message: error?.message ?? "รีเซ็ตรหัสผ่านไม่สำเร็จ" };
+    }
   };
 
   const handleUpdateDefaultPassword = (nextPassword) => {
@@ -571,28 +643,64 @@ export default function App() {
     return true;
   };
 
-  const handleCreateUser = ({ name, username, role, status, password }) => {
-    const result = validateAndCreateUser({
-      users,
-      name,
-      username,
-      role,
-      status,
-      password,
-      fallbackPassword: defaultUserPassword,
-    });
-    if (result.success) {
-      setUsers(result.nextUsers);
+  const handleCreateUser = async ({ name, username, role, status, password }) => {
+    try {
+      const resolvedPassword = String(password ?? "").trim() || defaultUserPassword;
+      const payload = await createUserAdmin({
+        name,
+        username,
+        role,
+        status,
+        password: resolvedPassword,
+      });
+      const user = payload?.user ?? {};
+      const normalizedUsername = String(user?.username ?? username).trim().toLowerCase();
+      if (normalizedUsername) {
+        setUsers((prevUsers) => ({
+          ...prevUsers,
+          [normalizedUsername]: {
+            name: user?.name ?? name,
+            role: user?.role ?? role ?? "ผู้ใช้งาน",
+            status: user?.status ?? status ?? "active",
+          },
+        }));
+      }
+      return { success: true, message: `เพิ่มผู้ใช้ ${normalizedUsername} เรียบร้อย` };
+    } catch (error) {
+      return { success: false, message: error?.message ?? "ไม่สามารถเพิ่มผู้ใช้ได้" };
     }
-    return { success: result.success, message: result.message };
   };
 
-  const handleUpdateUserRole = (username, role) => {
-    setUsers((prevUsers) => withUpdatedUserRole(prevUsers, username, role));
+  const handleUpdateUserRole = async (username, role) => {
+    try {
+      await updateUserAdmin(username, { role });
+      setUsers((prevUsers) => ({
+        ...prevUsers,
+        [username]: {
+          ...(prevUsers[username] ?? {}),
+          role,
+        },
+      }));
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error?.message ?? "ไม่สามารถอัปเดตตำแหน่งได้" };
+    }
   };
 
-  const handleUpdateUserStatus = (username, status) => {
-    setUsers((prevUsers) => withUpdatedUserStatus(prevUsers, username, status));
+  const handleUpdateUserStatus = async (username, status) => {
+    try {
+      await updateUserAdmin(username, { status });
+      setUsers((prevUsers) => ({
+        ...prevUsers,
+        [username]: {
+          ...(prevUsers[username] ?? {}),
+          status,
+        },
+      }));
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error?.message ?? "ไม่สามารถอัปเดตสถานะได้" };
+    }
   };
 
   const saveEditorDraft = useCallback(() => {
@@ -651,9 +759,8 @@ export default function App() {
         [normalizedUsername]: {
           ...(prevUsers[normalizedUsername] ?? {}),
           name: profile?.name ?? normalizedUsername,
-          password: prevUsers[normalizedUsername]?.password ?? DEFAULT_PASSWORD,
           role: profile?.role ?? "ผู้ใช้งาน",
-          status: "active",
+          status: profile?.status ?? "active",
         },
       }));
       setCurrentUserKey(normalizedUsername);

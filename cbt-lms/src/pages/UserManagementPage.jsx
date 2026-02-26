@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const roleOptions = ["ผู้ใช้งาน", "ผู้สอน", "ผู้ดูแลระบบ"];
+const roleOptions = ["ผู้ใช้งาน", "ผู้สอน", "ผู้ดูแลระบบ", "user", "admin"];
 const statusOptions = ["active", "inactive"];
 
 export default function UserManagementPage({
@@ -191,7 +191,12 @@ export default function UserManagementPage({
                   <select
                     className="role-select"
                     value={row.role}
-                    onChange={(event) => onUpdateUserRole(row.username, event.target.value)}
+                    onChange={async (event) => {
+                      const result = await onUpdateUserRole?.(row.username, event.target.value);
+                      if (result?.success === false) {
+                        setMessage(result.message ?? "ไม่สามารถอัปเดตตำแหน่งได้");
+                      }
+                    }}
                   >
                     {roleOptions.map((role) => (
                       <option key={role} value={role}>
@@ -204,7 +209,12 @@ export default function UserManagementPage({
                   <select
                     className="role-select"
                     value={row.status}
-                    onChange={(event) => onUpdateUserStatus(row.username, event.target.value)}
+                    onChange={async (event) => {
+                      const result = await onUpdateUserStatus?.(row.username, event.target.value);
+                      if (result?.success === false) {
+                        setMessage(result.message ?? "ไม่สามารถอัปเดตสถานะได้");
+                      }
+                    }}
                   >
                     {statusOptions.map((status) => (
                       <option key={status} value={status}>
@@ -217,9 +227,9 @@ export default function UserManagementPage({
                   <button
                     type="button"
                     className="manage-button"
-                    onClick={() => {
-                      onResetUserPassword?.(row.username);
-                      setMessage(`รีเซ็ตรหัสผ่านของ ${row.username} เป็นค่า default แล้ว`);
+                    onClick={async () => {
+                      const result = await onResetUserPassword?.(row.username);
+                      setMessage(result?.message ?? `รีเซ็ตรหัสผ่านของ ${row.username} เป็นค่า default แล้ว`);
                     }}
                   >
                     Reset Password

@@ -5,9 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
-	"errors"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -37,17 +35,4 @@ func generateRefreshToken() (string, string, error) {
 func hashRefreshToken(rawToken string) string {
 	sum := sha256.Sum256([]byte(rawToken))
 	return hex.EncodeToString(sum[:])
-}
-
-func parseUserIDFromClaims(claims jwt.MapClaims) (int64, error) {
-	rawSub, ok := claims["sub"]
-	if !ok {
-		return 0, errors.New("missing sub claim")
-	}
-	sub, ok := rawSub.(string)
-	if !ok {
-		return 0, errors.New("invalid sub claim")
-	}
-	sub = strings.TrimSpace(sub)
-	return strconv.ParseInt(sub, 10, 64)
 }

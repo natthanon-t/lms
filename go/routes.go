@@ -1,186 +1,38 @@
 package main
 
 import (
-	"database/sql"
-	"errors"
-	"strings"
-	"time"
-
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v4"
-	"golang.org/x/crypto/bcrypt"
+	jwtware "github.com/gofiber/jwt/v2"
 )
 
-func registerHandler(c *fiber.Ctx) error {
-	var req registerRequest
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
-	}
-
-	req.Name = strings.TrimSpace(req.Name)
-	req.Username = normalizeUsername(req.Username)
-	req.Password = strings.TrimSpace(req.Password)
-
-	if req.Name == "" || req.Username == "" || req.Password == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "name, username and password are required")
-	}
-	if len(req.Password) < 8 {
-		return fiber.NewError(fiber.StatusBadRequest, "password must be at least 8 characters")
-	}
-
-	user, err := createUser(req.Name, req.Username, req.Password, "user")
-	if err != nil {
-		if strings.Contains(strings.ToLower(err.Error()), "duplicate") || strings.Contains(strings.ToLower(err.Error()), "unique") {
-			return fiber.NewError(fiber.StatusConflict, "username already exists")
-		}
-		return fiber.NewError(fiber.StatusInternalServerError, "cannot create user")
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"message": "register success",
-		"user":    user,
+func registerRoutes(app *fiber.App, cfg appConfig) {
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"status": "ok"})
 	})
-}
 
-func loginHandler(c *fiber.Ctx) error {
-	var req loginRequest
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
-	}
-	req.Username = normalizeUsername(req.Username)
-	req.Password = strings.TrimSpace(req.Password)
-	if req.Username == "" || req.Password == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "username and password are required")
-	}
+	api := app.Group("/api")
 
-	user, err := findUserByUsername(req.Username)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return fiber.NewError(fiber.StatusUnauthorized, "invalid credentials")
-		}
-		return fiber.NewError(fiber.StatusInternalServerError, "login failed")
-	}
+	auth := api.Group("/auth")
+	auth.Post("/register", registerHandler)
+	auth.Post("/login", loginHandler)
+	auth.Post("/refresh", refreshHandler)
+	auth.Post("/logout", logoutHandler)
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		return fiber.NewError(fiber.StatusUnauthorized, "invalid credentials")
-	}
+	protected := api.Group("")
+	protected.Use(jwtware.New(jwtware.Config{
+		SigningKey: []byte(cfg.JWTSecret),
+	}))
 
-	accessToken, err := generateAccessToken(user)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "cannot generate token")
-	}
-	refreshToken, refreshHash, err := generateRefreshToken()
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "cannot generate refresh token")
-	}
-	refreshExpiresAt := time.Now().Add(time.Duration(appCfg.RefreshTTL) * time.Hour)
-	if err := createRefreshToken(user.ID, refreshHash, refreshExpiresAt); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "cannot store refresh token")
-	}
+	authProtected := protected.Group("/auth")
+	authProtected.Get("/me", meHandler)
 
-	return c.JSON(fiber.Map{
-		"message":       "login success",
-		"token":         accessToken,
-		"refresh_token": refreshToken,
-		"token_type":    "Bearer",
-		"expires_in":    appCfg.AccessTTL * 60,
-		"user": fiber.Map{
-			"id":       user.ID,
-			"name":     user.Name,
-			"username": user.Username,
-			"role":     user.Role,
-		},
-	})
-}
+	profile := protected.Group("/profile")
+	profile.Patch("", updateProfileNameHandler)
+	profile.Post("/change-password", changePasswordHandler)
 
-func refreshHandler(c *fiber.Ctx) error {
-	var req refreshRequest
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
-	}
-	rawToken := strings.TrimSpace(req.RefreshToken)
-	if rawToken == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "refresh token is required")
-	}
-
-	currentHash := hashRefreshToken(rawToken)
-	userID, err := getActiveRefreshTokenUser(currentHash)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return fiber.NewError(fiber.StatusUnauthorized, "invalid refresh token")
-		}
-		return fiber.NewError(fiber.StatusInternalServerError, "refresh failed")
-	}
-
-	user, err := findUserByID(userID)
-	if err != nil {
-		return fiber.NewError(fiber.StatusUnauthorized, "invalid refresh token")
-	}
-
-	if err := revokeRefreshToken(currentHash); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "cannot rotate refresh token")
-	}
-
-	nextRefreshToken, nextRefreshHash, err := generateRefreshToken()
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "cannot generate refresh token")
-	}
-	nextRefreshExpiresAt := time.Now().Add(time.Duration(appCfg.RefreshTTL) * time.Hour)
-	if err := createRefreshToken(user.ID, nextRefreshHash, nextRefreshExpiresAt); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "cannot store refresh token")
-	}
-
-	accessToken, err := generateAccessToken(user)
-	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "cannot generate token")
-	}
-
-	return c.JSON(fiber.Map{
-		"message":       "refresh success",
-		"token":         accessToken,
-		"refresh_token": nextRefreshToken,
-		"token_type":    "Bearer",
-		"expires_in":    appCfg.AccessTTL * 60,
-		"user": fiber.Map{
-			"id":       user.ID,
-			"name":     user.Name,
-			"username": user.Username,
-			"role":     user.Role,
-		},
-	})
-}
-
-func logoutHandler(c *fiber.Ctx) error {
-	var req logoutRequest
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
-	}
-
-	rawToken := strings.TrimSpace(req.RefreshToken)
-	if rawToken == "" {
-		return c.JSON(fiber.Map{"message": "logout success"})
-	}
-
-	if err := revokeRefreshToken(hashRefreshToken(rawToken)); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "logout failed")
-	}
-
-	return c.JSON(fiber.Map{"message": "logout success"})
-}
-
-func meHandler(c *fiber.Ctx) error {
-	token, ok := c.Locals("user").(*jwt.Token)
-	if !ok {
-		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
-	}
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		return fiber.NewError(fiber.StatusUnauthorized, "invalid token claims")
-	}
-
-	return c.JSON(fiber.Map{
-		"id":       claims["sub"],
-		"username": claims["username"],
-		"role":     claims["role"],
-	})
+	admin := protected.Group("/users", adminOnlyMiddleware)
+	admin.Get("", listUsersHandler)
+	admin.Post("", createUserByAdminHandler)
+	admin.Patch("/:username", updateUserByAdminHandler)
+	admin.Post("/:username/reset-password", resetUserPasswordByAdminHandler)
 }

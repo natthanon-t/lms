@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -42,8 +43,13 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'user',
+  status TEXT NOT NULL DEFAULT 'active',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );`)
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active';`)
 	if err != nil {
 		return err
 	}
@@ -63,7 +69,7 @@ func normalizeUsername(username string) string {
 	return strings.ToLower(strings.TrimSpace(username))
 }
 
-func createUser(name, username, password, role string) (AuthUser, error) {
+func createUser(name, username, password, role, status string) (AuthUser, error) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return AuthUser{}, err
@@ -72,25 +78,26 @@ func createUser(name, username, password, role string) (AuthUser, error) {
 	normalizedUsername := normalizeUsername(username)
 	var user AuthUser
 	err = db.QueryRow(
-		`INSERT INTO users (name, email, password_hash, role)
-		 VALUES ($1, $2, $3, $4)
-		 RETURNING id, name, email, role, created_at`,
+		`INSERT INTO users (name, email, password_hash, role, status)
+		 VALUES ($1, $2, $3, $4, $5)
+		 RETURNING id, name, email, role, status, created_at`,
 		name,
 		normalizedUsername,
 		string(hashed),
 		role,
-	).Scan(&user.ID, &user.Name, &user.Username, &user.Role, &user.CreatedAt)
+		status,
+	).Scan(&user.ID, &user.Name, &user.Username, &user.Role, &user.Status, &user.CreatedAt)
 	return user, err
 }
 
 func findUserByUsername(username string) (AuthUserRecord, error) {
 	var user AuthUserRecord
 	err := db.QueryRow(
-		`SELECT id, name, email, password_hash, role, created_at
+		`SELECT id, name, email, password_hash, role, status, created_at
 		 FROM users
 		 WHERE email = $1`,
 		normalizeUsername(username),
-	).Scan(&user.ID, &user.Name, &user.Username, &user.PasswordHash, &user.Role, &user.CreatedAt)
+	).Scan(&user.ID, &user.Name, &user.Username, &user.PasswordHash, &user.Role, &user.Status, &user.CreatedAt)
 	return user, err
 }
 
@@ -109,19 +116,109 @@ func ensureDefaultAdminUser(name, username, password string) error {
 		return err
 	}
 
-	_, err = createUser(strings.TrimSpace(name), normalizedUsername, password, "admin")
+	_, err = createUser(strings.TrimSpace(name), normalizedUsername, password, "admin", "active")
 	return err
 }
 
 func findUserByID(id int64) (AuthUserRecord, error) {
 	var user AuthUserRecord
 	err := db.QueryRow(
-		`SELECT id, name, email, password_hash, role, created_at
+		`SELECT id, name, email, password_hash, role, status, created_at
 		 FROM users
 		 WHERE id = $1`,
 		id,
-	).Scan(&user.ID, &user.Name, &user.Username, &user.PasswordHash, &user.Role, &user.CreatedAt)
+	).Scan(&user.ID, &user.Name, &user.Username, &user.PasswordHash, &user.Role, &user.Status, &user.CreatedAt)
 	return user, err
+}
+
+func listUsers() ([]AuthUser, error) {
+	rows, err := db.Query(`
+SELECT id, name, email, role, status, created_at
+FROM users
+ORDER BY created_at DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]AuthUser, 0)
+	for rows.Next() {
+		var user AuthUser
+		if err := rows.Scan(&user.ID, &user.Name, &user.Username, &user.Role, &user.Status, &user.CreatedAt); err != nil {
+			return nil, err
+		}
+		result = append(result, user)
+	}
+	return result, rows.Err()
+}
+
+func updateUserName(userID int64, name string) (AuthUserRecord, error) {
+	var user AuthUserRecord
+	err := db.QueryRow(
+		`UPDATE users
+		 SET name = $2
+		 WHERE id = $1
+		 RETURNING id, name, email, password_hash, role, status, created_at`,
+		userID,
+		strings.TrimSpace(name),
+	).Scan(&user.ID, &user.Name, &user.Username, &user.PasswordHash, &user.Role, &user.Status, &user.CreatedAt)
+	return user, err
+}
+
+func updateUserByUsername(username, name, role, status string) (AuthUserRecord, error) {
+	target, err := findUserByUsername(username)
+	if err != nil {
+		return AuthUserRecord{}, err
+	}
+
+	nextName := target.Name
+	if strings.TrimSpace(name) != "" {
+		nextName = strings.TrimSpace(name)
+	}
+
+	nextRole := target.Role
+	if strings.TrimSpace(role) != "" {
+		nextRole = strings.TrimSpace(role)
+	}
+
+	nextStatus := strings.ToLower(strings.TrimSpace(status))
+	if nextStatus == "" {
+		nextStatus = strings.ToLower(strings.TrimSpace(target.Status))
+	}
+	if nextStatus != "active" && nextStatus != "inactive" {
+		return AuthUserRecord{}, fmt.Errorf("invalid status")
+	}
+
+	var updated AuthUserRecord
+	err = db.QueryRow(
+		`UPDATE users
+		 SET name = $2, role = $3, status = $4
+		 WHERE email = $1
+		 RETURNING id, name, email, password_hash, role, status, created_at`,
+		normalizeUsername(username),
+		nextName,
+		nextRole,
+		nextStatus,
+	).Scan(&updated.ID, &updated.Name, &updated.Username, &updated.PasswordHash, &updated.Role, &updated.Status, &updated.CreatedAt)
+	return updated, err
+}
+
+func verifyUserPassword(userID int64, rawPassword string) (bool, error) {
+	var passwordHash string
+	err := db.QueryRow(`SELECT password_hash FROM users WHERE id = $1`, userID).Scan(&passwordHash)
+	if err != nil {
+		return false, err
+	}
+	return bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(rawPassword)) == nil, nil
+}
+
+func setUserPasswordByID(userID int64, password string) error {
+	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(`UPDATE users SET password_hash = $2 WHERE id = $1`, userID, string(hashed))
+	return err
 }
 
 func createRefreshToken(userID int64, tokenHash string, expiresAt time.Time) error {
@@ -131,6 +228,17 @@ func createRefreshToken(userID int64, tokenHash string, expiresAt time.Time) err
 		userID,
 		tokenHash,
 		expiresAt,
+	)
+	return err
+}
+
+func revokeAllRefreshTokensByUserID(userID int64) error {
+	_, err := db.Exec(
+		`UPDATE refresh_tokens
+		 SET revoked_at = NOW()
+		 WHERE user_id = $1
+		   AND revoked_at IS NULL`,
+		userID,
 	)
 	return err
 }

@@ -193,7 +193,7 @@ export default function ProfilePage({
     setPasswordMessage("");
   }, [currentUser.name]);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     const trimmedName = name.trim();
@@ -202,11 +202,11 @@ export default function ProfilePage({
       return;
     }
 
-    onSaveName(trimmedName);
-    setMessage("บันทึกชื่อเรียบร้อย");
+    const result = await onSaveName?.(trimmedName);
+    setMessage(result?.message ?? "บันทึกชื่อเรียบร้อย");
   };
 
-  const handleChangePasswordSubmit = (event) => {
+  const handleChangePasswordSubmit = async (event) => {
     event.preventDefault();
 
     const currentPassword = passwordForm.currentPassword;
@@ -226,7 +226,7 @@ export default function ProfilePage({
       return;
     }
 
-    const result = onChangePassword?.(username, currentPassword, nextPassword);
+    const result = await onChangePassword?.(username, currentPassword, nextPassword);
     if (result?.success) {
       setPasswordForm({ currentPassword: "", nextPassword: "", confirmPassword: "" });
     }
