@@ -1,5 +1,6 @@
-package.json
-package-lock.json
-*node_modules*
-*/node_modules
-go/test.sql
+#.env
+#package.json
+#package-lock.json
+#*node_modules*
+#*/node_modules
+#go/test.sql
