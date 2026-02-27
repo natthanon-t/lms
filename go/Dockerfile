@@ -9,5 +9,6 @@ FROM alpine:3.20
 WORKDIR /app
 RUN apk add --no-cache ca-certificates
 COPY --from=builder /auth-api /auth-api
+COPY openapi.yaml /app/openapi.yaml
 EXPOSE 5020
 CMD ["/auth-api"]

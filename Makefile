@@ -22,6 +22,8 @@ down:
 
 restart: down up
 
+re: restart
+
 logs:
 	docker compose logs -f
 
@@ -50,6 +52,8 @@ ports:
 	echo "-------------"; \
 	echo "React App   : http://localhost:$$FRONTEND_PORT"; \
 	echo "Fiber API   : http://localhost:$$API_PORT"; \
+	echo "Swagger UI  : http://localhost:$$API_PORT/swagger"; \
+	echo "Swagger Spec: http://localhost:$$API_PORT/openapi.yaml"; \
 	echo "PostgreSQL  : localhost:$$POSTGRES_PORT"; \
 	echo "pgAdmin     : http://localhost:$$PGADMIN_PORT"; \
 	echo ""
