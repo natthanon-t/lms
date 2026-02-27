@@ -157,11 +157,9 @@ export default function LoginScreen({ onLogin, onRegister, onCancel }) {
         {mode === "register" ? (
           <aside className="register-criteria-card">
             <h3>เกณฑ์การสมัครสมาชิก</h3>
-            <p>1. กรอก `name`, `username`, `password` ให้ครบ</p>
-            <p>2. `username` อย่างน้อย 4 ตัวอักษร</p>
-            <p>3. `username` ใช้ได้เฉพาะ a-z, A-Z, 0-9, . _ -</p>
-            <p>4. `password` อย่างน้อย 8 ตัวอักษร</p>
-            <p>5. `username` ต้องไม่ซ้ำกับผู้ใช้เดิม</p>
+            <p>1. `username` อย่างน้อย 4 ตัวอักษร</p>
+            <p>2. `username` ใช้ได้เฉพาะ a-z, A-Z, 0-9, . _ -</p>
+            <p>3. `password` อย่างน้อย 8 ตัวอักษร</p>
           </aside>
         ) : null}
       </div>

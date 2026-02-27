@@ -1,4 +1,8 @@
-.PHONY: help up down restart logs ps build pull clean-images clean-all ports frontend-install
+.PHONY: up help down restart logs ps build pull clean-images clean-all ports frontend-install
+
+up:
+	docker compose up -d --build
+	@$(MAKE) --no-print-directory ports
 
 help:
 	@echo "make up            - docker compose up -d --build"
@@ -12,10 +16,6 @@ help:
 	@echo "make clean-all     - docker compose down --rmi all -v --remove-orphans"
 	@echo "make ports         - แสดงสรุปพอร์ตของทุก service"
 	@echo "make frontend-install - ติดตั้ง package ของ frontend (cbt-lms)"
-
-up:
-	docker compose up -d --build
-	@$(MAKE) --no-print-directory ports
 
 down:
 	docker compose down

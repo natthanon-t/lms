@@ -207,6 +207,22 @@ paths:
         "500":
           $ref: "#/components/responses/ErrorResponse"
 
+  /api/role:
+    get:
+      tags: [Admin Users]
+      summary: Get available user roles
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Role options
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleOptionsResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+
   /api/users:
     get:
       tags: [Admin Users]
@@ -230,6 +246,24 @@ paths:
         "403":
           $ref: "#/components/responses/ErrorResponse"
         "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/users/options:
+    get:
+      tags: [Admin Users]
+      summary: Get available role and status options for user management (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Role and status options
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserManagementOptionsResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
           $ref: "#/components/responses/ErrorResponse"
     post:
       tags: [Admin Users]
@@ -501,6 +535,7 @@ components:
         role:
           type: string
           description: Defaults to ผู้ใช้งาน when omitted
+          enum: ["ผู้ใช้งาน", "ผู้สอน", "ผู้ดูแลระบบ", "user", "admin"]
         status:
           type: string
           enum: [active, inactive]
@@ -514,9 +549,47 @@ components:
           type: string
         role:
           type: string
+          enum: ["ผู้ใช้งาน", "ผู้สอน", "ผู้ดูแลระบบ", "user", "admin"]
         status:
           type: string
           enum: [active, inactive]
+
+    UserManagementOptionsResponse:
+      type: object
+      properties:
+        role_options:
+          type: array
+          items:
+            type: string
+            enum: ["ผู้ใช้งาน", "ผู้สอน", "ผู้ดูแลระบบ", "user", "admin"]
+        status_options:
+          type: array
+          items:
+            type: string
+            enum: [active, inactive]
+        default_role:
+          type: string
+          enum: ["ผู้ใช้งาน", "ผู้สอน", "ผู้ดูแลระบบ", "user", "admin"]
+          example: "ผู้ใช้งาน"
+        default_status:
+          type: string
+          enum: [active, inactive]
+          example: active
+      required: [role_options, status_options, default_role, default_status]
+
+    RoleOptionsResponse:
+      type: object
+      properties:
+        roles:
+          type: array
+          items:
+            type: string
+            enum: ["ผู้ใช้งาน", "ผู้สอน", "ผู้ดูแลระบบ", "user", "admin"]
+        default_role:
+          type: string
+          enum: ["ผู้ใช้งาน", "ผู้สอน", "ผู้ดูแลระบบ", "user", "admin"]
+          example: "ผู้ใช้งาน"
+      required: [roles, default_role]
 
     AdminResetPasswordRequest:
       type: object
