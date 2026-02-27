@@ -1,4 +1,4 @@
-.PHONY: up help down restart logs ps build pull clean-images clean-all ports frontend-install
+.PHONY: up help down restart logs ps build pull clean-images clean-all ports frontend-install front
 
 up:
 	docker compose up -d --build
@@ -16,6 +16,7 @@ help:
 	@echo "make clean-all     - docker compose down --rmi all -v --remove-orphans"
 	@echo "make ports         - แสดงสรุปพอร์ตของทุก service"
 	@echo "make frontend-install - ติดตั้ง package ของ frontend (cbt-lms)"
+	@echo "make front         - รัน backend ด้วย docker + รัน frontend local (hot reload)"
 
 down:
 	docker compose down
@@ -60,3 +61,14 @@ ports:
 
 frontend-install:
 	bash ./scripts/frontend-setup.sh
+
+front:
+	@FRONTEND_PORT=$$(grep -E '^FRONTEND_PORT=' .env | tail -n1 | cut -d '=' -f2-); \
+	VITE_API_BASE_URL=$$(grep -E '^VITE_API_BASE_URL=' .env | tail -n1 | cut -d '=' -f2-); \
+	if [ -z "$$FRONTEND_PORT" ]; then FRONTEND_PORT=5173; fi; \
+	echo ">> Start backend services (postgres, pgadmin, fiber-api) via docker..."; \
+	docker compose up -d postgres postgres-ui fiber-api; \
+	echo ">> Stop docker frontend container (if running) to avoid port conflict..."; \
+	docker compose stop react-app >/dev/null 2>&1 || true; \
+	echo ">> Run frontend locally on http://localhost:$$FRONTEND_PORT"; \
+	cd cbt-lms && VITE_API_BASE_URL="$$VITE_API_BASE_URL" npm run dev -- --host 0.0.0.0 --port $$FRONTEND_PORT

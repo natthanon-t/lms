@@ -26,10 +26,21 @@ const getSkillRewards = (draft) => {
   }));
 };
 
-export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft }) {
+export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, onDeleteContent }) {
   const editorViewRef = useRef(null);
   const [activeSubtopicId, setActiveSubtopicId] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showQuestionModal, setShowQuestionModal] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [showSubtopicModal, setShowSubtopicModal] = useState(false);
+  const [questionText, setQuestionText] = useState("");
+  const [answerText, setAnswerText] = useState("");
+  const [questionScore, setQuestionScore] = useState(10);
+  const [videoTitle, setVideoTitle] = useState("วิดีโอการสอน");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [subtopicTitle, setSubtopicTitle] = useState("หัวข้อย่อยใหม่");
+  const [subtopicScore, setSubtopicScore] = useState(20);
   const [showPreview, setShowPreview] = useState(false);
   const subtopicPages = useMemo(() => getSubtopicPages(draft.content, draft.title), [draft.content, draft.title]);
   const selectedSubtopic = subtopicPages.find((subtopic) => subtopic.id === activeSubtopicId) ?? subtopicPages[0];
@@ -78,38 +89,90 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft }
   };
 
   const insertSubSection = () => {
+    setShowSubtopicModal(true);
+  };
+
+  const closeSubtopicModal = () => {
+    setShowSubtopicModal(false);
+    setSubtopicTitle("หัวข้อย่อยใหม่");
+    setSubtopicScore(20);
+  };
+
+  const handleInsertSubSectionFromModal = () => {
+    const normalizedTitle = String(subtopicTitle ?? "").trim();
+    const normalizedScore = Number(subtopicScore);
+    if (!normalizedTitle || !Number.isFinite(normalizedScore) || normalizedScore <= 0) {
+      setSaveMessage("กรุณากรอกชื่อหัวข้อย่อยและคะแนนให้ถูกต้อง");
+      return;
+    }
+
+    const subtopicBlock = `\n\n### ${normalizedTitle}\n\nใส่รายละเอียดหัวข้อย่อย\n\n- [SCORE] ${Math.round(normalizedScore)}\n`;
     if (!selectedSubtopic?.mainText) {
-      insertAtCursor("\n### หัวข้อย่อย\n\nใส่รายละเอียดหัวข้อย่อย\n");
+      insertAtCursor(subtopicBlock);
+      setSaveMessage("");
+      closeSubtopicModal();
       return;
     }
 
     const marker = `## ${selectedSubtopic.mainText}`;
     const markerIndex = draft.content.indexOf(marker);
     if (markerIndex < 0) {
-      insertAtCursor("\n### หัวข้อย่อย\n\nใส่รายละเอียดหัวข้อย่อย\n");
+      insertAtCursor(subtopicBlock);
+      setSaveMessage("");
+      closeSubtopicModal();
       return;
     }
     const insertIndex = markerIndex + marker.length;
-    const nextContent = `${draft.content.slice(0, insertIndex)}\n\n### หัวข้อย่อยใหม่\n\nใส่รายละเอียดหัวข้อย่อย\n${draft.content.slice(insertIndex)}`;
+    const nextContent = `${draft.content.slice(0, insertIndex)}${subtopicBlock}${draft.content.slice(insertIndex)}`;
     onChangeDraft("content", nextContent);
+    setSaveMessage("");
+    closeSubtopicModal();
   };
 
   const insertVideoLink = () => {
-    const url = window.prompt("วางลิงก์ YouTube");
-    if (!url) {
+    setShowVideoModal(true);
+  };
+
+  const closeVideoModal = () => {
+    setShowVideoModal(false);
+    setVideoTitle("วิดีโอการสอน");
+    setVideoUrl("");
+  };
+
+  const handleInsertVideoFromModal = () => {
+    const normalizedTitle = String(videoTitle ?? "").trim() || "วิดีโอการสอน";
+    const normalizedUrl = String(videoUrl ?? "").trim();
+    if (!normalizedUrl) {
+      setSaveMessage("กรุณากรอกลิงก์วิดีโอ");
       return;
     }
+    insertAtCursor(`\n[video: ${normalizedTitle}](${normalizedUrl})\n`);
+    setSaveMessage("");
+    closeVideoModal();
+  };
 
-    const title = window.prompt("ชื่อวิดีโอ (ไม่กรอกได้)", "วิดีโอการสอน") ?? "วิดีโอการสอน";
-    insertAtCursor(`\n[video: ${title.trim() || "วิดีโอการสอน"}](${url.trim()})\n`);
+  const closeQuestionModal = () => {
+    setShowQuestionModal(false);
+    setQuestionText("");
+    setAnswerText("");
+    setQuestionScore(10);
   };
 
   const insertQuestionTemplate = () => {
-    insertAtCursor("\n- [Q] คำถามที่ต้องตอบ :: คำตอบที่ถูกต้อง :: 10\n");
+    setShowQuestionModal(true);
   };
 
-  const insertSubtopicScore = () => {
-    insertAtCursor("\n- [SCORE] 20\n");
+  const handleInsertQuestionFromModal = () => {
+    const normalizedQuestion = String(questionText ?? "").trim().replaceAll("::", "-");
+    const normalizedAnswer = String(answerText ?? "").trim().replaceAll("::", "-");
+    const normalizedScore = Number(questionScore);
+    if (!normalizedQuestion || !normalizedAnswer || !Number.isFinite(normalizedScore) || normalizedScore <= 0) {
+      setSaveMessage("กรุณากรอกคำถาม คำตอบ และคะแนนให้ถูกต้อง");
+      return;
+    }
+    insertAtCursor(`\n- [Q] ${normalizedQuestion} :: ${normalizedAnswer} :: ${Math.round(normalizedScore)}\n`);
+    setSaveMessage("");
+    closeQuestionModal();
   };
 
   useEffect(() => {
@@ -147,6 +210,16 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft }
     }
     const success = onSaveDraft?.();
     setSaveMessage(success ? "บันทึกเนื้อหาเรียบร้อยแล้ว" : "บันทึกไม่สำเร็จ");
+  };
+
+  const handleDeleteContent = async () => {
+    const result = await onDeleteContent?.(draft.sourceId || draft.id);
+    if (!result?.success) {
+      setSaveMessage(result?.message ?? "ลบเนื้อหาไม่สำเร็จ");
+      setShowDeleteConfirm(false);
+      return;
+    }
+    setShowDeleteConfirm(false);
   };
 
   const handleUploadCoverImage = async (event) => {
@@ -235,6 +308,9 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft }
           </button>
           <button type="button" className="save-button" onClick={handleSave}>
             บันทึกเนื้อหา
+          </button>
+          <button type="button" className="back-button danger-button" onClick={() => setShowDeleteConfirm(true)}>
+            ลบเนื้อหา
           </button>
           <button type="button" className="back-button" onClick={onBack}>
             กลับหน้า Lobby
@@ -355,9 +431,6 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft }
         <button type="button" onClick={insertQuestionTemplate}>
           เพิ่มคำถามหัวข้อย่อย
         </button>
-        <button type="button" onClick={insertSubtopicScore}>
-          กำหนดคะแนนหัวข้อย่อย
-        </button>
       </div>
 
       <div className="editor-hint">
@@ -423,6 +496,189 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft }
           </div>
         ) : null}
       </div>
+
+      {showQuestionModal ? (
+        <div className="modal-backdrop" onClick={closeQuestionModal}>
+          <article
+            className="info-card confirm-delete-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-question-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="modal-close-button"
+              aria-label="ปิดกล่องเพิ่มคำถาม"
+              onClick={closeQuestionModal}
+            >
+              ×
+            </button>
+            <h3 id="add-question-modal-title">เพิ่มคำถามหัวข้อย่อย</h3>
+            <div className="profile-form">
+              <label htmlFor="subtopic-question">คำถาม</label>
+              <input
+                id="subtopic-question"
+                type="text"
+                value={questionText}
+                onChange={(event) => setQuestionText(event.target.value)}
+                placeholder="พิมพ์คำถาม"
+              />
+              <label htmlFor="subtopic-answer">คำตอบ</label>
+              <input
+                id="subtopic-answer"
+                type="text"
+                value={answerText}
+                onChange={(event) => setAnswerText(event.target.value)}
+                placeholder="พิมพ์คำตอบที่ถูกต้อง"
+              />
+              <label htmlFor="subtopic-question-score">คะแนน</label>
+              <input
+                id="subtopic-question-score"
+                type="number"
+                min={1}
+                value={questionScore}
+                onChange={(event) => setQuestionScore(Number(event.target.value))}
+              />
+              <div className="profile-action-row">
+                <button type="button" className="enter-button" onClick={handleInsertQuestionFromModal}>
+                  เพิ่มคำถาม
+                </button>
+                <button type="button" className="back-button" onClick={closeQuestionModal}>
+                  ยกเลิก
+                </button>
+              </div>
+            </div>
+          </article>
+        </div>
+      ) : null}
+
+      {showSubtopicModal ? (
+        <div className="modal-backdrop" onClick={closeSubtopicModal}>
+          <article
+            className="info-card confirm-delete-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-subtopic-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="modal-close-button"
+              aria-label="ปิดกล่องเพิ่มหัวข้อย่อย"
+              onClick={closeSubtopicModal}
+            >
+              ×
+            </button>
+            <h3 id="add-subtopic-modal-title">เพิ่มหัวข้อย่อย</h3>
+            <div className="profile-form">
+              <label htmlFor="subtopic-title-input">ชื่อหัวข้อย่อย</label>
+              <input
+                id="subtopic-title-input"
+                type="text"
+                value={subtopicTitle}
+                onChange={(event) => setSubtopicTitle(event.target.value)}
+                placeholder="หัวข้อย่อยใหม่"
+              />
+              <label htmlFor="subtopic-score-input">คะแนน</label>
+              <input
+                id="subtopic-score-input"
+                type="number"
+                min={1}
+                value={subtopicScore}
+                onChange={(event) => setSubtopicScore(Number(event.target.value))}
+              />
+              <div className="profile-action-row">
+                <button type="button" className="enter-button" onClick={handleInsertSubSectionFromModal}>
+                  เพิ่มหัวข้อย่อย
+                </button>
+                <button type="button" className="back-button" onClick={closeSubtopicModal}>
+                  ยกเลิก
+                </button>
+              </div>
+            </div>
+          </article>
+        </div>
+      ) : null}
+
+      {showVideoModal ? (
+        <div className="modal-backdrop" onClick={closeVideoModal}>
+          <article
+            className="info-card confirm-delete-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-video-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="modal-close-button"
+              aria-label="ปิดกล่องแทรกวิดีโอ"
+              onClick={closeVideoModal}
+            >
+              ×
+            </button>
+            <h3 id="add-video-modal-title">แทรกวิดีโอ</h3>
+            <div className="profile-form">
+              <label htmlFor="subtopic-video-title">ชื่อวิดีโอ</label>
+              <input
+                id="subtopic-video-title"
+                type="text"
+                value={videoTitle}
+                onChange={(event) => setVideoTitle(event.target.value)}
+                placeholder="วิดีโอการสอน"
+              />
+              <label htmlFor="subtopic-video-url">ลิงก์วิดีโอ</label>
+              <input
+                id="subtopic-video-url"
+                type="text"
+                value={videoUrl}
+                onChange={(event) => setVideoUrl(event.target.value)}
+                placeholder="https://..."
+              />
+              <div className="profile-action-row">
+                <button type="button" className="enter-button" onClick={handleInsertVideoFromModal}>
+                  แทรกวิดีโอ
+                </button>
+                <button type="button" className="back-button" onClick={closeVideoModal}>
+                  ยกเลิก
+                </button>
+              </div>
+            </div>
+          </article>
+        </div>
+      ) : null}
+
+      {showDeleteConfirm ? (
+        <div className="modal-backdrop" onClick={() => setShowDeleteConfirm(false)}>
+          <article
+            className="info-card confirm-delete-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-content-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="modal-close-button"
+              aria-label="ปิดกล่องยืนยันลบเนื้อหา"
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              ×
+            </button>
+            <h3 id="delete-content-modal-title">ยืนยันการลบเนื้อหา</h3>
+            <p>ต้องการลบเนื้อหา "{draft.title}" ใช่หรือไม่</p>
+            <div className="profile-action-row">
+              <button type="button" className="toc-delete-button" onClick={handleDeleteContent}>
+                ยืนยันลบ
+              </button>
+              <button type="button" className="back-button" onClick={() => setShowDeleteConfirm(false)}>
+                ยกเลิก
+              </button>
+            </div>
+          </article>
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -48,8 +48,8 @@ export default function LobbyPage({
   const filteredExams = baseExams.filter((exam) =>
     keyword ? exam.title.toLowerCase().includes(keyword) : true,
   );
-  const limitedExamples = filteredExamples.slice(0, 3);
-  const limitedExams = filteredExams.slice(0, 3);
+  const limitedExamples = filteredExamples.slice(0, 4);
+  const limitedExams = filteredExams.slice(0, 4);
 
   return (
     <section className="workspace-content">

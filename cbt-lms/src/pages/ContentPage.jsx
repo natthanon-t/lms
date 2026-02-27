@@ -20,6 +20,7 @@ export default function ContentPage({
   onUpdateContentStatus,
   currentUserKey = "",
   isAdmin = false,
+  canCreate = false,
 }) {
   const [managingContentId, setManagingContentId] = useState("");
   const isOwner = (example) =>
@@ -39,7 +40,7 @@ export default function ContentPage({
         <p>รายการบทเรียนสำหรับเข้าเรียนหรือแก้ไขเนื้อหา</p>
       </header>
 
-      {currentUserKey ? (
+      {canCreate ? (
         <div className="section-row">
           <p className="section-label">รายการคอร์ส</p>
           <button type="button" className="create-content-button" onClick={onCreateContent}>

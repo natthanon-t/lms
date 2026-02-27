@@ -113,11 +113,62 @@ export default function SummaryPage({
     };
   }, [examples, learnerCount, learnerUsernames, learningProgress, learningStats]);
 
+  const handleExportCsv = () => {
+    const escapeCsv = (value) => {
+      const text = String(value ?? "");
+      if (text.includes(",") || text.includes("\"") || text.includes("\n")) {
+        return `"${text.replaceAll("\"", "\"\"")}"`;
+      }
+      return text;
+    };
+
+    const rows = [
+      ["Section", "Field", "Value"],
+      ["ภาพรวม", "บทเรียนทั้งหมด", lessonCount],
+      ["ภาพรวม", "ข้อสอบทั้งหมด", examCount],
+      ["ภาพรวม", "พนักงานที่ติดตาม", learnerCount],
+      ["ภาพรวม", "คะแนนเฉลี่ยทีม", organizationSummary.avgScore],
+      ["ภาพรวม", "ค่าเฉลี่ยคอร์สที่เรียนจบต่อคน", organizationSummary.avgCompletedCourses],
+      [],
+      ["คอร์สที่ควรเร่งพัฒนา", "ชื่อคอร์ส", "Completion Rate (%)"],
+      ...organizationSummary.weakestCourses.map((course) => [
+        "คอร์สที่ควรเร่งพัฒนา",
+        course.title,
+        course.completionRate,
+      ]),
+      [],
+      ["ทักษะที่ทีมยังอ่อน", "ทักษะ", "Average Progress (%)", "แนะนำคอร์ส"],
+      ...organizationSummary.topSkillGaps.map((entry) => [
+        "ทักษะที่ทีมยังอ่อน",
+        entry.skill,
+        entry.avgProgressPercent,
+        entry.recommendedCourses.join(", "),
+      ]),
+    ];
+
+    const csvContent = rows.map((row) => row.map(escapeCsv).join(",")).join("\n");
+    const blob = new Blob([`\uFEFF${csvContent}`], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const date = new Date().toISOString().slice(0, 10);
+    link.href = url;
+    link.download = `summary-report-${date}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <section className="workspace-content">
-      <header className="content-header">
-        <h1>สรุปผล</h1>
-        <p>ภาพรวมเพื่อวางแผนพัฒนาพนักงานขององค์กร</p>
+      <header className="content-header summary-header">
+        <div>
+          <h1>สรุปผล</h1>
+          <p>ภาพรวมเพื่อวางแผนพัฒนาพนักงานขององค์กร</p>
+        </div>
+        <button type="button" className="enter-button summary-export-button" onClick={handleExportCsv}>
+          Export CSV
+        </button>
       </header>
 
       <div className="metric-grid">

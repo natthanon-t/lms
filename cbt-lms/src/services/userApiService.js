@@ -30,10 +30,10 @@ export const listUsersAdmin = async () => {
   return Array.isArray(payload?.users) ? payload.users : [];
 };
 
-export const createUserAdmin = async ({ name, username, password, role, status }) =>
+export const createUserAdmin = async ({ name, username, employeeCode, password, role, status }) =>
   authRequest("/api/users", {
     method: "POST",
-    body: JSON.stringify({ name, username, password, role, status }),
+    body: JSON.stringify({ name, username, employee_code: employeeCode, password, role, status }),
   });
 
 export const updateUserAdmin = async (username, payload) =>

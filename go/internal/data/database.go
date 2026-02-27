@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 )
 
 var db *sql.DB
+var employeeCodePattern = regexp.MustCompile(`^2026-[A-Z0-9]{2}-[0-9]{4}$`)
 
 func ConnectPostgres(databaseURL string) error {
 	if strings.TrimSpace(databaseURL) == "" {
@@ -41,11 +43,16 @@ CREATE TABLE IF NOT EXISTS users (
   id BIGSERIAL PRIMARY KEY,
   name TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE,
+  employee_code TEXT NOT NULL DEFAULT '',
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'user',
   status TEXT NOT NULL DEFAULT 'active',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );`)
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS employee_code TEXT NOT NULL DEFAULT '';`)
 	if err != nil {
 		return err
 	}
@@ -69,35 +76,45 @@ func NormalizeUsername(username string) string {
 	return strings.ToLower(strings.TrimSpace(username))
 }
 
-func CreateUser(name, username, password, role, status string) (AuthUser, error) {
+func NormalizeEmployeeCode(employeeCode string) string {
+	return strings.ToUpper(strings.TrimSpace(employeeCode))
+}
+
+func IsValidEmployeeCode(employeeCode string) bool {
+	return employeeCodePattern.MatchString(NormalizeEmployeeCode(employeeCode))
+}
+
+func CreateUser(name, username, employeeCode, password, role, status string) (AuthUser, error) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return AuthUser{}, err
 	}
 
 	normalizedUsername := NormalizeUsername(username)
+	normalizedEmployeeCode := NormalizeEmployeeCode(employeeCode)
 	var user AuthUser
 	err = db.QueryRow(
-		`INSERT INTO users (name, email, password_hash, role, status)
-		 VALUES ($1, $2, $3, $4, $5)
-		 RETURNING id, name, email, role, status, created_at`,
+		`INSERT INTO users (name, email, employee_code, password_hash, role, status)
+		 VALUES ($1, $2, $3, $4, $5, $6)
+		 RETURNING id, name, email, employee_code, role, status, created_at`,
 		name,
 		normalizedUsername,
+		normalizedEmployeeCode,
 		string(hashed),
 		role,
 		status,
-	).Scan(&user.ID, &user.Name, &user.Username, &user.Role, &user.Status, &user.CreatedAt)
+	).Scan(&user.ID, &user.Name, &user.Username, &user.EmployeeCode, &user.Role, &user.Status, &user.CreatedAt)
 	return user, err
 }
 
 func FindUserByUsername(username string) (AuthUserRecord, error) {
 	var user AuthUserRecord
 	err := db.QueryRow(
-		`SELECT id, name, email, password_hash, role, status, created_at
+		`SELECT id, name, email, employee_code, password_hash, role, status, created_at
 		 FROM users
 		 WHERE email = $1`,
 		NormalizeUsername(username),
-	).Scan(&user.ID, &user.Name, &user.Username, &user.PasswordHash, &user.Role, &user.Status, &user.CreatedAt)
+	).Scan(&user.ID, &user.Name, &user.Username, &user.EmployeeCode, &user.PasswordHash, &user.Role, &user.Status, &user.CreatedAt)
 	return user, err
 }
 
@@ -116,24 +133,24 @@ func EnsureDefaultAdminUser(name, username, password string) error {
 		return err
 	}
 
-	_, err = CreateUser(strings.TrimSpace(name), normalizedUsername, password, "admin", "active")
+	_, err = CreateUser(strings.TrimSpace(name), normalizedUsername, "", password, "admin", "active")
 	return err
 }
 
 func FindUserByID(id int64) (AuthUserRecord, error) {
 	var user AuthUserRecord
 	err := db.QueryRow(
-		`SELECT id, name, email, password_hash, role, status, created_at
+		`SELECT id, name, email, employee_code, password_hash, role, status, created_at
 		 FROM users
 		 WHERE id = $1`,
 		id,
-	).Scan(&user.ID, &user.Name, &user.Username, &user.PasswordHash, &user.Role, &user.Status, &user.CreatedAt)
+	).Scan(&user.ID, &user.Name, &user.Username, &user.EmployeeCode, &user.PasswordHash, &user.Role, &user.Status, &user.CreatedAt)
 	return user, err
 }
 
 func ListUsers() ([]AuthUser, error) {
 	rows, err := db.Query(`
-SELECT id, name, email, role, status, created_at
+SELECT id, name, email, employee_code, role, status, created_at
 FROM users
 ORDER BY created_at DESC`)
 	if err != nil {
@@ -144,7 +161,7 @@ ORDER BY created_at DESC`)
 	result := make([]AuthUser, 0)
 	for rows.Next() {
 		var user AuthUser
-		if err := rows.Scan(&user.ID, &user.Name, &user.Username, &user.Role, &user.Status, &user.CreatedAt); err != nil {
+		if err := rows.Scan(&user.ID, &user.Name, &user.Username, &user.EmployeeCode, &user.Role, &user.Status, &user.CreatedAt); err != nil {
 			return nil, err
 		}
 		result = append(result, user)
@@ -158,14 +175,14 @@ func UpdateUserName(userID int64, name string) (AuthUserRecord, error) {
 		`UPDATE users
 		 SET name = $2
 		 WHERE id = $1
-		 RETURNING id, name, email, password_hash, role, status, created_at`,
+		 RETURNING id, name, email, employee_code, password_hash, role, status, created_at`,
 		userID,
 		strings.TrimSpace(name),
-	).Scan(&user.ID, &user.Name, &user.Username, &user.PasswordHash, &user.Role, &user.Status, &user.CreatedAt)
+	).Scan(&user.ID, &user.Name, &user.Username, &user.EmployeeCode, &user.PasswordHash, &user.Role, &user.Status, &user.CreatedAt)
 	return user, err
 }
 
-func UpdateUserByUsername(username, name, role, status string) (AuthUserRecord, error) {
+func UpdateUserByUsername(username, name, role, status, employeeCode string) (AuthUserRecord, error) {
 	target, err := FindUserByUsername(username)
 	if err != nil {
 		return AuthUserRecord{}, err
@@ -189,17 +206,24 @@ func UpdateUserByUsername(username, name, role, status string) (AuthUserRecord, 
 		return AuthUserRecord{}, fmt.Errorf("invalid status")
 	}
 
+	nextEmployeeCode := target.EmployeeCode
+	normalizedEmployeeCode := NormalizeEmployeeCode(employeeCode)
+	if normalizedEmployeeCode != "" {
+		nextEmployeeCode = normalizedEmployeeCode
+	}
+
 	var updated AuthUserRecord
 	err = db.QueryRow(
 		`UPDATE users
-		 SET name = $2, role = $3, status = $4
+		 SET name = $2, role = $3, status = $4, employee_code = $5
 		 WHERE email = $1
-		 RETURNING id, name, email, password_hash, role, status, created_at`,
+		 RETURNING id, name, email, employee_code, password_hash, role, status, created_at`,
 		NormalizeUsername(username),
 		nextName,
 		nextRole,
 		nextStatus,
-	).Scan(&updated.ID, &updated.Name, &updated.Username, &updated.PasswordHash, &updated.Role, &updated.Status, &updated.CreatedAt)
+		nextEmployeeCode,
+	).Scan(&updated.ID, &updated.Name, &updated.Username, &updated.EmployeeCode, &updated.PasswordHash, &updated.Role, &updated.Status, &updated.CreatedAt)
 	return updated, err
 }
 

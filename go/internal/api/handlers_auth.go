@@ -29,7 +29,7 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "password must be at least 8 characters")
 	}
 
-	user, err := data.CreateUser(req.Name, req.Username, req.Password, "user", "active")
+	user, err := data.CreateUser(req.Name, req.Username, "", req.Password, "user", "active")
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "duplicate") || strings.Contains(strings.ToLower(err.Error()), "unique") {
 			return fiber.NewError(fiber.StatusConflict, "username already exists")

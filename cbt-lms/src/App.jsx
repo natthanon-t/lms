@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import "./App.css";
 import LoginScreen from "./components/auth/LoginScreen";
 import WorkspaceSidebar from "./components/layout/WorkspaceSidebar";
+import WorkspaceTopbar from "./components/layout/WorkspaceTopbar";
 import { DEFAULT_PASSWORD, DEFAULT_USERNAME, fallbackExamples, normalizeExamRaw } from "./constants/mockData";
 import {
   CONTENT_STATUS_OPTIONS,
@@ -69,6 +70,7 @@ export default function App() {
       }
       acc[username] = {
         name: user?.name ?? username,
+        employeeCode: user?.employee_code ?? "",
         role: user?.role ?? "ผู้ใช้งาน",
         status: user?.status ?? "active",
       };
@@ -92,6 +94,7 @@ export default function App() {
   const [users, setUsers] = useState({
     [DEFAULT_USERNAME]: {
       name: "Admin",
+      employeeCode: "",
       role: "ผู้ดูแลระบบ",
       status: "active",
     },
@@ -105,6 +108,8 @@ export default function App() {
 
   const currentUser = currentUserKey ? users[currentUserKey] : null;
   const isAdmin = currentUser?.role === "ผู้ดูแลระบบ" || currentUser?.role === "admin";
+  const canCreateLearningItems =
+    Boolean(currentUser) && (isAdmin || currentUser?.role === "ผู้สอน");
   const canManageItem = useCallback(
     (item) => canManageOwnedItem({ item, currentUser, currentUserKey, isAdmin }),
     [currentUser, currentUserKey, isAdmin],
@@ -226,6 +231,7 @@ export default function App() {
           [username]: {
             ...(prevUsers[username] ?? {}),
             name: profile?.name ?? profile?.username ?? username,
+            employeeCode: profile?.employee_code ?? prevUsers[username]?.employeeCode ?? "",
             role: profile?.role ?? prevUsers[username]?.role ?? "ผู้ใช้งาน",
             status: profile?.status ?? prevUsers[username]?.status ?? "active",
           },
@@ -544,6 +550,45 @@ export default function App() {
     );
   };
 
+  const handleDeleteContent = async (contentId) => {
+    const targetId = String(contentId ?? "").trim();
+    if (!targetId) {
+      return { success: false, message: "ไม่พบเนื้อหาที่ต้องการลบ" };
+    }
+    const targetContent = examples.find((example) => example.id === targetId);
+    if (!canManageItem(targetContent)) {
+      return { success: false, message: "ไม่มีสิทธิ์ลบเนื้อหานี้" };
+    }
+
+    setExamples((prevExamples) => {
+      const nextExamples = prevExamples.filter((example) => example.id !== targetId);
+      persistExamples(nextExamples);
+      return nextExamples;
+    });
+    setSelectedContent((prev) => (prev?.id === targetId ? null : prev));
+    setHomeView("lobby");
+    return { success: true, message: "ลบเนื้อหาเรียบร้อย" };
+  };
+
+  const handleDeleteExam = async (examId) => {
+    const targetId = String(examId ?? "").trim();
+    if (!targetId) {
+      return { success: false, message: "ไม่พบข้อสอบที่ต้องการลบ" };
+    }
+    const targetExam = examBank.find((exam) => exam.id === targetId);
+    if (!canManageItem(targetExam)) {
+      return { success: false, message: "ไม่มีสิทธิ์ลบข้อสอบนี้" };
+    }
+
+    setExamBank((prevExamBank) => {
+      const nextExamBank = prevExamBank.filter((exam) => exam.id !== targetId);
+      writeStoredJson(EXAMS_STORAGE_KEY, nextExamBank);
+      return nextExamBank;
+    });
+    setExamView("list");
+    return { success: true, message: "ลบข้อสอบเรียบร้อย" };
+  };
+
   const handleLogout = async () => {
     await logoutAuth();
     setCurrentUserKey("");
@@ -587,6 +632,7 @@ export default function App() {
         [username]: {
           ...(prevUsers[username] ?? {}),
           name: user?.name ?? name,
+          employeeCode: user?.employee_code ?? prevUsers[username]?.employeeCode ?? "",
           role: user?.role ?? prevUsers[username]?.role ?? "ผู้ใช้งาน",
           status: user?.status ?? prevUsers[username]?.status ?? "active",
         },
@@ -643,12 +689,13 @@ export default function App() {
     return true;
   };
 
-  const handleCreateUser = async ({ name, username, role, status, password }) => {
+  const handleCreateUser = async ({ name, username, employeeCode, role, status, password }) => {
     try {
       const resolvedPassword = String(password ?? "").trim() || defaultUserPassword;
       const payload = await createUserAdmin({
         name,
         username,
+        employeeCode,
         role,
         status,
         password: resolvedPassword,
@@ -660,6 +707,7 @@ export default function App() {
           ...prevUsers,
           [normalizedUsername]: {
             name: user?.name ?? name,
+            employeeCode: user?.employee_code ?? employeeCode ?? "",
             role: user?.role ?? role ?? "ผู้ใช้งาน",
             status: user?.status ?? status ?? "active",
           },
@@ -700,6 +748,27 @@ export default function App() {
       return { success: true };
     } catch (error) {
       return { success: false, message: error?.message ?? "ไม่สามารถอัปเดตสถานะได้" };
+    }
+  };
+
+  const handleUpdateUserProfileByAdmin = async (username, payload) => {
+    try {
+      const response = await updateUserAdmin(username, payload);
+      const user = response?.user ?? {};
+      setUsers((prevUsers) => ({
+        ...prevUsers,
+        [username]: {
+          ...(prevUsers[username] ?? {}),
+          name: user?.name ?? payload?.name ?? prevUsers[username]?.name ?? username,
+          employeeCode:
+            user?.employee_code ?? payload?.employee_code ?? prevUsers[username]?.employeeCode ?? "",
+          role: user?.role ?? prevUsers[username]?.role ?? "ผู้ใช้งาน",
+          status: user?.status ?? prevUsers[username]?.status ?? "active",
+        },
+      }));
+      return { success: true, message: `อัปเดตข้อมูลของ ${username} สำเร็จ` };
+    } catch (error) {
+      return { success: false, message: error?.message ?? "ไม่สามารถอัปเดตข้อมูลผู้ใช้ได้" };
     }
   };
 
@@ -759,6 +828,7 @@ export default function App() {
         [normalizedUsername]: {
           ...(prevUsers[normalizedUsername] ?? {}),
           name: profile?.name ?? normalizedUsername,
+          employeeCode: profile?.employee_code ?? prevUsers[normalizedUsername]?.employeeCode ?? "",
           role: profile?.role ?? "ผู้ใช้งาน",
           status: profile?.status ?? "active",
         },
@@ -805,9 +875,14 @@ export default function App() {
   }
 
   return (
-    <main className="workspace-shell">
-      <WorkspaceSidebar
+    <div className="workspace-layout">
+      <WorkspaceTopbar
         currentUser={currentUser}
+        onGoHome={() => handleSelectTab("home")}
+      />
+      <main className="workspace-shell">
+      <div className="sidebar-hover-trigger" aria-hidden="true" />
+      <WorkspaceSidebar
         activeTab={activeTab}
         onSelectTab={handleSelectTab}
         onAuthAction={handleAuthAction}
@@ -851,18 +926,12 @@ export default function App() {
           users={users}
           onUpdateUserRole={handleUpdateUserRole}
           onUpdateUserStatus={handleUpdateUserStatus}
+          onUpdateUserProfile={handleUpdateUserProfileByAdmin}
           defaultPassword={defaultUserPassword}
           onUpdateDefaultPassword={handleUpdateDefaultPassword}
           onResetUserPassword={handleResetUserPassword}
           onCreateUser={handleCreateUser}
         />
-      ) : activeTab === "leaderboard" && !currentUser ? (
-        <section className="workspace-content">
-          <header className="content-header">
-            <h1>ลีดเดอร์บอร์ด</h1>
-            <p>กรุณา Login ก่อนใช้งานหน้านี้</p>
-          </header>
-        </section>
       ) : activeTab === "leaderboard" ? (
         <LeaderboardPage users={users} learningStats={learningStats} />
       ) : activeTab === "summary" && !isAdmin ? (
@@ -907,17 +976,19 @@ export default function App() {
             draft={examEditorDraft}
             onBack={() => setExamView("list")}
             onSaveDraft={saveExamEditorDraft}
+            onDeleteExam={handleDeleteExam}
           />
         ) : (
-          <ExamPage
-            examBank={examBank}
-            onOpenEditor={openExamEditor}
-            onEnterExam={openExam}
-            onCreateExam={createExam}
-            onUpdateExamStatus={updateExamStatus}
-            currentUserKey={currentUserKey}
-            isAdmin={isAdmin}
-          />
+        <ExamPage
+          examBank={examBank}
+          onOpenEditor={openExamEditor}
+          onEnterExam={openExam}
+          onCreateExam={createExam}
+          onUpdateExamStatus={updateExamStatus}
+          currentUserKey={currentUserKey}
+          isAdmin={isAdmin}
+          canCreate={canCreateLearningItems}
+        />
         )
       ) : activeTab === "content" ? (
         <ContentPage
@@ -928,6 +999,7 @@ export default function App() {
           onUpdateContentStatus={updateContentStatus}
           currentUserKey={currentUserKey}
           isAdmin={isAdmin}
+          canCreate={canCreateLearningItems}
         />
       ) : homeView === "auth-required" ? (
         <section className="workspace-content">
@@ -959,6 +1031,7 @@ export default function App() {
           onBack={() => setHomeView("lobby")}
           onChangeDraft={updateEditorDraft}
           onSaveDraft={saveEditorDraft}
+          onDeleteContent={handleDeleteContent}
         />
       ) : (
         <LobbyPage
@@ -973,6 +1046,7 @@ export default function App() {
           isAdmin={isAdmin}
         />
       )}
-    </main>
+      </main>
+    </div>
   );
 }

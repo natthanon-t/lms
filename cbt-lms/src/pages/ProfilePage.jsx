@@ -25,12 +25,14 @@ export default function ProfilePage({
   currentUserProgress,
 }) {
   const [name, setName] = useState(currentUser.name);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [message, setMessage] = useState("");
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     nextPassword: "",
     confirmPassword: "",
   });
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState("");
   const userSkillScores = learningStats?.[username]?.skillScores ?? {};
   const safeExamples = Array.isArray(examples) ? examples : [];
@@ -184,12 +186,14 @@ export default function ProfilePage({
 
   useEffect(() => {
     setName(currentUser.name);
+    setIsEditingProfile(false);
     setMessage("");
     setPasswordForm({
       currentPassword: "",
       nextPassword: "",
       confirmPassword: "",
     });
+    setShowPasswordForm(false);
     setPasswordMessage("");
   }, [currentUser.name]);
 
@@ -204,6 +208,9 @@ export default function ProfilePage({
 
     const result = await onSaveName?.(trimmedName);
     setMessage(result?.message ?? "บันทึกชื่อเรียบร้อย");
+    if (result?.success !== false) {
+      setIsEditingProfile(false);
+    }
   };
 
   const handleChangePasswordSubmit = async (event) => {
@@ -233,6 +240,31 @@ export default function ProfilePage({
     setPasswordMessage(result?.message ?? "ไม่สามารถเปลี่ยนรหัสผ่านได้");
   };
 
+  const closePasswordModal = () => {
+    setShowPasswordForm(false);
+    setPasswordForm({
+      currentPassword: "",
+      nextPassword: "",
+      confirmPassword: "",
+    });
+    setPasswordMessage("");
+  };
+
+  useEffect(() => {
+    if (!showPasswordForm) {
+      return undefined;
+    }
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        closePasswordModal();
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [showPasswordForm]);
+
   return (
     <section className="workspace-content">
       <header className="content-header">
@@ -241,66 +273,135 @@ export default function ProfilePage({
       </header>
 
       <article className="info-card">
-        <form className="profile-form" onSubmit={handleSubmit}>
-          <label htmlFor="profile-name">ชื่อ</label>
-          <input
-            id="profile-name"
-            type="text"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
+        {isEditingProfile ? (
+          <form className="profile-form" onSubmit={handleSubmit}>
+            <label htmlFor="profile-name">ชื่อ</label>
+            <input
+              id="profile-name"
+              type="text"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
 
-          <p>
-            <strong>Username:</strong> {username}
-          </p>
-          <p>
-            <strong>ตำแหน่ง:</strong> {currentUser.role}
-          </p>
+            <p>
+              <strong>Username:</strong> {username}
+            </p>
+            <p>
+              <strong>ตำแหน่ง:</strong> {currentUser.role}
+            </p>
 
-          <button type="submit" className="enter-button">
-            บันทึก
-          </button>
-        </form>
+            <div className="profile-action-row">
+              <button type="submit" className="enter-button">
+                บันทึก
+              </button>
+              <button
+                type="button"
+                className="back-button"
+                onClick={() => {
+                  setName(currentUser.name);
+                  setIsEditingProfile(false);
+                }}
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                className="back-button"
+                onClick={() => setShowPasswordForm(true)}
+              >
+                เปลี่ยนรหัสผ่าน
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="profile-form">
+            <label>ชื่อ</label>
+            <p>{currentUser.name}</p>
+            <p>
+              <strong>Username:</strong> {username}
+            </p>
+            <p>
+              <strong>ตำแหน่ง:</strong> {currentUser.role}
+            </p>
+            <div className="profile-action-row">
+              <button
+                type="button"
+                className="enter-button"
+                onClick={() => {
+                  setName(currentUser.name);
+                  setIsEditingProfile(true);
+                }}
+              >
+                แก้ไขข้อมูล
+              </button>
+              <button
+                type="button"
+                className="back-button"
+                onClick={() => setShowPasswordForm(true)}
+              >
+                เปลี่ยนรหัสผ่าน
+              </button>
+            </div>
+          </div>
+        )}
 
         {message ? <p className="profile-message">{message}</p> : null}
       </article>
 
-      <article className="info-card">
-        <h3>เปลี่ยนรหัสผ่าน</h3>
-        <form className="profile-form" onSubmit={handleChangePasswordSubmit}>
-          <label htmlFor="current-password">รหัสผ่านปัจจุบัน</label>
-          <input
-            id="current-password"
-            type="password"
-            value={passwordForm.currentPassword}
-            onChange={(event) =>
-              setPasswordForm((prev) => ({ ...prev, currentPassword: event.target.value }))
-            }
-          />
-          <label htmlFor="next-password">รหัสผ่านใหม่</label>
-          <input
-            id="next-password"
-            type="password"
-            value={passwordForm.nextPassword}
-            onChange={(event) =>
-              setPasswordForm((prev) => ({ ...prev, nextPassword: event.target.value }))
-            }
-          />
-          <label htmlFor="confirm-password">ยืนยันรหัสผ่านใหม่</label>
-          <input
-            id="confirm-password"
-            type="password"
-            value={passwordForm.confirmPassword}
-            onChange={(event) =>
-              setPasswordForm((prev) => ({ ...prev, confirmPassword: event.target.value }))
-            }
-          />
-          <button type="submit" className="enter-button">
-            บันทึกรหัสผ่านใหม่
-          </button>
-        </form>
-        {passwordMessage ? <p className="profile-message">{passwordMessage}</p> : null}
-      </article>
+      {showPasswordForm ? (
+        <div className="modal-backdrop" onClick={closePasswordModal}>
+          <article
+            className="info-card profile-password-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="password-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="modal-close-button"
+              aria-label="ปิดกล่องเปลี่ยนรหัสผ่าน"
+              onClick={closePasswordModal}
+            >
+              ×
+            </button>
+            <h3 id="password-modal-title">เปลี่ยนรหัสผ่าน</h3>
+            <form className="profile-form" onSubmit={handleChangePasswordSubmit}>
+              <label htmlFor="current-password">รหัสผ่านปัจจุบัน</label>
+              <input
+                id="current-password"
+                type="password"
+                value={passwordForm.currentPassword}
+                onChange={(event) =>
+                  setPasswordForm((prev) => ({ ...prev, currentPassword: event.target.value }))
+                }
+              />
+              <label htmlFor="next-password">รหัสผ่านใหม่</label>
+              <input
+                id="next-password"
+                type="password"
+                value={passwordForm.nextPassword}
+                onChange={(event) =>
+                  setPasswordForm((prev) => ({ ...prev, nextPassword: event.target.value }))
+                }
+              />
+              <label htmlFor="confirm-password">ยืนยันรหัสผ่านใหม่</label>
+              <input
+                id="confirm-password"
+                type="password"
+                value={passwordForm.confirmPassword}
+                onChange={(event) =>
+                  setPasswordForm((prev) => ({ ...prev, confirmPassword: event.target.value }))
+                }
+              />
+              <button type="submit" className="enter-button">
+                บันทึกรหัสผ่านใหม่
+              </button>
+            </form>
+            {passwordMessage ? <p className="profile-message">{passwordMessage}</p> : null}
+          </article>
+        </div>
+      ) : null}
 
       <section className="profile-dashboard-grid">
         <article className="info-card profile-projects-panel">

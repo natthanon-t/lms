@@ -48,8 +48,12 @@ func (h *Handler) CreateUserByAdmin(c *fiber.Ctx) error {
 	req.Password = strings.TrimSpace(req.Password)
 	req.Role = strings.TrimSpace(req.Role)
 	req.Status = strings.ToLower(strings.TrimSpace(req.Status))
-	if req.Name == "" || req.Username == "" || req.Password == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "name, username and password are required")
+	req.EmployeeCode = data.NormalizeEmployeeCode(req.EmployeeCode)
+	if req.Name == "" || req.Username == "" || req.Password == "" || req.EmployeeCode == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "name, username, employee_code and password are required")
+	}
+	if !data.IsValidEmployeeCode(req.EmployeeCode) {
+		return fiber.NewError(fiber.StatusBadRequest, "employee_code must be in format 2026-XX-XXXX")
 	}
 	if len(req.Password) < 8 {
 		return fiber.NewError(fiber.StatusBadRequest, "password must be at least 8 characters")
@@ -67,7 +71,7 @@ func (h *Handler) CreateUserByAdmin(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "status is invalid")
 	}
 
-	user, err := data.CreateUser(req.Name, req.Username, req.Password, req.Role, req.Status)
+	user, err := data.CreateUser(req.Name, req.Username, req.EmployeeCode, req.Password, req.Role, req.Status)
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "duplicate") || strings.Contains(strings.ToLower(err.Error()), "unique") {
 			return fiber.NewError(fiber.StatusConflict, "username already exists")
@@ -93,11 +97,15 @@ func (h *Handler) UpdateUserByAdmin(c *fiber.Ctx) error {
 	req.Role = strings.TrimSpace(req.Role)
 	req.Status = strings.ToLower(strings.TrimSpace(req.Status))
 	req.Name = strings.TrimSpace(req.Name)
+	req.EmployeeCode = data.NormalizeEmployeeCode(req.EmployeeCode)
 	if req.Role != "" && !slices.Contains(userRoleOptions, req.Role) {
 		return fiber.NewError(fiber.StatusBadRequest, "role is invalid")
 	}
+	if req.EmployeeCode != "" && !data.IsValidEmployeeCode(req.EmployeeCode) {
+		return fiber.NewError(fiber.StatusBadRequest, "employee_code must be in format 2026-XX-XXXX")
+	}
 
-	user, err := data.UpdateUserByUsername(username, req.Name, req.Role, req.Status)
+	user, err := data.UpdateUserByUsername(username, req.Name, req.Role, req.Status, req.EmployeeCode)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fiber.NewError(fiber.StatusNotFound, "user not found")

@@ -19,6 +19,7 @@ export default function ExamPage({
   onUpdateExamStatus,
   currentUserKey = "",
   isAdmin = false,
+  canCreate = false,
 }) {
   const [managingExamId, setManagingExamId] = useState("");
   const isOwner = (exam) =>
@@ -37,7 +38,7 @@ export default function ExamPage({
         <p>เลือกข้อสอบเพื่อดูรายละเอียดก่อนเริ่มสอบ หรือกดปุ่มเฝืองเพื่อแก้ไข</p>
       </header>
 
-      {currentUserKey ? (
+      {canCreate ? (
         <div className="section-row">
           <p className="section-label">รายการข้อสอบ</p>
           <button type="button" className="create-content-button" onClick={onCreateExam}>

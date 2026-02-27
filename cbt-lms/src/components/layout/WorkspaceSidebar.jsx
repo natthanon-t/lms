@@ -8,8 +8,13 @@ const tabs = [
   { key: "summary", label: "สรุปผล" },
 ];
 
+const tabGroups = [
+  ["home", "content", "exam"],
+  ["profile", "user-management", "summary"],
+  ["leaderboard"],
+];
+
 export default function WorkspaceSidebar({
-  currentUser,
   activeTab,
   onSelectTab,
   onAuthAction,
@@ -22,26 +27,32 @@ export default function WorkspaceSidebar({
     }
     return true;
   });
+  const visibleTabsByKey = new Map(visibleTabs.map((tab) => [tab.key, tab]));
 
   return (
     <aside className="workspace-sidebar">
-      <div>
-        <h2>LMS Panel</h2>
-        <p className="user-label">ผู้ใช้: {currentUser?.name ?? "Guest"}</p>
-        <p className="user-role">ตำแหน่ง: {currentUser?.role ?? "ผู้เยี่ยมชม"}</p>
-      </div>
-
       <nav className="sidebar-nav" aria-label="main navigation">
-        {visibleTabs.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            className={activeTab === tab.key ? "active" : ""}
-            onClick={() => onSelectTab(tab.key)}
-          >
-            {tab.label}
-          </button>
-        ))}
+        {tabGroups.map((group, groupIndex) => {
+          const groupTabs = group.map((key) => visibleTabsByKey.get(key)).filter(Boolean);
+          if (!groupTabs.length) {
+            return null;
+          }
+
+          return (
+            <div className="sidebar-nav-group" key={`group-${groupIndex}`}>
+              {groupTabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  className={activeTab === tab.key ? "active" : ""}
+                  onClick={() => onSelectTab(tab.key)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          );
+        })}
       </nav>
 
       <button type="button" className="logout-button" onClick={onAuthAction}>

@@ -29,17 +29,19 @@ type changePasswordRequest struct {
 }
 
 type adminCreateUserRequest struct {
-	Name     string `json:"name"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Role     string `json:"role"`
-	Status   string `json:"status"`
+	Name         string `json:"name"`
+	Username     string `json:"username"`
+	EmployeeCode string `json:"employee_code"`
+	Password     string `json:"password"`
+	Role         string `json:"role"`
+	Status       string `json:"status"`
 }
 
 type adminUpdateUserRequest struct {
-	Name   string `json:"name"`
-	Role   string `json:"role"`
-	Status string `json:"status"`
+	Name         string `json:"name"`
+	EmployeeCode string `json:"employee_code"`
+	Role         string `json:"role"`
+	Status       string `json:"status"`
 }
 
 type adminResetPasswordRequest struct {

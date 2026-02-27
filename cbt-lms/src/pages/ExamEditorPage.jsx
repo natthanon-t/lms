@@ -36,12 +36,13 @@ const toQuestions = (questions) => {
   }));
 };
 
-export default function ExamEditorPage({ draft, onBack, onSaveDraft }) {
+export default function ExamEditorPage({ draft, onBack, onSaveDraft, onDeleteExam }) {
   const [exam, setExam] = useState(draft);
   const [domainRows, setDomainRows] = useState(() => toDomainRows(draft.domainPercentages));
   const [questions, setQuestions] = useState(() => toQuestions(draft.questions));
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
   const [importStatus, setImportStatus] = useState({ type: "", message: "" });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const questionRefs = useRef({});
 
   useEffect(() => {
@@ -198,6 +199,16 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft }) {
     }
   };
 
+  const handleDeleteExam = async () => {
+    const result = await onDeleteExam?.(exam.id || exam.sourceId);
+    if (!result?.success) {
+      setImportStatus({ type: "error", message: result?.message ?? "ลบข้อสอบไม่สำเร็จ" });
+      setShowDeleteConfirm(false);
+      return;
+    }
+    setShowDeleteConfirm(false);
+  };
+
   return (
     <section className="workspace-content">
       <header className="content-header editor-head">
@@ -208,6 +219,9 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft }) {
         <div className="editor-header-actions">
           <button type="button" className="save-button" onClick={handleSave}>
             บันทึกข้อสอบ
+          </button>
+          <button type="button" className="back-button danger-button" onClick={() => setShowDeleteConfirm(true)}>
+            ลบข้อสอบ
           </button>
           <button type="button" className="back-button" onClick={onBack}>
             กลับหน้าข้อสอบ
@@ -465,6 +479,37 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft }) {
           ))}
         </div>
       </div>
+
+      {showDeleteConfirm ? (
+        <div className="modal-backdrop" onClick={() => setShowDeleteConfirm(false)}>
+          <article
+            className="info-card confirm-delete-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-exam-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="modal-close-button"
+              aria-label="ปิดกล่องยืนยันลบข้อสอบ"
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              ×
+            </button>
+            <h3 id="delete-exam-modal-title">ยืนยันการลบข้อสอบ</h3>
+            <p>ต้องการลบข้อสอบ "{exam.title}" ใช่หรือไม่</p>
+            <div className="profile-action-row">
+              <button type="button" className="toc-delete-button" onClick={handleDeleteExam}>
+                ยืนยันลบ
+              </button>
+              <button type="button" className="back-button" onClick={() => setShowDeleteConfirm(false)}>
+                ยกเลิก
+              </button>
+            </div>
+          </article>
+        </div>
+      ) : null}
     </section>
   );
 }
