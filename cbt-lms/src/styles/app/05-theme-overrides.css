@@ -1,0 +1,503 @@
+/* Blue-White Corporate Theme overrides */
+.login-page,
+.workspace-shell {
+  background: var(--background);
+}
+
+.login-card,
+.info-card,
+.leaderboard-card,
+.metric-card,
+.summary-row,
+.example-card,
+.exam-card,
+.editor-question-card,
+.project-course-item,
+.acquired-skill-box,
+.skill-item,
+.course-skill-awards {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--foreground);
+  box-shadow: var(--shadow-sm);
+}
+
+.workspace-sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--divider);
+  color: var(--foreground);
+}
+
+.workspace-sidebar h2,
+.user-label,
+.user-role,
+.content-header h1,
+.section-label,
+.example-title,
+.editor-skill-head h3,
+.editor-question-head h4,
+.exam-card h3,
+.project-course-title,
+.skill-name,
+.metric-card h3 {
+  color: var(--foreground);
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar-brand-logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 76, 153, 0.12);
+}
+
+.sidebar-brand h2 {
+  margin: 0;
+  line-height: 1.1;
+}
+
+.sidebar-brand-subtitle {
+  margin: 3px 0 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+  color: var(--secondary);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.content-header p,
+.exam-card p,
+.summary-note,
+.project-course-status,
+.project-course-skills {
+  color: var(--secondary);
+}
+
+.sidebar-nav button,
+.logout-button,
+.manage-button,
+.editor-toolbar button,
+.gear-button,
+.subtopic-nav-button,
+.toc-edit-button,
+.toc-delete-button,
+.content-theme-exam .quiz-answer-row button,
+.content-theme-exam .subtopic-nav-button {
+  background: linear-gradient(180deg, #ffffff 0%, var(--surface) 100%);
+  border-color: var(--border);
+  color: var(--foreground);
+  box-shadow: 0 6px 14px rgba(100, 116, 139, 0.14);
+  transition: background-color 0.22s ease, border-color 0.22s ease, color 0.22s ease,
+    box-shadow 0.22s ease, transform 0.16s ease;
+}
+
+.sidebar-nav button:hover,
+.manage-button:hover,
+.editor-toolbar button:hover,
+.gear-button:hover,
+.subtopic-nav-button:hover,
+.toc-edit-button:hover {
+  background: #e6f2ff;
+  border-color: var(--primary-light);
+  color: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(0, 76, 153, 0.18);
+}
+
+.logout-button,
+.toc-delete-button {
+  color: var(--danger);
+  border-color: #fecaca;
+  background: #fff1f2;
+}
+
+.logout-button:hover,
+.toc-delete-button:hover {
+  background: #ffe4e6;
+  border-color: #fda4af;
+}
+
+.sidebar-nav button.active,
+.create-content-button,
+.enter-button,
+.back-button,
+.save-button,
+.danger-button,
+.end-exam-button,
+.login-form button,
+.submit-exam-button {
+  background: linear-gradient(180deg, var(--primary-light) 0%, var(--primary) 100%);
+  border-color: #0a75dd;
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(0, 102, 204, 0.24);
+}
+
+.create-content-button:hover,
+.enter-button:hover,
+.back-button:hover,
+.save-button:hover,
+.danger-button:hover,
+.end-exam-button:hover,
+.login-form button:hover,
+.submit-exam-button:hover,
+.sidebar-nav button.active:hover {
+  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
+  border-color: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(0, 76, 153, 0.3);
+}
+
+.save-button,
+.submit-exam-button {
+  background: linear-gradient(180deg, #1db6cf 0%, var(--accent) 100%);
+  border-color: var(--accent);
+  box-shadow: 0 8px 18px rgba(8, 145, 178, 0.24);
+}
+
+.danger-button {
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+  border-color: #dc2626;
+  box-shadow: 0 8px 18px rgba(220, 38, 38, 0.26);
+}
+
+.save-button:hover,
+.submit-exam-button:hover {
+  background: linear-gradient(180deg, var(--accent) 0%, #0e7490 100%);
+  border-color: #0e7490;
+  box-shadow: 0 12px 22px rgba(14, 116, 144, 0.32);
+}
+
+.danger-button:hover {
+  background: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%);
+  border-color: #b91c1c;
+  box-shadow: 0 12px 22px rgba(185, 28, 28, 0.32);
+}
+
+.back-home-button {
+  background: linear-gradient(180deg, #ffffff 0%, var(--surface) 100%);
+  border-color: var(--border);
+  color: var(--foreground);
+  box-shadow: 0 6px 14px rgba(100, 116, 139, 0.14);
+}
+
+.back-home-button:hover {
+  background: #e6f2ff;
+  border-color: var(--primary-light);
+  color: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.sidebar-nav button:focus-visible,
+.logout-button:focus-visible,
+.manage-button:focus-visible,
+.editor-toolbar button:focus-visible,
+.gear-button:focus-visible,
+.subtopic-nav-button:focus-visible,
+.toc-edit-button:focus-visible,
+.toc-delete-button:focus-visible,
+.create-content-button:focus-visible,
+.enter-button:focus-visible,
+.back-button:focus-visible,
+.save-button:focus-visible,
+.danger-button:focus-visible,
+.end-exam-button:focus-visible,
+.login-form button:focus-visible,
+.submit-exam-button:focus-visible,
+.back-home-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.22), 0 10px 20px rgba(0, 76, 153, 0.18);
+}
+
+.search-box input,
+.editor-title-box input,
+.editor-title-box textarea,
+.editor-title-box select,
+.editor-skill-row input,
+.editor-choice-list input,
+.answer-box textarea,
+.profile-form input,
+.role-select,
+.default-password-row input,
+.quiz-answer-row input,
+.content-theme-exam .quiz-answer-row input,
+.login-form input {
+  background: var(--background);
+  border-color: var(--border);
+  color: var(--foreground);
+}
+
+.search-box input:focus,
+.editor-title-box input:focus,
+.editor-title-box textarea:focus,
+.editor-title-box select:focus,
+.answer-box textarea:focus,
+.profile-form input:focus,
+.role-select:focus,
+.default-password-row input:focus,
+.login-form input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.18);
+}
+
+.editor-panel,
+.preview-panel,
+.toc-panel,
+.subtopic-quiz-shell {
+  background: var(--surface);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+.preview-panel h3,
+.editor-panel h3,
+.toc-panel h3,
+.toc-heading-label,
+.subtopic-quiz-head h3,
+.quiz-answer-label {
+  color: var(--foreground);
+}
+
+.toc-empty,
+.toc-drag-help,
+.subtopic-nav span,
+.subtopic-quiz-head p {
+  color: var(--secondary);
+}
+
+.toc-item {
+  background: var(--background);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+.toc-item:hover {
+  background: #e6f2ff;
+}
+
+.toc-item.active {
+  background: #dbeafe;
+  border-color: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+.choice-item,
+.domain-result-item,
+.content-manage-menu,
+.editor-skill-card,
+.register-criteria-card,
+.project-metric-chip {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.choice-item.checked {
+  border-color: var(--primary);
+  background: #e6f2ff;
+}
+
+.timer-badge,
+.content-status-badge,
+.question-points {
+  background: #e6f2ff;
+  border-color: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+.content-status-badge.active,
+.project-course-item.done {
+  background: #ecfdf5;
+  border-color: #86efac;
+  color: var(--success);
+}
+
+.content-status-badge.inprogress {
+  background: #fffbeb;
+  border-color: #fcd34d;
+  color: var(--warning);
+}
+
+.content-status-badge.inactive {
+  background: #f8fafc;
+  border-color: var(--divider);
+  color: var(--secondary);
+}
+
+.result-wrong,
+.exam-json-import-message.is-error {
+  color: var(--danger);
+}
+
+.result-correct,
+.exam-json-import-message.is-success,
+.save-message {
+  color: var(--success);
+}
+
+.user-management-metrics .metric-card p {
+  font-size: 1.5rem;
+}
+
+.summary-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.summary-export-button {
+  margin-top: 6px;
+  white-space: nowrap;
+}
+
+.user-management-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.user-create-open-button {
+  margin-top: 6px;
+  white-space: nowrap;
+}
+
+.user-create-modal {
+  margin-top: 0;
+  width: min(100%, 940px);
+  position: relative;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.24);
+}
+
+.user-create-modal h3 {
+  margin: 0 0 10px;
+}
+
+.confirm-delete-modal {
+  margin-top: 0;
+  width: min(100%, 500px);
+  position: relative;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.24);
+}
+
+.confirm-delete-modal h3 {
+  margin: 0 0 10px;
+}
+
+.confirm-delete-modal p {
+  margin: 0 0 12px;
+  color: #375587;
+}
+
+.user-management-toolbar {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.5fr) repeat(2, minmax(170px, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.user-management-toolbar .manage-button {
+  height: 42px;
+  white-space: nowrap;
+}
+
+.user-management-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f8fbff;
+}
+
+.user-management-table td {
+  vertical-align: middle;
+}
+
+.user-management-table td .manage-button {
+  width: 100%;
+}
+
+.user-row-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.user-modal-actions {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-management-empty {
+  margin: 12px 0;
+  text-align: center;
+  color: var(--secondary);
+  font-weight: 600;
+}
+
+.sidebar-nav-group {
+  display: grid;
+  gap: 10px;
+}
+
+.sidebar-nav-group + .sidebar-nav-group {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--divider);
+}
+
+@media (max-width: 1100px) {
+  .summary-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .summary-export-button {
+    width: fit-content;
+    margin-top: 0;
+  }
+
+  .user-management-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .user-create-open-button {
+    width: fit-content;
+    margin-top: 0;
+  }
+
+  .user-management-toolbar {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+
+  .user-management-toolbar .manage-button {
+    width: fit-content;
+  }
+}
+
+@media (max-width: 720px) {
+  .summary-export-button {
+    width: 100%;
+  }
+
+  .user-create-open-button {
+    width: 100%;
+  }
+
+  .user-management-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .user-management-toolbar .manage-button {
+    width: 100%;
+  }
+}

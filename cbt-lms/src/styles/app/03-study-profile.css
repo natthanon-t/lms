@@ -1,0 +1,504 @@
+.subtopic-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 0.92rem;
+}
+
+.subtopic-nav span {
+  color: #c9d8f4;
+  font-weight: 600;
+  text-align: center;
+}
+
+.subtopic-nav-button {
+  border: 1px solid #2b3e63;
+  border-radius: 8px;
+  background: #17253c;
+  color: #e9eef8;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.subtopic-nav-button:hover {
+  background: #1f3154;
+}
+
+.subtopic-quiz {
+  margin-top: 0;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.subtopic-quiz h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.subtopic-quiz-shell {
+  margin-top: 20px;
+  border: 1px solid #243149;
+  border-radius: 12px;
+  background: #0f1c31;
+  overflow: hidden;
+}
+
+.subtopic-complete-actions {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.subtopic-quiz-head {
+  padding: 14px;
+  border-bottom: 1px solid #243149;
+}
+
+.subtopic-quiz-head h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.subtopic-quiz-head p {
+  margin: 6px 0 0;
+  color: #a9bddf;
+  font-size: 0.95rem;
+}
+
+.quiz-question-card {
+  border: none;
+  border-bottom: 1px solid #243149;
+  border-radius: 0;
+  padding: 6px 0 14px;
+  background: transparent;
+}
+
+.quiz-question-card p {
+  margin: 0 0 8px;
+}
+
+.quiz-question-text {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  line-height: 1.45;
+}
+
+.question-points {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  border: 1px solid #314b75;
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: #17253c;
+  color: #b9d3ff;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.quiz-answer-label {
+  display: inline-block;
+  margin: 0 0 6px;
+  font-weight: 700;
+  color: #c9d8f4;
+}
+
+.quiz-answer-row {
+  display: flex;
+  gap: 8px;
+}
+
+.quiz-answer-row input {
+  flex: 1;
+  border: 1px solid #2b3e63;
+  border-radius: 8px;
+  background: #0d1728;
+  color: #e9eef8;
+  padding: 8px 10px;
+}
+
+.quiz-answer-row button {
+  border: 1px solid #2b3e63;
+  border-radius: 8px;
+  background: #1d77dc;
+  color: #e9eef8;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.quiz-question-card:last-of-type {
+  border-bottom: none;
+}
+
+.submit-exam-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.answer-box {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.answer-box label {
+  font-weight: 700;
+  color: #1a2f57;
+}
+
+.answer-box textarea {
+  border: 1px solid #b8c4e0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.98rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.answer-box textarea:focus {
+  outline: 2px solid #2f66da;
+  border-color: #2f66da;
+}
+
+.exam-card h3 {
+  margin: 0;
+  color: #16315d;
+}
+
+.exam-card p {
+  margin: 0;
+  color: #45608f;
+}
+
+.info-card {
+  margin-top: 16px;
+  background: #ffffff;
+  border: 1px solid #d5e0f7;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.profile-form {
+  display: grid;
+  gap: 10px;
+}
+
+.profile-form label {
+  font-weight: 700;
+  color: #1a2f57;
+}
+
+.profile-form input {
+  border: 1px solid #b8c4e0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.98rem;
+  font-family: inherit;
+}
+
+.profile-form p {
+  margin: 0;
+  color: #1a2f57;
+}
+
+.profile-action-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(15, 23, 42, 0.44);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.profile-password-modal {
+  margin-top: 0;
+  width: min(100%, 480px);
+  position: relative;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.24);
+}
+
+.modal-close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid #d5e0f7;
+  background: #f8fbff;
+  color: #1a2f57;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modal-close-button:hover {
+  background: #eaf2ff;
+  border-color: #b8c4e0;
+}
+
+.profile-dashboard-grid {
+  margin-top: 16px;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 1.1fr 1fr;
+}
+
+.profile-projects-panel h3,
+.profile-skills-panel h3 {
+  margin: 0;
+  letter-spacing: 0.04em;
+}
+
+.project-metrics {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.project-metric-chip {
+  border: 1px solid #7ec9db;
+  background: #f4fcff;
+  color: #0f5d75;
+  border-radius: 999px;
+  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.project-metric-chip strong {
+  font-size: 0.92rem;
+}
+
+.project-course-list {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+  max-height: 430px;
+  overflow: auto;
+}
+
+.project-course-item {
+  border: 1px solid #d5e0f7;
+  border-radius: 12px;
+  background: #f7faff;
+  padding: 10px;
+}
+
+.project-course-item.done {
+  border-color: #9ed7b3;
+  background: #f1fff6;
+}
+
+.project-course-title {
+  margin: 0;
+  font-weight: 800;
+  color: #16315d;
+}
+
+.project-course-status {
+  margin: 6px 0 0;
+  font-weight: 700;
+  color: #45608f;
+}
+
+.project-course-item.done .project-course-status {
+  color: #1f8d4e;
+}
+
+.project-course-skills {
+  margin: 6px 0 0;
+  color: #45608f;
+  font-size: 0.88rem;
+}
+
+.project-course-reward-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: #1a2f57;
+  font-size: 0.9rem;
+}
+
+.project-course-reward-list li + li {
+  margin-top: 4px;
+}
+
+.profile-skills-panel {
+  overflow: hidden;
+}
+
+.acquired-skill-box {
+  margin-top: 12px;
+  border: 1px solid #d5e0f7;
+  border-radius: 12px;
+  background: #f9fbff;
+  padding: 10px;
+}
+
+.acquired-skill-box h4 {
+  margin: 0;
+  color: #1a2f57;
+  font-size: 0.95rem;
+}
+
+.acquired-skill-grid {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+.acquired-skill-item {
+  border: 1px solid #d5e0f7;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 8px 10px;
+}
+
+.radar-wrap {
+  margin-top: 12px;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+}
+
+.skill-radar {
+  width: min(100%, 480px);
+  height: auto;
+}
+
+.radar-ring {
+  fill: none;
+  stroke: #c8d6f0;
+  stroke-width: 1;
+}
+
+.radar-axis {
+  stroke: #d4deef;
+  stroke-width: 1;
+}
+
+.radar-data {
+  fill: rgba(45, 182, 214, 0.35);
+  stroke: #11a9c8;
+  stroke-width: 2;
+}
+
+.radar-dot {
+  fill: #0f98b7;
+}
+
+.radar-label {
+  fill: #1a2f57;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.skill-grid {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.skill-item {
+  border: 1px solid #d5e0f7;
+  border-radius: 12px;
+  background: #f7faff;
+  padding: 10px 12px;
+}
+
+.skill-name {
+  margin: 0;
+  font-weight: 800;
+  color: #16315d;
+}
+
+.skill-score {
+  margin: 6px 0 0;
+  color: #45608f;
+  font-weight: 700;
+}
+
+.skill-progress {
+  margin-top: 8px;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: #dce8ff;
+  overflow: hidden;
+}
+
+.skill-progress span {
+  display: block;
+  height: calc(100vh - 84px);
+  background: linear-gradient(90deg, #3f8cff, #2454b8);
+}
+
+.power-progress span {
+  background: linear-gradient(90deg, #24b26b, #19874f);
+}
+
+.course-skill-awards {
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid #d5e0f7;
+  border-radius: 12px;
+  background: #f7faff;
+}
+
+.course-skill-awards-title {
+  margin: 0;
+  color: #1a2f57;
+  font-weight: 800;
+}
+
+.course-skill-awards-list {
+  margin: 8px 0 10px;
+  padding-left: 18px;
+  color: #1a2f57;
+}
+
+.course-skill-awards-list li + li {
+  margin-top: 4px;
+}
+
+.profile-form input:focus {
+  outline: 2px solid #2f66da;
+  border-color: #2f66da;
+}
+
+.profile-message {
+  margin: 12px 0 0;
+  color: #2f66da;
+  font-weight: 700;
+}
+
+@media (max-width: 1180px) {
+  .profile-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
