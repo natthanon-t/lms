@@ -43,11 +43,11 @@ export const loginAuth = async ({ username, password }) => {
   return payload;
 };
 
-export const registerAuth = async ({ name, username, password }) =>
+export const registerAuth = async ({ name, username, employeeCode, password }) =>
   request("/api/auth/register", {
     method: "POST",
     headers: toHeaders(),
-    body: JSON.stringify({ name, username, password }),
+    body: JSON.stringify({ name, username, employee_code: employeeCode, password }),
   });
 
 export const refreshAuth = async () => {

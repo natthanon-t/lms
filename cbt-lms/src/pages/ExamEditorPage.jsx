@@ -500,7 +500,7 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft, onDeleteExa
             <h3 id="delete-exam-modal-title">ยืนยันการลบข้อสอบ</h3>
             <p>ต้องการลบข้อสอบ "{exam.title}" ใช่หรือไม่</p>
             <div className="profile-action-row">
-              <button type="button" className="toc-delete-button" onClick={handleDeleteExam}>
+              <button type="button" className="end-exam-button" onClick={handleDeleteExam}>
                 ยืนยันลบ
               </button>
               <button type="button" className="back-button" onClick={() => setShowDeleteConfirm(false)}>

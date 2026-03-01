@@ -842,9 +842,9 @@ export default function App() {
     }
   };
 
-  const handleRegisterFromBackend = async ({ name, username, password }) => {
+  const handleRegisterFromBackend = async ({ name, username, employeeCode, password }) => {
     try {
-      await registerAuth({ name, username, password });
+      await registerAuth({ name, username, employeeCode, password });
       return { success: true };
     } catch (error) {
       return { success: false, message: error?.message ?? "สมัครสมาชิกไม่สำเร็จ" };
@@ -1032,6 +1032,7 @@ export default function App() {
           onChangeDraft={updateEditorDraft}
           onSaveDraft={saveEditorDraft}
           onDeleteContent={handleDeleteContent}
+          isAdmin={isAdmin}
         />
       ) : (
         <LobbyPage

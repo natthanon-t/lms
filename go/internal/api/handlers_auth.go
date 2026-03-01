@@ -20,16 +20,20 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 
 	req.Name = strings.TrimSpace(req.Name)
 	req.Username = data.NormalizeUsername(req.Username)
+	req.EmployeeCode = data.NormalizeEmployeeCode(req.EmployeeCode)
 	req.Password = strings.TrimSpace(req.Password)
 
-	if req.Name == "" || req.Username == "" || req.Password == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "name, username and password are required")
+	if req.Name == "" || req.Username == "" || req.EmployeeCode == "" || req.Password == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "name, username, employee_code and password are required")
+	}
+	if !data.IsValidEmployeeCode(req.EmployeeCode) {
+		return fiber.NewError(fiber.StatusBadRequest, "employee_code must be in format 2026-XX-XXXX")
 	}
 	if len(req.Password) < 8 {
 		return fiber.NewError(fiber.StatusBadRequest, "password must be at least 8 characters")
 	}
 
-	user, err := data.CreateUser(req.Name, req.Username, "", req.Password, "user", "active")
+	user, err := data.CreateUser(req.Name, req.Username, req.EmployeeCode, req.Password, "user", "active")
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "duplicate") || strings.Contains(strings.ToLower(err.Error()), "unique") {
 			return fiber.NewError(fiber.StatusConflict, "username already exists")

@@ -1,9 +1,10 @@
 package api
 
 type registerRequest struct {
-	Name     string `json:"name"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Name         string `json:"name"`
+	Username     string `json:"username"`
+	EmployeeCode string `json:"employee_code"`
+	Password     string `json:"password"`
 }
 
 type loginRequest struct {

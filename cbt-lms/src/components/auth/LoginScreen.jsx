@@ -3,9 +3,14 @@ import { useState } from "react";
 export default function LoginScreen({ onLogin, onRegister, onCancel }) {
   const [name, setName] = useState("");
   const [user, setUser] = useState("");
+  const [employeeCode, setEmployeeCode] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("error");
   const [mode, setMode] = useState("login");
+
+  const setError = (msg) => { setMessage(msg); setMessageType("error"); };
+  const setSuccess = (msg) => { setMessage(msg); setMessageType("success"); };
 
   const switchMode = (nextMode) => {
     setMode(nextMode);
@@ -13,6 +18,27 @@ export default function LoginScreen({ onLogin, onRegister, onCancel }) {
     setPassword("");
     if (nextMode === "login") {
       setName("");
+      setEmployeeCode("");
+    }
+  };
+
+  const formatEmployeeCode = (raw) => {
+    const clean = raw.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 10);
+    if (clean.length <= 4) return clean;
+    if (clean.length <= 6) return `${clean.slice(0, 4)}-${clean.slice(4)}`;
+    return `${clean.slice(0, 4)}-${clean.slice(4, 6)}-${clean.slice(6)}`;
+  };
+
+  const handleEmployeeCodeChange = (event) => {
+    const incoming = event.target.value;
+    const formatted = formatEmployeeCode(incoming);
+    // If user deleted a char but the dash snapped back (formatted === current),
+    // remove one more alphanumeric so backspace through a dash actually works.
+    if (incoming.length < employeeCode.length && formatted === employeeCode) {
+      const shorter = employeeCode.replace(/[^a-zA-Z0-9]/g, "").slice(0, -1);
+      setEmployeeCode(formatEmployeeCode(shorter));
+    } else {
+      setEmployeeCode(formatted);
     }
   };
 
@@ -27,6 +53,9 @@ export default function LoginScreen({ onLogin, onRegister, onCancel }) {
     if (text.includes("name, username and password are required")) {
       return "กรุณากรอก name, username และ password ให้ครบ";
     }
+    if (text.includes("employee_code must be in format")) {
+      return "รหัสพนักงานต้องอยู่ในรูปแบบ 2026-XX-XXXX";
+    }
     return message || "สมัครสมาชิกไม่สำเร็จ";
   };
 
@@ -34,53 +63,61 @@ export default function LoginScreen({ onLogin, onRegister, onCancel }) {
     event.preventDefault();
 
     if (!user.trim() || !password.trim()) {
-      setMessage("กรุณากรอก username และ password");
+      setError("กรุณากรอก username และ password");
       return;
     }
 
     if (mode === "register") {
       if (!name.trim()) {
-        setMessage("กรุณากรอก name");
+        setError("กรุณากรอก name");
         return;
       }
       if (user.trim().length < 4) {
-        setMessage("username ต้องมีอย่างน้อย 4 ตัวอักษร");
+        setError("username ต้องมีอย่างน้อย 4 ตัวอักษร");
         return;
       }
       if (!/^[a-zA-Z0-9._-]+$/.test(user.trim())) {
-        setMessage("username ใช้ได้เฉพาะ a-z, A-Z, 0-9, . _ -");
+        setError("username ใช้ได้เฉพาะ a-z, A-Z, 0-9, . _ -");
+        return;
+      }
+      if (!employeeCode.trim()) {
+        setError("กรุณากรอกรหัสพนักงาน");
+        return;
+      }
+      if (!/^2026-[A-Z0-9]{2}-[0-9]{4}$/i.test(employeeCode.trim())) {
+        setError("รหัสพนักงานต้องอยู่ในรูปแบบ 2026-XX-XXXX");
         return;
       }
       if (password.length < 8) {
-        setMessage("รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร");
+        setError("รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร");
         return;
       }
 
-      onRegister?.({ name: name.trim(), username: user.trim(), password })
+      onRegister?.({ name: name.trim(), username: user.trim(), employeeCode: employeeCode.trim().toUpperCase(), password })
         .then((result) => {
           if (!result?.success) {
-            setMessage(getFriendlyRegisterError(result?.message));
+            setError(getFriendlyRegisterError(result?.message));
             return;
           }
-          setMessage("สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ");
+          setSuccess("สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ");
           setPassword("");
           setMode("login");
         })
         .catch(() => {
-          setMessage("สมัครสมาชิกไม่สำเร็จ");
+          setError("สมัครสมาชิกไม่สำเร็จ");
         });
       return;
     }
     onLogin?.({ username: user.trim(), password })
       .then((result) => {
         if (!result?.success) {
-          setMessage(result?.message ?? "username หรือ password ไม่ถูกต้อง");
+          setError(result?.message ?? "username หรือ password ไม่ถูกต้อง");
           return;
         }
         setMessage("");
       })
       .catch(() => {
-        setMessage("username หรือ password ไม่ถูกต้อง");
+        setError("username หรือ password ไม่ถูกต้อง");
       });
   };
 
@@ -102,6 +139,18 @@ export default function LoginScreen({ onLogin, onRegister, onCancel }) {
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   placeholder="กรอก name"
+                />
+
+                <label htmlFor="employee-code">รหัสพนักงาน</label>
+                <input
+                  id="employee-code"
+                  name="employee_code"
+                  type="text"
+                  autoComplete="off"
+                  value={employeeCode}
+                  onChange={handleEmployeeCodeChange}
+                  placeholder="2026-XX-XXXX"
+                  style={{ letterSpacing: "0.06em" }}
                 />
               </>
             ) : null}
@@ -146,7 +195,11 @@ export default function LoginScreen({ onLogin, onRegister, onCancel }) {
             {mode === "login" ? "Register" : "Login"}
           </p>
 
-          {message ? <p className="login-message">{message}</p> : null}
+          {message ? (
+            <p className={`login-message${messageType === "success" ? " login-message--success" : ""}`}>
+              {message}
+            </p>
+          ) : null}
           {onCancel ? (
             <button type="button" className="back-home-button" onClick={onCancel}>
               กลับหน้าหลัก
@@ -159,7 +212,8 @@ export default function LoginScreen({ onLogin, onRegister, onCancel }) {
             <h3>เกณฑ์การสมัครสมาชิก</h3>
             <p>1. `username` อย่างน้อย 4 ตัวอักษร</p>
             <p>2. `username` ใช้ได้เฉพาะ a-z, A-Z, 0-9, . _ -</p>
-            <p>3. `password` อย่างน้อย 8 ตัวอักษร</p>
+            <p>3. `รหัสพนักงาน` รูปแบบ 2026-XX-XXXX</p>
+            <p>4. `password` อย่างน้อย 8 ตัวอักษร</p>
           </aside>
         ) : null}
       </div>

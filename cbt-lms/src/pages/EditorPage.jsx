@@ -26,7 +26,7 @@ const getSkillRewards = (draft) => {
   }));
 };
 
-export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, onDeleteContent }) {
+export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, onDeleteContent, isAdmin = false }) {
   const editorViewRef = useRef(null);
   const [activeSubtopicId, setActiveSubtopicId] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
@@ -346,7 +346,7 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
             onChange={(event) => onChangeDraft("status", event.target.value)}
           >
             <option value="inprogress">inprogress</option>
-            <option value="active">active</option>
+            {isAdmin && <option value="active">active</option>}
             <option value="inactive">inactive</option>
           </select>
         </div>
@@ -669,7 +669,7 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
             <h3 id="delete-content-modal-title">ยืนยันการลบเนื้อหา</h3>
             <p>ต้องการลบเนื้อหา "{draft.title}" ใช่หรือไม่</p>
             <div className="profile-action-row">
-              <button type="button" className="toc-delete-button" onClick={handleDeleteContent}>
+              <button type="button" className="end-exam-button" onClick={handleDeleteContent}>
                 ยืนยันลบ
               </button>
               <button type="button" className="back-button" onClick={() => setShowDeleteConfirm(false)}>

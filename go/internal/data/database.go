@@ -60,9 +60,9 @@ func CreateUser(name, username, employeeCode, password, role, status string) (Au
 	normalizedEmployeeCode := NormalizeEmployeeCode(employeeCode)
 	var user AuthUser
 	err = db.QueryRow(
-		`INSERT INTO users (name, email, employee_code, password_hash, role, status)
+		`INSERT INTO users (name, username, employee_code, password_hash, role, status)
 		 VALUES ($1, $2, $3, $4, $5, $6)
-		 RETURNING id, name, email, employee_code, role, status, created_at`,
+		 RETURNING id, name, username, employee_code, role, status, created_at`,
 		name,
 		normalizedUsername,
 		normalizedEmployeeCode,
@@ -76,9 +76,9 @@ func CreateUser(name, username, employeeCode, password, role, status string) (Au
 func FindUserByUsername(username string) (AuthUserRecord, error) {
 	var user AuthUserRecord
 	err := db.QueryRow(
-		`SELECT id, name, email, employee_code, password_hash, role, status, created_at
+		`SELECT id, name, username, employee_code, password_hash, role, status, created_at
 		 FROM users
-		 WHERE email = $1`,
+		 WHERE username = $1`,
 		NormalizeUsername(username),
 	).Scan(&user.ID, &user.Name, &user.Username, &user.EmployeeCode, &user.PasswordHash, &user.Role, &user.Status, &user.CreatedAt)
 	return user, err
@@ -91,7 +91,7 @@ func EnsureDefaultAdminUser(name, username, password string) error {
 	}
 
 	var existingID int64
-	err := db.QueryRow(`SELECT id FROM users WHERE email = $1`, normalizedUsername).Scan(&existingID)
+	err := db.QueryRow(`SELECT id FROM users WHERE username = $1`, normalizedUsername).Scan(&existingID)
 	if err == nil {
 		return nil
 	}
@@ -106,7 +106,7 @@ func EnsureDefaultAdminUser(name, username, password string) error {
 func FindUserByID(id int64) (AuthUserRecord, error) {
 	var user AuthUserRecord
 	err := db.QueryRow(
-		`SELECT id, name, email, employee_code, password_hash, role, status, created_at
+		`SELECT id, name, username, employee_code, password_hash, role, status, created_at
 		 FROM users
 		 WHERE id = $1`,
 		id,
@@ -116,7 +116,7 @@ func FindUserByID(id int64) (AuthUserRecord, error) {
 
 func ListUsers() ([]AuthUser, error) {
 	rows, err := db.Query(`
-SELECT id, name, email, employee_code, role, status, created_at
+SELECT id, name, username, employee_code, role, status, created_at
 FROM users
 ORDER BY created_at DESC`)
 	if err != nil {
@@ -141,7 +141,7 @@ func UpdateUserName(userID int64, name string) (AuthUserRecord, error) {
 		`UPDATE users
 		 SET name = $2
 		 WHERE id = $1
-		 RETURNING id, name, email, employee_code, password_hash, role, status, created_at`,
+		 RETURNING id, name, username, employee_code, password_hash, role, status, created_at`,
 		userID,
 		strings.TrimSpace(name),
 	).Scan(&user.ID, &user.Name, &user.Username, &user.EmployeeCode, &user.PasswordHash, &user.Role, &user.Status, &user.CreatedAt)
@@ -182,8 +182,8 @@ func UpdateUserByUsername(username, name, role, status, employeeCode string) (Au
 	err = db.QueryRow(
 		`UPDATE users
 		 SET name = $2, role = $3, status = $4, employee_code = $5
-		 WHERE email = $1
-		 RETURNING id, name, email, employee_code, password_hash, role, status, created_at`,
+		 WHERE username = $1
+		 RETURNING id, name, username, employee_code, password_hash, role, status, created_at`,
 		NormalizeUsername(username),
 		nextName,
 		nextRole,
