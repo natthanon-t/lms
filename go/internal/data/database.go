@@ -15,6 +15,8 @@ import (
 var db *sql.DB
 var employeeCodePattern = regexp.MustCompile(`^[A-Z0-9]{4}-[A-Z0-9]{2}-[A-Z0-9]{4}$`)
 
+var ErrForbidden = errors.New("forbidden")
+
 func ConnectPostgres(databaseURL string) error {
 	if strings.TrimSpace(databaseURL) == "" {
 		return errors.New("DATABASE_URL is required")

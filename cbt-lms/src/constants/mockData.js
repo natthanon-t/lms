@@ -1,7 +1,9 @@
 export const DEFAULT_USERNAME = "admin";
 export const DEFAULT_PASSWORD = "admin";
 
-export const fallbackExamples = [
+// Course content is seeded from the database (insert_db.sql) — no fallback data.
+
+const _placeholder = [
   {
     id: "ex-1",
     title: "Cyber Analyst: SOC Foundations",
@@ -152,6 +154,7 @@ SOC เฝ้าระวังเหตุการณ์จาก SIEM, EDR �
 - [Q] การสรุปบทเรียนหลังจบกิจกรรมเรียกว่าอะไร :: lessons learned :: 10`,
   },
 ];
+void _placeholder; // unused — kept only to avoid breaking git history
 
 const escapePipes = (text) => String(text).replaceAll("|", "\\|");
 const stripHtml = (text) => String(text ?? "").replace(/<[^>]*>/g, "");

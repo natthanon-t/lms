@@ -3,7 +3,7 @@ import "./App.css";
 import LoginScreen from "./components/auth/LoginScreen";
 import WorkspaceSidebar from "./components/layout/WorkspaceSidebar";
 import WorkspaceTopbar from "./components/layout/WorkspaceTopbar";
-import { DEFAULT_PASSWORD, DEFAULT_USERNAME, fallbackExamples, normalizeExamRaw } from "./constants/mockData";
+import { DEFAULT_PASSWORD, DEFAULT_USERNAME, normalizeExamRaw } from "./constants/mockData";
 import {
   CONTENT_STATUS_OPTIONS,
   EXAM_STATUS_OPTIONS,
@@ -52,6 +52,15 @@ import {
   registerAuth,
 } from "./services/authService";
 import {
+  deleteCourseApi,
+  fetchCoursesApi,
+  fetchLearningProgressApi,
+  markSubtopicCompleteApi,
+  submitSubtopicAnswerApi,
+  updateCourseStatusApi,
+  upsertCourseApi,
+} from "./services/courseApiService";
+import {
   changeProfilePassword,
   createUserAdmin,
   listUsersAdmin,
@@ -78,7 +87,6 @@ export default function App() {
     }, {});
   }, []);
 
-  const initialCourse = normalizeExampleRecord(fallbackExamples[0]);
   const [currentUserKey, setCurrentUserKey] = useState("");
   const [showLogin, setShowLogin] = useState(false);
   const [authBootstrapped, setAuthBootstrapped] = useState(false);
@@ -101,8 +109,8 @@ export default function App() {
   });
   const [defaultUserPassword, setDefaultUserPassword] = useState(DEFAULT_PASSWORD);
 
-  const [editorDraft, setEditorDraft] = useState(toCourseDraft(initialCourse));
-  const [studyDraft, setStudyDraft] = useState(toCourseDraft(initialCourse));
+  const [editorDraft, setEditorDraft] = useState(() => toCourseDraft(normalizeExampleRecord({ id: "" })));
+  const [studyDraft, setStudyDraft] = useState(() => toCourseDraft(normalizeExampleRecord({ id: "" })));
   const [examDraft, setExamDraft] = useState(EMPTY_EXAM_DRAFT);
   const [examEditorDraft, setExamEditorDraft] = useState(normalizeExamRecord(EMPTY_EXAM_DRAFT));
 
@@ -136,39 +144,15 @@ export default function App() {
     if (examples.length > 0) {
       return;
     }
-
-    const storedExamples = readStoredJsonArray(EXAMPLES_STORAGE_KEY);
-    const storedSeedVersion = window.localStorage.getItem(EXAMPLES_SEED_VERSION_KEY);
-    if (storedExamples?.length && storedSeedVersion === EXAMPLES_SEED_VERSION) {
-      const normalizedExamples = storedExamples.map(normalizeExampleRecord);
-      setExamples(normalizedExamples);
-      syncPrimaryCourseDrafts(normalizedExamples[0]);
-      return;
-    }
-
     try {
-      const response = await fetch("/data/examples.json");
-      if (!response.ok) {
-        throw new Error("failed to load examples");
-      }
-      const data = await response.json();
-      const list = (Array.isArray(data) ? data : []).map(normalizeExampleRecord);
+      const apiCourses = await fetchCoursesApi();
+      const list = apiCourses.map(normalizeExampleRecord);
       setExamples(list);
-      persistExamples(list);
       syncPrimaryCourseDrafts(list[0]);
     } catch {
-      if (storedExamples?.length) {
-        const normalizedStored = storedExamples.map(normalizeExampleRecord);
-        setExamples(normalizedStored);
-        syncPrimaryCourseDrafts(normalizedStored[0]);
-        return;
-      }
-
-      const normalizedFallback = fallbackExamples.map(normalizeExampleRecord);
-      setExamples(normalizedFallback);
-      syncPrimaryCourseDrafts(normalizedFallback[0]);
+      // API unavailable — leave examples empty
     }
-  }, [examples.length, persistExamples, syncPrimaryCourseDrafts]);
+  }, [examples.length, syncPrimaryCourseDrafts]);
 
   const loadExamCatalog = useCallback(async () => {
     if (examBank.length > 0) {
@@ -237,6 +221,7 @@ export default function App() {
           },
         }));
         setCurrentUserKey(username);
+        void loadLearningProgressFromApi(username);
       } catch {
         clearTokens();
       } finally {
@@ -467,7 +452,7 @@ export default function App() {
     });
   };
 
-  const createContent = () => {
+  const createContent = async () => {
     if (!currentUserKey) {
       return;
     }
@@ -478,15 +463,29 @@ export default function App() {
       ownerUsername: currentUserKey,
     });
 
-    setExamples((prevExamples) => {
-      const nextExamples = [newContent, ...prevExamples];
-      persistExamples(nextExamples);
-      return nextExamples;
-    });
+    try {
+      const payload = await upsertCourseApi(newContent);
+      const saved = normalizeExampleRecord(payload?.course ?? newContent);
+      setExamples((prevExamples) => {
+        const nextExamples = [saved, ...prevExamples];
+        persistExamples(nextExamples);
+        return nextExamples;
+      });
+      setEditorDraft(toCourseDraft(saved));
+      setStudyDraft(toCourseDraft(saved));
+      setSelectedContent(saved);
+    } catch {
+      // API failed — create locally
+      setExamples((prevExamples) => {
+        const nextExamples = [newContent, ...prevExamples];
+        persistExamples(nextExamples);
+        return nextExamples;
+      });
+      setEditorDraft(toCourseDraft(newContent));
+      setStudyDraft(toCourseDraft(newContent));
+      setSelectedContent(newContent);
+    }
 
-    setEditorDraft(toCourseDraft(newContent));
-    setStudyDraft(toCourseDraft(newContent));
-    setSelectedContent(newContent);
     setActiveTab("home");
     setHomeView("editor");
   };
@@ -508,7 +507,6 @@ export default function App() {
       persistExamples(nextExamples);
       return nextExamples;
     });
-
     setEditorDraft((prevDraft) =>
       prevDraft.sourceId === contentId ? { ...prevDraft, status: normalizedStatus } : prevDraft,
     );
@@ -518,6 +516,8 @@ export default function App() {
     setSelectedContent((prevContent) =>
       prevContent?.id === contentId ? { ...prevContent, status: normalizedStatus } : prevContent,
     );
+
+    void updateCourseStatusApi(contentId, normalizedStatus).catch(() => {});
   };
 
   const updateExamStatus = (examId, nextStatus) => {
@@ -558,6 +558,12 @@ export default function App() {
     const targetContent = examples.find((example) => example.id === targetId);
     if (!canManageItem(targetContent)) {
       return { success: false, message: "ไม่มีสิทธิ์ลบเนื้อหานี้" };
+    }
+
+    try {
+      await deleteCourseApi(targetId);
+    } catch {
+      // Delete API failed — continue with local removal anyway
     }
 
     setExamples((prevExamples) => {
@@ -772,12 +778,19 @@ export default function App() {
     }
   };
 
-  const saveEditorDraft = useCallback(() => {
-    const savedExamples = writeStoredJson(EXAMPLES_STORAGE_KEY, examples);
-    const savedSeed = writeStoredValue(EXAMPLES_SEED_VERSION_KEY, EXAMPLES_SEED_VERSION);
-    const savedExams = writeStoredJson(EXAMS_STORAGE_KEY, examBank);
-    return savedExamples && savedSeed && savedExams;
-  }, [examples, examBank]);
+  const saveEditorDraft = useCallback(async () => {
+    writeStoredJson(EXAMPLES_STORAGE_KEY, examples);
+    writeStoredValue(EXAMPLES_SEED_VERSION_KEY, EXAMPLES_SEED_VERSION);
+    writeStoredJson(EXAMS_STORAGE_KEY, examBank);
+
+    try {
+      await upsertCourseApi(editorDraft);
+    } catch {
+      // API unavailable — already persisted to localStorage above
+    }
+
+    return true;
+  }, [examples, examBank, editorDraft]);
 
   const handleSubmitSubtopicAnswer = (courseId, subtopicId, answerResult) => {
     if (!currentUserKey) {
@@ -793,6 +806,14 @@ export default function App() {
         answerResult,
       }),
     );
+
+    void submitSubtopicAnswerApi(
+      courseId,
+      subtopicId,
+      answerResult.id,
+      answerResult.typedAnswer ?? "",
+      Boolean(answerResult.isCorrect),
+    ).catch(() => {});
   };
 
   const handleMarkSubtopicComplete = (courseId, subtopicId) => {
@@ -808,12 +829,29 @@ export default function App() {
         subtopicId,
       }),
     );
+
+    void markSubtopicCompleteApi(courseId, subtopicId).catch(() => {});
   };
 
   const learningStats = useMemo(
     () => calculateLearningStats(users, examples, learningProgress),
     [users, examples, learningProgress],
   );
+
+  const loadLearningProgressFromApi = useCallback(async (username) => {
+    try {
+      const apiProgress = await fetchLearningProgressApi();
+      setLearningProgress((prev) => ({
+        ...prev,
+        [username]: {
+          ...(prev[username] ?? {}),
+          ...apiProgress,
+        },
+      }));
+    } catch {
+      // keep existing local progress
+    }
+  }, []);
 
   const handleLoginFromBackend = async ({ username, password }) => {
     try {
@@ -836,6 +874,7 @@ export default function App() {
       setCurrentUserKey(normalizedUsername);
       setAccessMessage("");
       setShowLogin(false);
+      void loadLearningProgressFromApi(normalizedUsername);
       return { success: true };
     } catch (error) {
       return { success: false, message: error?.message ?? "เข้าสู่ระบบไม่สำเร็จ" };

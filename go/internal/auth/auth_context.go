@@ -52,6 +52,27 @@ func isAdminRole(role string) bool {
 	return normalized == "admin" || role == "ผู้ดูแลระบบ"
 }
 
+func CurrentUsername(c *fiber.Ctx) (string, error) {
+	token, ok := c.Locals("user").(*jwt.Token)
+	if !ok {
+		return "", errors.New("invalid token")
+	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", errors.New("invalid token claims")
+	}
+	username, _ := claims["username"].(string)
+	username = strings.ToLower(strings.TrimSpace(username))
+	if username == "" {
+		return "", errors.New("missing username claim")
+	}
+	return username, nil
+}
+
+func IsAdminContext(c *fiber.Ctx) bool {
+	return isAdminRole(currentUserRole(c))
+}
+
 func AdminOnlyMiddleware(c *fiber.Ctx) error {
 	if !isAdminRole(currentUserRole(c)) {
 		return fiber.NewError(fiber.StatusForbidden, "admin only")
