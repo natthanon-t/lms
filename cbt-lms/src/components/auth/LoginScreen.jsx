@@ -54,7 +54,7 @@ export default function LoginScreen({ onLogin, onRegister, onCancel }) {
       return "กรุณากรอก name, username และ password ให้ครบ";
     }
     if (text.includes("employee_code must be in format")) {
-      return "รหัสพนักงานต้องอยู่ในรูปแบบ 2026-XX-XXXX";
+      return "รหัสพนักงานต้องอยู่ในรูปแบบ XXXX-XX-XXXX";
     }
     return message || "สมัครสมาชิกไม่สำเร็จ";
   };
@@ -84,8 +84,8 @@ export default function LoginScreen({ onLogin, onRegister, onCancel }) {
         setError("กรุณากรอกรหัสพนักงาน");
         return;
       }
-      if (!/^2026-[A-Z0-9]{2}-[0-9]{4}$/i.test(employeeCode.trim())) {
-        setError("รหัสพนักงานต้องอยู่ในรูปแบบ 2026-XX-XXXX");
+      if (!/^[A-Z0-9]{4}-[A-Z0-9]{2}-[A-Z0-9]{4}$/i.test(employeeCode.trim())) {
+        setError("รหัสพนักงานต้องอยู่ในรูปแบบ XXXX-XX-XXXX");
         return;
       }
       if (password.length < 8) {
@@ -149,7 +149,7 @@ export default function LoginScreen({ onLogin, onRegister, onCancel }) {
                   autoComplete="off"
                   value={employeeCode}
                   onChange={handleEmployeeCodeChange}
-                  placeholder="2026-XX-XXXX"
+                  placeholder="XXXX-XX-XXXX"
                   style={{ letterSpacing: "0.06em" }}
                 />
               </>
@@ -212,7 +212,7 @@ export default function LoginScreen({ onLogin, onRegister, onCancel }) {
             <h3>เกณฑ์การสมัครสมาชิก</h3>
             <p>1. `username` อย่างน้อย 4 ตัวอักษร</p>
             <p>2. `username` ใช้ได้เฉพาะ a-z, A-Z, 0-9, . _ -</p>
-            <p>3. `รหัสพนักงาน` รูปแบบ 2026-XX-XXXX</p>
+            <p>3. `รหัสพนักงาน` รูปแบบ XXXX-XX-XXXX</p>
             <p>4. `password` อย่างน้อย 8 ตัวอักษร</p>
           </aside>
         ) : null}

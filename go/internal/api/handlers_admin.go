@@ -53,7 +53,7 @@ func (h *Handler) CreateUserByAdmin(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "name, username, employee_code and password are required")
 	}
 	if !data.IsValidEmployeeCode(req.EmployeeCode) {
-		return fiber.NewError(fiber.StatusBadRequest, "employee_code must be in format 2026-XX-XXXX")
+		return fiber.NewError(fiber.StatusBadRequest, "employee_code must be in format XXXX-XX-XXXX")
 	}
 	if len(req.Password) < 8 {
 		return fiber.NewError(fiber.StatusBadRequest, "password must be at least 8 characters")
@@ -102,7 +102,7 @@ func (h *Handler) UpdateUserByAdmin(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "role is invalid")
 	}
 	if req.EmployeeCode != "" && !data.IsValidEmployeeCode(req.EmployeeCode) {
-		return fiber.NewError(fiber.StatusBadRequest, "employee_code must be in format 2026-XX-XXXX")
+		return fiber.NewError(fiber.StatusBadRequest, "employee_code must be in format XXXX-XX-XXXX")
 	}
 
 	user, err := data.UpdateUserByUsername(username, req.Name, req.Role, req.Status, req.EmployeeCode)

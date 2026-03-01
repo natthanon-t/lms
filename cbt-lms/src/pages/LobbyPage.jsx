@@ -77,9 +77,11 @@ export default function LobbyPage({
             <div className="example-head">
               <h3 className="example-title">{example.title}</h3>
               <div className="example-action-box">
-                <span className={`content-status-badge ${example.status ?? "active"}`}>
-                  {toStatusLabel(example.status)}
-                </span>
+                {canManageExample(example) ? (
+                  <span className={`content-status-badge ${example.status ?? "active"}`}>
+                    {toStatusLabel(example.status)}
+                  </span>
+                ) : null}
                 {canManageExample(example) ? (
                   <button
                     type="button"

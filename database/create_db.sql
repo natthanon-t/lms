@@ -19,6 +19,7 @@ DROP TABLE IF EXISTS user_course_enrollments CASCADE;
 DROP TABLE IF EXISTS course_skill_rewards CASCADE;
 DROP TABLE IF EXISTS courses CASCADE;
 
+DROP TABLE IF EXISTS user_login_logs CASCADE;
 DROP TABLE IF EXISTS refresh_tokens CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
@@ -47,6 +48,18 @@ CREATE TABLE refresh_tokens (
   CONSTRAINT fk_refresh_tokens_user
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+-- ประวัติการ login ของผู้ใช้
+CREATE TABLE user_login_logs (
+  id          BIGSERIAL    PRIMARY KEY,
+  user_id     BIGINT       NOT NULL,
+  logged_in_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT fk_login_logs_user
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX ix_login_logs_user ON user_login_logs(user_id);
+CREATE INDEX ix_login_logs_time ON user_login_logs(logged_in_at);
 
 -- ==========================================================
 -- COURSES (เนื้อหา)
