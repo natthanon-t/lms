@@ -37,40 +37,6 @@ func ConnectPostgres(databaseURL string) error {
 	return nil
 }
 
-func EnsureAuthSchema() error {
-	_, err := db.Exec(`
-CREATE TABLE IF NOT EXISTS users (
-  id BIGSERIAL PRIMARY KEY,
-  name TEXT NOT NULL,
-  email TEXT NOT NULL UNIQUE,
-  employee_code TEXT NOT NULL DEFAULT '',
-  password_hash TEXT NOT NULL,
-  role TEXT NOT NULL DEFAULT 'user',
-  status TEXT NOT NULL DEFAULT 'active',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);`)
-	if err != nil {
-		return err
-	}
-	_, err = db.Exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS employee_code TEXT NOT NULL DEFAULT '';`)
-	if err != nil {
-		return err
-	}
-	_, err = db.Exec(`ALTER TABLE users ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active';`)
-	if err != nil {
-		return err
-	}
-	_, err = db.Exec(`
-CREATE TABLE IF NOT EXISTS refresh_tokens (
-  id BIGSERIAL PRIMARY KEY,
-  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  token_hash TEXT NOT NULL UNIQUE,
-  expires_at TIMESTAMPTZ NOT NULL,
-  revoked_at TIMESTAMPTZ NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);`)
-	return err
-}
 
 func NormalizeUsername(username string) string {
 	return strings.ToLower(strings.TrimSpace(username))

@@ -6,31 +6,38 @@
 }
 
 .sidebar-hover-trigger {
+  display: block;
   position: fixed;
   left: 0;
   top: 84px;
-  width: 14px;
+  width: 4px;
   height: calc(100vh - 84px);
-  z-index: 40;
+  z-index: 51;
+  background: rgba(75, 130, 255, 0.25);
+  transition: background 0.2s;
+}
+
+.sidebar-hover-trigger:hover {
+  background: rgba(75, 130, 255, 0.55);
 }
 
 .workspace-sidebar {
   width: 260px;
-  transform: translateX(-100%);
-  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  transform: translateX(-260px);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) 0.12s;
   position: fixed;
   left: 0;
   top: 84px;
-  z-index: 45;
+  z-index: 50;
   height: calc(100vh - 84px);
-  overflow: hidden;
-  box-shadow: none;
+  overflow: auto;
+  box-shadow: 4px 0 24px rgba(15, 23, 42, 0.14);
 }
 
-.sidebar-hover-trigger:hover + .workspace-sidebar,
+.sidebar-hover-trigger:hover ~ .workspace-sidebar,
 .workspace-sidebar:hover {
   transform: translateX(0);
-  box-shadow: 10px 0 24px rgba(15, 23, 42, 0.14);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .workspace-content {
@@ -154,6 +161,7 @@
   .workspace-sidebar {
     display: none;
   }
+
 }
 
 /* Cybertron tone */
@@ -183,17 +191,17 @@
 }
 
 .workspace-sidebar {
-  background: #eef4ff;
-  border-right: 1px solid #dbe7f8;
+  background: #f7f9ff;
+  border-right: 1px solid #d2dcf3;
   backdrop-filter: blur(2px);
 }
 
 .sidebar-nav-group + .sidebar-nav-group {
-  border-top: 1px solid #d5e3f6;
+  border-top: 1px solid #d2dcf3;
 }
 
 .sidebar-nav button {
-  background: #eef4ff;
+  background: #f7f9ff;
   border-color: transparent;
   color: #23385c;
 }
@@ -222,11 +230,11 @@
   width: 100%;
   display: block;
   text-align: left;
-  background: #eef4ff;
+  background: #f7f9ff;
   border-color: transparent;
   color: #1f355a;
   font-weight: 700;
-  border-top: 1px solid #d2dff4;
+  border-top: 1px solid #d2dcf3;
   border-radius: 0;
   position: sticky;
   bottom: 0;

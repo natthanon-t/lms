@@ -18,9 +18,6 @@ func Start() error {
 	}
 	defer data.Close()
 
-	if err := data.EnsureAuthSchema(); err != nil {
-		return fmt.Errorf("ensure auth schema failed: %w", err)
-	}
 	if err := data.EnsureDefaultAdminUser(cfg.AdminName, cfg.AdminUser, cfg.AdminPass); err != nil {
 		return fmt.Errorf("ensure default admin failed: %w", err)
 	}

@@ -1,6 +1,7 @@
 services:
   postgres:
-    image: postgres:17-alpine
+    build:
+      context: ./database
     container_name: cbt_postgres
     restart: unless-stopped
     environment:
