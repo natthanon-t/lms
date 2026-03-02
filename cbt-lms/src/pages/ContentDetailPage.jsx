@@ -3,7 +3,7 @@ import TableOfContents from "../components/markdown/TableOfContents";
 import { getSubtopicPages } from "../components/markdown/headingUtils";
 import { getCourseSkillRewards } from "../services/skillRewardsService";
 
-export default function ContentDetailPage({ contentItem, onBack, onEnterStudy }) {
+export default function ContentDetailPage({ contentItem, onBack, onEnterStudy, isLoggedIn = false }) {
   const subtopics = useMemo(
     () => getSubtopicPages(contentItem.content, contentItem.title),
     [contentItem.content, contentItem.title],
@@ -59,8 +59,13 @@ export default function ContentDetailPage({ contentItem, onBack, onEnterStudy })
           <p>
             <strong>คะแนนจบคอร์ส:</strong> {contentItem.courseCompletionScore ?? 100}
           </p>
-          <button type="button" className="enter-button" onClick={onEnterStudy}>
-            เข้าเรียนเนื้อหานี้
+          <button
+            type="button"
+            className="enter-button"
+            onClick={isLoggedIn ? onEnterStudy : undefined}
+            disabled={!isLoggedIn}
+          >
+            {isLoggedIn ? "เข้าเรียนเนื้อหานี้" : "กรุณา Login ก่อนเข้าเรียน"}
           </button>
         </article>
 

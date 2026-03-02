@@ -331,12 +331,6 @@ export default function App() {
   };
 
   const openContentDetail = (item) => {
-    if (!currentUser) {
-      setAccessMessage("กรุณา Login ก่อนใช้งานหน้านี้");
-      setActiveTab("home");
-      setHomeView("auth-required");
-      return;
-    }
     if (!canViewItem(item)) {
       setAccessMessage("ไม่มีสิทธิ์เข้าถึงเนื้อหานี้");
       setActiveTab("home");
@@ -1059,6 +1053,7 @@ export default function App() {
             setSelectedContent(null);
           }}
           onEnterStudy={() => enterStudy(selectedContent)}
+          isLoggedIn={Boolean(currentUserKey)}
         />
       ) : homeView === "study" ? (
         <StudyPage
