@@ -51,6 +51,7 @@ export const normalizeExamRecord = (item) => {
     image: ensureCoverImage(item.image, item.id ?? `exam-${Date.now()}`),
     numberOfQuestions: Number(item.numberOfQuestions ?? questions.length ?? 0),
     defaultTime: Number(item.defaultTime ?? 0),
+    maxAttempts: Number(item.maxAttempts ?? 0),
     domainPercentages: item.domainPercentages ?? {},
     questions,
   };
@@ -84,6 +85,7 @@ export const toExamTakingDraft = (exam) => ({
   instructions: exam.instructions,
   numberOfQuestions: exam.numberOfQuestions,
   defaultTime: exam.defaultTime,
+  maxAttempts: Number(exam.maxAttempts ?? 0),
   domainPercentages: exam.domainPercentages ?? {},
   questions: exam.questions ?? [],
   content: exam.content ?? "",

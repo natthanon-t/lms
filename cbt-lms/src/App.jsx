@@ -7,6 +7,7 @@ import { DEFAULT_PASSWORD, DEFAULT_USERNAME, normalizeExamRaw } from "./constant
 import {
   CONTENT_STATUS_OPTIONS,
   EXAM_STATUS_OPTIONS,
+  EXAM_ATTEMPTS_STORAGE_KEY,
   EMPTY_EXAM_DRAFT,
   EXAMPLES_SEED_VERSION,
   EXAMPLES_SEED_VERSION_KEY,
@@ -113,6 +114,7 @@ export default function App() {
   const [studyDraft, setStudyDraft] = useState(() => toCourseDraft(normalizeExampleRecord({ id: "" })));
   const [examDraft, setExamDraft] = useState(EMPTY_EXAM_DRAFT);
   const [examEditorDraft, setExamEditorDraft] = useState(normalizeExamRecord(EMPTY_EXAM_DRAFT));
+  const [examAttempts, setExamAttempts] = useState(() => readStoredObject(EXAM_ATTEMPTS_STORAGE_KEY) ?? {});
 
   const currentUser = currentUserKey ? users[currentUserKey] : null;
   const isAdmin = currentUser?.role === "ผู้ดูแลระบบ" || currentUser?.role === "admin";
@@ -417,6 +419,37 @@ export default function App() {
     setActiveTab("exam");
     setExamView("list");
   };
+
+  const handleSaveAttempt = useCallback(
+    (result) => {
+      if (!currentUserKey || !examDraft.sourceId) {
+        return;
+      }
+      const attempt = {
+        attemptId: `attempt-${Date.now()}`,
+        date: new Date().toISOString(),
+        correctCount: result.correctCount,
+        totalQuestions: result.totalQuestions,
+        scorePercent: result.scorePercent,
+        domainStats: result.domainStats,
+        details: result.details,
+      };
+      setExamAttempts((prev) => {
+        const userAttempts = prev[currentUserKey] ?? {};
+        const examHistory = userAttempts[examDraft.sourceId] ?? [];
+        const next = {
+          ...prev,
+          [currentUserKey]: {
+            ...userAttempts,
+            [examDraft.sourceId]: [...examHistory, attempt],
+          },
+        };
+        writeStoredJson(EXAM_ATTEMPTS_STORAGE_KEY, next);
+        return next;
+      });
+    },
+    [currentUserKey, examDraft.sourceId],
+  );
 
   const updateEditorDraft = (field, value) => {
     const nextValue =
@@ -996,12 +1029,14 @@ export default function App() {
             onEndExam={endExam}
             orderMode={examOrderMode}
             durationSeconds={(examDraft.defaultTime ?? 0) * 60}
+            onSaveAttempt={handleSaveAttempt}
           />
         ) : examView === "detail" ? (
           <ExamDetailPage
             exam={examDraft}
             onBack={() => setExamView("list")}
             onStartExam={startExam}
+            userAttempts={examAttempts[currentUserKey]?.[examDraft.sourceId] ?? []}
           />
         ) : examView === "auth-required" ? (
           <section className="workspace-content">

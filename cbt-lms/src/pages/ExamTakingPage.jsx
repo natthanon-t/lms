@@ -100,7 +100,7 @@ const pickQuestionsByDomainPercentage = (questions, totalQuestions, domainPercen
   return selected;
 };
 
-export default function ExamTakingPage({ draft, onEndExam, orderMode, durationSeconds }) {
+export default function ExamTakingPage({ draft, onEndExam, orderMode, durationSeconds, onSaveAttempt }) {
   const selectedQuestions = useMemo(() => {
     return pickQuestionsByDomainPercentage(draft.questions, draft.numberOfQuestions, draft.domainPercentages);
   }, [draft.questions, draft.numberOfQuestions, draft.domainPercentages]);
@@ -157,14 +157,16 @@ export default function ExamTakingPage({ draft, onEndExam, orderMode, durationSe
       }))
       .sort((a, b) => a.domain.localeCompare(b.domain));
 
-    setSubmittedResult({
+    const result = {
       correctCount,
       totalQuestions,
       scorePercent,
       details,
       domainStats,
-    });
-  }, [answers, orderedQuestions, totalQuestions]);
+    };
+    setSubmittedResult(result);
+    onSaveAttempt?.(result);
+  }, [answers, orderedQuestions, totalQuestions, onSaveAttempt]);
 
   useEffect(() => {
     if (submittedResult) {

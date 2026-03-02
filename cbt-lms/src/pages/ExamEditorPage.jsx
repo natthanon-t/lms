@@ -151,6 +151,7 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft, onDeleteExa
       domainPercentages,
       numberOfQuestions: Number(exam.numberOfQuestions ?? 0),
       defaultTime: Number(exam.defaultTime ?? 0),
+      maxAttempts: Number(exam.maxAttempts ?? 0),
       questions: normalizedQuestions,
     });
   };
@@ -278,6 +279,16 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft, onDeleteExa
             onChange={(event) => setExam((prev) => ({ ...prev, defaultTime: Number(event.target.value) }))}
           />
         </div>
+        <div className="editor-title-box">
+          <label htmlFor="exam-max-attempts">จำนวนครั้งที่ทำได้ (0 = ไม่จำกัด)</label>
+          <input
+            id="exam-max-attempts"
+            type="number"
+            min={0}
+            value={Number(exam.maxAttempts ?? 0)}
+            onChange={(event) => setExam((prev) => ({ ...prev, maxAttempts: Number(event.target.value) }))}
+          />
+        </div>
         <div className="editor-title-box editor-meta-full">
           <label htmlFor="exam-image-url">Cover Image URL</label>
           <input
@@ -325,6 +336,81 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft, onDeleteExa
           <input id="exam-json-upload" type="file" accept=".json,application/json" onChange={handleImportExamJson} />
           <p>อัปโหลดไฟล์ข้อสอบครั้งเดียว แล้วแก้รายข้อได้เลย</p>
         </div>
+        <details style={{ marginTop: "0.5rem" }}>
+          <summary style={{ cursor: "pointer", fontSize: "0.85rem", color: "var(--text-muted, #888)" }}>
+            ดู format ไฟล์ที่รองรับ
+          </summary>
+          <pre style={{
+            marginTop: "0.5rem",
+            padding: "0.75rem",
+            background: "var(--bg-code, #1e1e1e)",
+            color: "var(--text-code, #d4d4d4)",
+            borderRadius: "6px",
+            fontSize: "0.78rem",
+            overflowX: "auto",
+            lineHeight: 1.6,
+          }}>{`{
+  "Exam Name": "ชื่อข้อสอบ",
+  "Number of Questions": 4,
+  "Default Time": 60,
+  "Description": "คำอธิบาย (ถ้ามี)",
+  "Instructions": "คำแนะนำการทำข้อสอบ",
+  "DomainPercentages": {
+    "Domain A": 50,
+    "Domain B": 50
+  },
+  "Questions": [
+    {
+      "DomainOfKnowledge": "Domain A",
+      "Question": "คำถามข้อ 1 (Domain A)",
+      "Choices": [
+        "A. ตัวเลือก 1",
+        "B. ตัวเลือก 2",
+        "C. ตัวเลือก 3",
+        "D. ตัวเลือก 4"
+      ],
+      "AnswerKey": "B. ตัวเลือก 2",
+      "Explaination": "คำอธิบายเฉลยข้อ 1"
+    },
+    {
+      "DomainOfKnowledge": "Domain A",
+      "Question": "คำถามข้อ 2 (Domain A)",
+      "Choices": [
+        "A. ตัวเลือก 1",
+        "B. ตัวเลือก 2",
+        "C. ตัวเลือก 3",
+        "D. ตัวเลือก 4"
+      ],
+      "AnswerKey": "A. ตัวเลือก 1",
+      "Explaination": "คำอธิบายเฉลยข้อ 2"
+    },
+    {
+      "DomainOfKnowledge": "Domain B",
+      "Question": "คำถามข้อ 3 (Domain B)",
+      "Choices": [
+        "A. ตัวเลือก 1",
+        "B. ตัวเลือก 2",
+        "C. ตัวเลือก 3",
+        "D. ตัวเลือก 4"
+      ],
+      "AnswerKey": "C. ตัวเลือก 3",
+      "Explaination": "คำอธิบายเฉลยข้อ 3"
+    },
+    {
+      "DomainOfKnowledge": "Domain B",
+      "Question": "คำถามข้อ 4 (Domain B)",
+      "Choices": [
+        "A. ตัวเลือก 1",
+        "B. ตัวเลือก 2",
+        "C. ตัวเลือก 3",
+        "D. ตัวเลือก 4"
+      ],
+      "AnswerKey": "D. ตัวเลือก 4",
+      "Explaination": "คำอธิบายเฉลยข้อ 4"
+    }
+  ]
+}`}</pre>
+        </details>
         {importStatus.message ? (
           <p className={`exam-json-import-message ${importStatus.type === "error" ? "is-error" : "is-success"}`}>
             {importStatus.message}
@@ -343,6 +429,13 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft, onDeleteExa
             + เพิ่ม Domain
           </button>
         </div>
+        <p style={{ fontSize: "0.85rem", color: "var(--text-muted, #888)", marginBottom: "0.5rem" }}>
+          กำหนดสัดส่วน (%) ของข้อสอบในแต่ละ Domain — รวมทุก Domain ควรได้ 100%
+          <br />
+          ระบบจะสุ่มหรือเลือกข้อสอบให้ตรงตามสัดส่วนนี้เมื่อนักเรียนเริ่มสอบ
+          เช่น ถ้ากำหนด Domain A = 60% และ Domain B = 40% และจำนวนข้อสอบ = 10 ข้อ
+          จะได้ข้อจาก Domain A 6 ข้อ และ Domain B 4 ข้อ
+        </p>
         <div className="editor-skill-grid">
           {domainRows.map((row, index) => (
             <div key={`domain-${index}`} className="editor-skill-row">
