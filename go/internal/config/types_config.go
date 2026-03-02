@@ -10,4 +10,5 @@ type AppConfig struct {
 	AdminName   string
 	AdminUser   string
 	AdminPass   string
+	ExamSeedDir string
 }

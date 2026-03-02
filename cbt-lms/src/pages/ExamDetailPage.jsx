@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function ExamDetailPage({ exam, onBack, onStartExam, userAttempts = [] }) {
+export default function ExamDetailPage({ exam, onBack, onStartExam, userAttempts = [], isLoggedIn = false }) {
   const [orderMode, setOrderMode] = useState("sequential");
   const [showHistory, setShowHistory] = useState(false);
 
@@ -161,9 +161,9 @@ export default function ExamDetailPage({ exam, onBack, onStartExam, userAttempts
             type="button"
             className="enter-button"
             onClick={() => onStartExam(orderMode)}
-            disabled={hasReachedMax}
+            disabled={!isLoggedIn || hasReachedMax}
           >
-            {hasReachedMax ? "ถึงจำนวนครั้งสูงสุดแล้ว" : "เริ่มสอบ"}
+            {!isLoggedIn ? "กรุณา Login ก่อนเริ่มสอบ" : hasReachedMax ? "ถึงจำนวนครั้งสูงสุดแล้ว" : "เริ่มสอบ"}
           </button>
           {attemptCount > 0 && (
             <button type="button" className="manage-button" onClick={() => setShowHistory(true)}>

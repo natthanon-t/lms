@@ -3,16 +3,14 @@ import "./App.css";
 import LoginScreen from "./components/auth/LoginScreen";
 import WorkspaceSidebar from "./components/layout/WorkspaceSidebar";
 import WorkspaceTopbar from "./components/layout/WorkspaceTopbar";
-import { DEFAULT_PASSWORD, DEFAULT_USERNAME, normalizeExamRaw } from "./constants/mockData";
+import { DEFAULT_PASSWORD, DEFAULT_USERNAME } from "./constants/mockData";
 import {
   CONTENT_STATUS_OPTIONS,
   EXAM_STATUS_OPTIONS,
-  EXAM_ATTEMPTS_STORAGE_KEY,
   EMPTY_EXAM_DRAFT,
   EXAMPLES_SEED_VERSION,
   EXAMPLES_SEED_VERSION_KEY,
   EXAMPLES_STORAGE_KEY,
-  EXAMS_STORAGE_KEY,
   LEARNING_PROGRESS_STORAGE_KEY,
 } from "./constants/appConfig";
 import ContentPage from "./pages/ContentPage";
@@ -38,11 +36,19 @@ import { calculateLearningStats } from "./services/learningStatsService";
 import { ensureCoverImage } from "./services/imageService";
 import { withCompletedSubtopic, withSubmittedSubtopicAnswer } from "./services/progressService";
 import {
-  readStoredJsonArray,
   readStoredObject,
   writeStoredJson,
   writeStoredValue,
 } from "./services/storageService";
+import {
+  deleteExamApi,
+  fetchExamApi,
+  fetchExamAttemptsApi,
+  fetchExamsApi,
+  saveExamAttemptApi,
+  updateExamStatusApi,
+  upsertExamApi,
+} from "./services/examApiService";
 import { canManageOwnedItem, canViewItemByStatus } from "./services/accessControlService";
 import {
   clearTokens,
@@ -114,7 +120,7 @@ export default function App() {
   const [studyDraft, setStudyDraft] = useState(() => toCourseDraft(normalizeExampleRecord({ id: "" })));
   const [examDraft, setExamDraft] = useState(EMPTY_EXAM_DRAFT);
   const [examEditorDraft, setExamEditorDraft] = useState(normalizeExamRecord(EMPTY_EXAM_DRAFT));
-  const [examAttempts, setExamAttempts] = useState(() => readStoredObject(EXAM_ATTEMPTS_STORAGE_KEY) ?? {});
+  const [currentExamAttempts, setCurrentExamAttempts] = useState([]);
 
   const currentUser = currentUserKey ? users[currentUserKey] : null;
   const isAdmin = currentUser?.role === "ผู้ดูแลระบบ" || currentUser?.role === "admin";
@@ -160,24 +166,26 @@ export default function App() {
     if (examBank.length > 0) {
       return;
     }
-
-    const storedExamBank = readStoredJsonArray(EXAMS_STORAGE_KEY);
-    if (storedExamBank?.length) {
-      setExamBank(storedExamBank.map(normalizeExamRecord));
-      return;
-    }
-
     try {
-      const response = await fetch("/exam/index.json");
-      if (!response.ok) {
-        throw new Error("failed to load exam catalog");
-      }
-      const data = await response.json();
-      setExamBank((Array.isArray(data) ? data : []).map(normalizeExamRecord));
+      const apiExams = await fetchExamsApi();
+      setExamBank(apiExams.map(normalizeExamRecord));
     } catch {
       setExamBank([]);
     }
   }, [examBank.length]);
+
+  const loadCurrentExamAttempts = useCallback(async (examId) => {
+    if (!currentUserKey || !examId) {
+      setCurrentExamAttempts([]);
+      return;
+    }
+    try {
+      const attempts = await fetchExamAttemptsApi(examId);
+      setCurrentExamAttempts(attempts);
+    } catch {
+      setCurrentExamAttempts([]);
+    }
+  }, [currentUserKey]);
 
   useEffect(() => {
     if (activeTab === "home" || activeTab === "content") {
@@ -255,29 +263,6 @@ export default function App() {
     })();
   }, [currentUserKey, isAdmin, toUserMap]);
 
-  const ensureFullExam = useCallback(async (item) => {
-    if (item?.questions?.length) {
-      return item;
-    }
-    if (!item?.file) {
-      return item;
-    }
-
-    const response = await fetch(item.file);
-    if (!response.ok) {
-      throw new Error("failed to load exam detail");
-    }
-
-    const examRaw = await response.json();
-    const normalizedExam = normalizeExamRecord(normalizeExamRaw(examRaw, item));
-
-    setExamBank((prevExamBank) =>
-      prevExamBank.map((exam) => (exam.id === normalizedExam.id ? { ...exam, ...normalizedExam } : exam)),
-    );
-
-    return normalizedExam;
-  }, []);
-
   const openContentEditor = (item) => {
     if (!canManageItem(item)) {
       return;
@@ -292,18 +277,14 @@ export default function App() {
     if (!canManageItem(item)) {
       return;
     }
-    let nextItem = normalizeExamRecord(item);
-    if (item?.file) {
-      try {
-        nextItem = normalizeExamRecord(await ensureFullExam(item));
-      } catch {
-        return;
-      }
+    try {
+      const fullExam = await fetchExamApi(item.id ?? item.sourceId);
+      const nextItem = normalizeExamRecord(fullExam ?? item);
+      setExamEditorDraft({ sourceId: nextItem.id ?? item?.id ?? "", ...nextItem });
+    } catch {
+      const nextItem = normalizeExamRecord(item);
+      setExamEditorDraft({ sourceId: nextItem.id ?? item?.id ?? "", ...nextItem });
     }
-    setExamEditorDraft({
-      sourceId: nextItem.id ?? item?.id ?? "",
-      ...nextItem,
-    });
     setActiveTab("exam");
     setExamView("editor");
   };
@@ -323,8 +304,8 @@ export default function App() {
     setExamView("editor");
   };
 
-  const saveExamEditorDraft = (nextDraft) => {
-    const normalizedDraft = normalizeExamRecord({
+  const saveExamEditorDraft = async (nextDraft) => {
+    const normalized = normalizeExamRecord({
       ...nextDraft,
       numberOfQuestions:
         Number(nextDraft.numberOfQuestions ?? 0) > 0
@@ -334,18 +315,19 @@ export default function App() {
             : 0,
     });
 
-    setExamBank((prevExamBank) => {
-      const exists = prevExamBank.some((exam) => exam.id === normalizedDraft.id);
-      const nextExamBank = exists
-        ? prevExamBank.map((exam) => (exam.id === normalizedDraft.id ? normalizedDraft : exam))
-        : [normalizedDraft, ...prevExamBank];
-      writeStoredJson(EXAMS_STORAGE_KEY, nextExamBank);
-      return nextExamBank;
-    });
-
-    setExamDraft(toExamTakingDraft(normalizedDraft));
-    setExamEditorDraft(normalizedDraft);
-    setExamView("list");
+    try {
+      const payload = await upsertExamApi(normalized);
+      const saved = normalizeExamRecord(payload?.exam ?? normalized);
+      setExamBank((prev) => {
+        const exists = prev.some((e) => e.id === saved.id);
+        return exists ? prev.map((e) => (e.id === saved.id ? saved : e)) : [saved, ...prev];
+      });
+      setExamDraft(toExamTakingDraft(saved));
+      setExamEditorDraft(saved);
+      setExamView("list");
+    } catch (error) {
+      window.alert(`ไม่สามารถบันทึกข้อสอบได้: ${error?.message ?? "กรุณาลองใหม่"}`);
+    }
   };
 
   const openContentDetail = (item) => {
@@ -382,26 +364,20 @@ export default function App() {
   };
 
   const openExam = async (item) => {
-    if (!currentUser) {
-      setAccessMessage("กรุณา Login ก่อนใช้งานหน้านี้");
-      setActiveTab("exam");
-      setExamView("auth-required");
-      return;
-    }
-    if (!canViewItem(item)) {
-      setAccessMessage("ไม่มีสิทธิ์เข้าถึงข้อสอบนี้");
-      setActiveTab("exam");
-      setExamView("auth-required");
-      return;
-    }
-
     try {
-      const fullExam = await ensureFullExam(item);
-      setExamDraft(toExamTakingDraft(fullExam));
+      const fullExam = await fetchExamApi(item.id ?? item.sourceId);
+      if (!fullExam) {
+        throw new Error("exam not found");
+      }
+      setExamDraft(toExamTakingDraft(normalizeExamRecord(fullExam)));
       setExamOrderMode("sequential");
+      setCurrentExamAttempts([]);
       setAccessMessage("");
       setActiveTab("exam");
       setExamView("detail");
+      if (currentUserKey) {
+        void loadCurrentExamAttempts(fullExam.id);
+      }
     } catch {
       setAccessMessage("ไม่สามารถโหลดรายละเอียดข้อสอบได้");
       setActiveTab("exam");
@@ -421,34 +397,33 @@ export default function App() {
   };
 
   const handleSaveAttempt = useCallback(
-    (result) => {
+    async (result) => {
       if (!currentUserKey || !examDraft.sourceId) {
         return;
       }
-      const attempt = {
-        attemptId: `attempt-${Date.now()}`,
-        date: new Date().toISOString(),
-        correctCount: result.correctCount,
-        totalQuestions: result.totalQuestions,
-        scorePercent: result.scorePercent,
-        domainStats: result.domainStats,
-        details: result.details,
-      };
-      setExamAttempts((prev) => {
-        const userAttempts = prev[currentUserKey] ?? {};
-        const examHistory = userAttempts[examDraft.sourceId] ?? [];
-        const next = {
-          ...prev,
-          [currentUserKey]: {
-            ...userAttempts,
-            [examDraft.sourceId]: [...examHistory, attempt],
-          },
-        };
-        writeStoredJson(EXAM_ATTEMPTS_STORAGE_KEY, next);
-        return next;
+      const domainStatsMap = {};
+      result.domainStats.forEach(({ domain, correct, total }) => {
+        domainStatsMap[domain] = { correct, total };
       });
+      const answers = result.details.map(({ question, selected, isCorrect }) => ({
+        questionId: question.id,
+        selected: selected ?? "",
+        isCorrect,
+      }));
+      try {
+        await saveExamAttemptApi(examDraft.sourceId, {
+          correctCount: result.correctCount,
+          totalQuestions: result.totalQuestions,
+          scorePercent: result.scorePercent,
+          domainStats: domainStatsMap,
+          answers,
+        });
+        void loadCurrentExamAttempts(examDraft.sourceId);
+      } catch {
+        // noop — attempt save failed silently
+      }
     },
-    [currentUserKey, examDraft.sourceId],
+    [currentUserKey, examDraft.sourceId, loadCurrentExamAttempts],
   );
 
   const updateEditorDraft = (field, value) => {
@@ -563,24 +538,17 @@ export default function App() {
       return;
     }
 
-    setExamBank((prevExamBank) => {
-      const nextExamBank = prevExamBank.map((exam) =>
-        exam.id === examId ? { ...exam, status: normalizedStatus } : exam,
-      );
-      writeStoredJson(EXAMS_STORAGE_KEY, nextExamBank);
-      return nextExamBank;
-    });
+    setExamBank((prev) =>
+      prev.map((e) => (e.id === examId ? { ...e, status: normalizedStatus } : e)),
+    );
+    setExamEditorDraft((prev) =>
+      prev.id === examId || prev.sourceId === examId ? { ...prev, status: normalizedStatus } : prev,
+    );
+    setExamDraft((prev) =>
+      prev.sourceId === examId ? { ...prev, status: normalizedStatus } : prev,
+    );
 
-    setExamEditorDraft((prevDraft) =>
-      prevDraft.id === examId || prevDraft.sourceId === examId
-        ? { ...prevDraft, status: normalizedStatus }
-        : prevDraft,
-    );
-    setExamDraft((prevDraft) =>
-      prevDraft.sourceId === examId
-        ? { ...prevDraft, status: normalizedStatus }
-        : prevDraft,
-    );
+    void updateExamStatusApi(examId, normalizedStatus).catch(() => {});
   };
 
   const handleDeleteContent = async (contentId) => {
@@ -619,11 +587,12 @@ export default function App() {
       return { success: false, message: "ไม่มีสิทธิ์ลบข้อสอบนี้" };
     }
 
-    setExamBank((prevExamBank) => {
-      const nextExamBank = prevExamBank.filter((exam) => exam.id !== targetId);
-      writeStoredJson(EXAMS_STORAGE_KEY, nextExamBank);
-      return nextExamBank;
-    });
+    try {
+      await deleteExamApi(targetId);
+    } catch {
+      // continue with local removal
+    }
+    setExamBank((prev) => prev.filter((e) => e.id !== targetId));
     setExamView("list");
     return { success: true, message: "ลบข้อสอบเรียบร้อย" };
   };
@@ -814,7 +783,6 @@ export default function App() {
   const saveEditorDraft = useCallback(async () => {
     writeStoredJson(EXAMPLES_STORAGE_KEY, examples);
     writeStoredValue(EXAMPLES_SEED_VERSION_KEY, EXAMPLES_SEED_VERSION);
-    writeStoredJson(EXAMS_STORAGE_KEY, examBank);
 
     try {
       await upsertCourseApi(editorDraft);
@@ -823,7 +791,7 @@ export default function App() {
     }
 
     return true;
-  }, [examples, examBank, editorDraft]);
+  }, [examples, editorDraft]);
 
   const handleSubmitSubtopicAnswer = (courseId, subtopicId, answerResult) => {
     if (!currentUserKey) {
@@ -1036,7 +1004,8 @@ export default function App() {
             exam={examDraft}
             onBack={() => setExamView("list")}
             onStartExam={startExam}
-            userAttempts={examAttempts[currentUserKey]?.[examDraft.sourceId] ?? []}
+            userAttempts={currentExamAttempts}
+            isLoggedIn={Boolean(currentUserKey)}
           />
         ) : examView === "auth-required" ? (
           <section className="workspace-content">

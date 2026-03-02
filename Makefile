@@ -21,6 +21,9 @@ help:
 down:
 	docker compose down
 
+reset:
+	docker compose down -v && docker compose up -d --build
+
 restart: down up
 
 re: restart

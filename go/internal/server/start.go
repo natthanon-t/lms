@@ -22,6 +22,14 @@ func Start() error {
 		return fmt.Errorf("ensure default admin failed: %w", err)
 	}
 
+	if err := data.EnsureExamSchema(); err != nil {
+		return fmt.Errorf("ensure exam schema failed: %w", err)
+	}
+
+	if err := data.SeedExamsFromDir(cfg.ExamSeedDir); err != nil {
+		log.Printf("seed exams warning: %v", err)
+	}
+
 	app := newFiberApp(cfg)
 	registerRoutes(app, cfg)
 

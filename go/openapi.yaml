@@ -10,6 +10,9 @@ tags:
   - name: Auth
   - name: Profile
   - name: Admin Users
+  - name: Courses
+  - name: Learning
+  - name: Exams
 paths:
   /health:
     get:
@@ -382,6 +385,429 @@ paths:
         "500":
           $ref: "#/components/responses/ErrorResponse"
 
+  /api/courses:
+    get:
+      tags: [Courses]
+      summary: List all courses (public)
+      responses:
+        "200":
+          description: Courses list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  courses:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Course"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+    post:
+      tags: [Courses]
+      summary: Create or update a course
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertCourseRequest"
+      responses:
+        "200":
+          description: Course saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  course:
+                    $ref: "#/components/schemas/Course"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/courses/{id}/status:
+    patch:
+      tags: [Courses]
+      summary: Update course status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusRequest"
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: status updated
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/courses/{id}:
+    delete:
+      tags: [Courses]
+      summary: Delete a course
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Course deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: course deleted
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/learning/progress:
+    get:
+      tags: [Learning]
+      summary: Get learning progress for current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Learning progress
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  progress:
+                    type: object
+                    description: Progress keyed by course ID
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/learning/courses/{courseId}/subtopics/{subtopicId}/complete:
+    post:
+      tags: [Learning]
+      summary: Mark a subtopic as complete
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: subtopicId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Subtopic marked complete
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: subtopic marked complete
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/learning/courses/{courseId}/subtopics/{subtopicId}/answer:
+    post:
+      tags: [Learning]
+      summary: Submit a subtopic answer
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: subtopicId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubtopicAnswerRequest"
+      responses:
+        "200":
+          description: Answer saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: answer saved
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/exams:
+    get:
+      tags: [Exams]
+      summary: List all exams (public)
+      responses:
+        "200":
+          description: Exams list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exams:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Exam"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+    post:
+      tags: [Exams]
+      summary: Create or update an exam
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertExamRequest"
+      responses:
+        "200":
+          description: Exam saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exam:
+                    $ref: "#/components/schemas/Exam"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/exams/{id}:
+    get:
+      tags: [Exams]
+      summary: Get exam detail with questions (public)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Exam detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exam:
+                    $ref: "#/components/schemas/ExamDetail"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+    delete:
+      tags: [Exams]
+      summary: Delete an exam
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Exam deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: exam deleted
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/exams/{id}/status:
+    patch:
+      tags: [Exams]
+      summary: Update exam status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusRequest"
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: status updated
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/exams/{id}/attempts:
+    get:
+      tags: [Exams]
+      summary: Get exam attempts for current user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Attempts list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  attempts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ExamAttempt"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+    post:
+      tags: [Exams]
+      summary: Save exam attempt result
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveAttemptRequest"
+      responses:
+        "200":
+          description: Attempt saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  attempt:
+                    $ref: "#/components/schemas/ExamAttempt"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -598,3 +1024,298 @@ components:
           type: string
           minLength: 8
       required: [new_password]
+
+    StatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [active, inprogress, inactive]
+      required: [status]
+
+    SkillReward:
+      type: object
+      properties:
+        skill:
+          type: string
+        points:
+          type: integer
+      required: [skill, points]
+
+    Course:
+      type: object
+      properties:
+        id:
+          type: string
+          example: course-123
+        title:
+          type: string
+        creator:
+          type: string
+        ownerUsername:
+          type: string
+        status:
+          type: string
+          enum: [active, inprogress, inactive]
+        description:
+          type: string
+        image:
+          type: string
+        content:
+          type: string
+          description: Markdown content
+        skillPoints:
+          type: integer
+        subtopicCompletionScore:
+          type: integer
+        courseCompletionScore:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        skillRewards:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillReward"
+      required: [id, title, status]
+
+    UpsertCourseRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        creator:
+          type: string
+        status:
+          type: string
+          enum: [active, inprogress, inactive]
+        description:
+          type: string
+        image:
+          type: string
+        content:
+          type: string
+        skillPoints:
+          type: integer
+        subtopicCompletionScore:
+          type: integer
+        courseCompletionScore:
+          type: integer
+        skillRewards:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillReward"
+      required: [id, title]
+
+    SubtopicAnswerRequest:
+      type: object
+      properties:
+        questionId:
+          type: string
+        typedAnswer:
+          type: string
+        isCorrect:
+          type: boolean
+      required: [questionId]
+
+    ExamQuestion:
+      type: object
+      properties:
+        id:
+          type: string
+        examId:
+          type: string
+        domain:
+          type: string
+        question:
+          type: string
+        choices:
+          type: array
+          items:
+            type: string
+          minItems: 4
+          maxItems: 4
+        answerKey:
+          type: string
+        explanation:
+          type: string
+      required: [id, question, choices, answerKey]
+
+    Exam:
+      type: object
+      description: Exam metadata (no questions)
+      properties:
+        id:
+          type: string
+          example: cc1
+        title:
+          type: string
+        creator:
+          type: string
+        ownerUsername:
+          type: string
+        status:
+          type: string
+          enum: [active, inprogress, inactive]
+        description:
+          type: string
+        instructions:
+          type: string
+        image:
+          type: string
+        numberOfQuestions:
+          type: integer
+        defaultTime:
+          type: integer
+          description: Duration in minutes
+        maxAttempts:
+          type: integer
+          description: 0 = unlimited
+        createdAt:
+          type: string
+          format: date-time
+        domainPercentages:
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            "Domain A": 60
+            "Domain B": 40
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExamQuestion"
+      required: [id, title, status]
+
+    ExamDetail:
+      allOf:
+        - $ref: "#/components/schemas/Exam"
+        - type: object
+          description: Exam with full question list
+
+    UpsertExamRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        creator:
+          type: string
+        status:
+          type: string
+          enum: [active, inprogress, inactive]
+        description:
+          type: string
+        instructions:
+          type: string
+        image:
+          type: string
+        numberOfQuestions:
+          type: integer
+        defaultTime:
+          type: integer
+        maxAttempts:
+          type: integer
+          description: 0 = unlimited
+        domainPercentages:
+          type: object
+          additionalProperties:
+            type: integer
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExamQuestion"
+      required: [id, title]
+
+    ExamDomainStat:
+      type: object
+      properties:
+        correct:
+          type: integer
+        total:
+          type: integer
+      required: [correct, total]
+
+    ExamAttemptAnswer:
+      type: object
+      properties:
+        questionId:
+          type: string
+        domain:
+          type: string
+        question:
+          type: string
+        choices:
+          type: array
+          items:
+            type: string
+        answerKey:
+          type: string
+        explanation:
+          type: string
+        selected:
+          type: string
+        isCorrect:
+          type: boolean
+      required: [questionId, selected, isCorrect]
+
+    ExamAttempt:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        correctCount:
+          type: integer
+        totalQuestions:
+          type: integer
+        scorePercent:
+          type: number
+          format: float
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        domainStats:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/ExamDomainStat"
+        details:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExamAttemptAnswer"
+      required: [id, correctCount, totalQuestions, scorePercent, startedAt]
+
+    SaveAttemptRequest:
+      type: object
+      properties:
+        correctCount:
+          type: integer
+        totalQuestions:
+          type: integer
+        scorePercent:
+          type: number
+          format: float
+        domainStats:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/ExamDomainStat"
+        answers:
+          type: array
+          items:
+            type: object
+            properties:
+              questionId:
+                type: string
+              selected:
+                type: string
+              isCorrect:
+                type: boolean
+            required: [questionId, selected, isCorrect]
+      required: [correctCount, totalQuestions, scorePercent]

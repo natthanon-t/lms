@@ -163,6 +163,7 @@ CREATE TABLE exams (
   image               TEXT         NOT NULL DEFAULT '',
   number_of_questions INT          NOT NULL DEFAULT 0,
   default_time        INT          NOT NULL DEFAULT 0,  -- minutes
+  max_attempts        INT          NOT NULL DEFAULT 0,  -- 0 = unlimited
   created_at          TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
   CONSTRAINT fk_exams_owner
     FOREIGN KEY (owner_username) REFERENCES users(username) ON DELETE SET NULL
@@ -209,6 +210,7 @@ CREATE TABLE exam_attempts (
   correct_count   INT           NOT NULL DEFAULT 0,
   total_questions INT           NOT NULL DEFAULT 0,
   score_percent   NUMERIC(5,2)  NOT NULL DEFAULT 0,
+  domain_stats    JSONB         NOT NULL DEFAULT '{}',
   started_at      TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
   finished_at     TIMESTAMPTZ,
   CONSTRAINT fk_exam_attempts_user

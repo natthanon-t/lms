@@ -28,8 +28,10 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	authGroup.Post("/refresh", handler.Refresh)
 	authGroup.Post("/logout", handler.Logout)
 
-	// Courses — GET is public (register before JWT middleware)
+	// Courses & Exams — GET is public (register before JWT middleware)
 	api.Get("/courses", handler.ListCourses)
+	api.Get("/exams", handler.ListExams)
+	api.Get("/exams/:id", handler.GetExam)
 
 	protected := api.Group("")
 	protected.Use(jwtware.New(jwtware.Config{
@@ -55,6 +57,14 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	courses.Post("", handler.UpsertCourse)
 	courses.Patch("/:id/status", handler.UpdateCourseStatus)
 	courses.Delete("/:id", handler.DeleteCourse)
+
+	// Exams — protected CRUD + attempts
+	exams := protected.Group("/exams")
+	exams.Post("", handler.UpsertExam)
+	exams.Patch("/:id/status", handler.UpdateExamStatus)
+	exams.Delete("/:id", handler.DeleteExam)
+	exams.Get("/:id/attempts", handler.GetExamAttempts)
+	exams.Post("/:id/attempts", handler.SaveExamAttempt)
 
 	// Learning progress
 	learning := protected.Group("/learning")

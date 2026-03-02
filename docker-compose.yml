@@ -64,6 +64,9 @@ services:
       APP_ADMIN_NAME: ${APP_ADMIN_NAME}
       APP_ADMIN_USERNAME: ${APP_ADMIN_USERNAME}
       APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD}
+      EXAM_SEED_DIR: /app/exam
+    volumes:
+      - ./cbt-lms/public/exam:/app/exam:ro
     ports:
       - "${API_PORT}:5020"
 

@@ -1,0 +1,222 @@
+package api
+
+import (
+	"backend/internal/auth"
+	"backend/internal/data"
+	"database/sql"
+	"errors"
+	"slices"
+	"strings"
+
+	"github.com/gofiber/fiber/v2"
+)
+
+var validExamStatuses = []string{"active", "inprogress", "inactive"}
+
+func (h *Handler) ListExams(c *fiber.Ctx) error {
+	exams, err := data.ListExams()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot list exams")
+	}
+	return c.JSON(fiber.Map{"exams": exams})
+}
+
+func (h *Handler) GetExam(c *fiber.Ctx) error {
+	id := strings.TrimSpace(c.Params("id"))
+	if id == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "exam id is required")
+	}
+	exam, err := data.GetExam(id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fiber.NewError(fiber.StatusNotFound, "exam not found")
+		}
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot get exam")
+	}
+	return c.JSON(fiber.Map{"exam": exam})
+}
+
+func (h *Handler) UpsertExam(c *fiber.Ctx) error {
+	username, err := auth.CurrentUsername(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
+	}
+	isAdmin := auth.IsAdminContext(c)
+
+	var req examRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	req.ID = strings.TrimSpace(req.ID)
+	req.Title = strings.TrimSpace(req.Title)
+	req.Status = strings.ToLower(strings.TrimSpace(req.Status))
+	if req.ID == "" || req.Title == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "id and title are required")
+	}
+	if req.Status == "" {
+		req.Status = "inprogress"
+	}
+	if !slices.Contains(validExamStatuses, req.Status) {
+		return fiber.NewError(fiber.StatusBadRequest, "status must be active, inprogress, or inactive")
+	}
+
+	if req.DomainPercentages == nil {
+		req.DomainPercentages = map[string]int{}
+	}
+
+	questions := make([]data.ExamQuestion, 0, len(req.Questions))
+	for _, q := range req.Questions {
+		choices := make([]string, 0, len(q.Choices))
+		for _, ch := range q.Choices {
+			choices = append(choices, strings.TrimSpace(ch))
+		}
+		questions = append(questions, data.ExamQuestion{
+			Domain:      strings.TrimSpace(q.Domain),
+			Question:    strings.TrimSpace(q.Question),
+			Choices:     choices,
+			AnswerKey:   strings.TrimSpace(q.AnswerKey),
+			Explanation: strings.TrimSpace(q.Explanation),
+		})
+	}
+
+	exam := data.Exam{
+		ID:                req.ID,
+		Title:             req.Title,
+		Creator:           strings.TrimSpace(req.Creator),
+		Status:            req.Status,
+		Description:       strings.TrimSpace(req.Description),
+		Instructions:      strings.TrimSpace(req.Instructions),
+		Image:             strings.TrimSpace(req.Image),
+		NumberOfQuestions: req.NumberOfQuestions,
+		DefaultTime:       req.DefaultTime,
+		MaxAttempts:       req.MaxAttempts,
+		DomainPercentages: req.DomainPercentages,
+		Questions:         questions,
+	}
+
+	saved, err := data.UpsertExam(exam, username, isAdmin)
+	if err != nil {
+		if errors.Is(err, data.ErrForbidden) {
+			return fiber.NewError(fiber.StatusForbidden, "not allowed to edit this exam")
+		}
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot save exam")
+	}
+
+	return c.JSON(fiber.Map{"exam": saved})
+}
+
+func (h *Handler) UpdateExamStatus(c *fiber.Ctx) error {
+	username, err := auth.CurrentUsername(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
+	}
+	isAdmin := auth.IsAdminContext(c)
+	id := strings.TrimSpace(c.Params("id"))
+	if id == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "exam id is required")
+	}
+
+	var req examStatusRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	status := strings.ToLower(strings.TrimSpace(req.Status))
+	if !slices.Contains(validExamStatuses, status) {
+		return fiber.NewError(fiber.StatusBadRequest, "status must be active, inprogress, or inactive")
+	}
+
+	if err := data.UpdateExamStatus(id, status, username, isAdmin); err != nil {
+		if errors.Is(err, data.ErrForbidden) {
+			return fiber.NewError(fiber.StatusForbidden, "not allowed to edit this exam")
+		}
+		if errors.Is(err, sql.ErrNoRows) {
+			return fiber.NewError(fiber.StatusNotFound, "exam not found")
+		}
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot update exam status")
+	}
+
+	return c.JSON(fiber.Map{"message": "status updated"})
+}
+
+func (h *Handler) DeleteExam(c *fiber.Ctx) error {
+	username, err := auth.CurrentUsername(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
+	}
+	isAdmin := auth.IsAdminContext(c)
+	id := strings.TrimSpace(c.Params("id"))
+	if id == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "exam id is required")
+	}
+
+	if err := data.DeleteExam(id, username, isAdmin); err != nil {
+		if errors.Is(err, data.ErrForbidden) {
+			return fiber.NewError(fiber.StatusForbidden, "not allowed to delete this exam")
+		}
+		if errors.Is(err, sql.ErrNoRows) {
+			return fiber.NewError(fiber.StatusNotFound, "exam not found")
+		}
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot delete exam")
+	}
+
+	return c.JSON(fiber.Map{"message": "exam deleted"})
+}
+
+func (h *Handler) SaveExamAttempt(c *fiber.Ctx) error {
+	username, err := auth.CurrentUsername(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
+	}
+	examID := strings.TrimSpace(c.Params("id"))
+	if examID == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "exam id is required")
+	}
+
+	var req examAttemptRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+
+	domainStats := make(map[string]data.ExamDomainStat, len(req.DomainStats))
+	for domain, stat := range req.DomainStats {
+		domainStats[domain] = data.ExamDomainStat{Correct: stat.Correct, Total: stat.Total}
+	}
+
+	answers := make([]data.ExamAnswerInput, 0, len(req.Answers))
+	for _, ans := range req.Answers {
+		answers = append(answers, data.ExamAnswerInput{
+			QuestionID: ans.QuestionID,
+			Selected:   ans.Selected,
+			IsCorrect:  ans.IsCorrect,
+		})
+	}
+
+	attempt, err := data.SaveExamAttempt(
+		examID, username,
+		req.CorrectCount, req.TotalQuestions, req.ScorePercent,
+		domainStats, answers,
+	)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot save attempt")
+	}
+
+	return c.JSON(fiber.Map{"attempt": attempt})
+}
+
+func (h *Handler) GetExamAttempts(c *fiber.Ctx) error {
+	username, err := auth.CurrentUsername(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
+	}
+	examID := strings.TrimSpace(c.Params("id"))
+	if examID == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "exam id is required")
+	}
+
+	attempts, err := data.GetUserExamAttempts(username, examID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot get attempts")
+	}
+
+	return c.JSON(fiber.Map{"attempts": attempts})
+}

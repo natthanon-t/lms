@@ -23,6 +23,69 @@ type Course struct {
 	SkillRewards            []SkillReward `json:"skillRewards"`
 }
 
+type Exam struct {
+	ID                string         `json:"id"`
+	Title             string         `json:"title"`
+	Creator           string         `json:"creator"`
+	OwnerUsername     string         `json:"ownerUsername"`
+	Status            string         `json:"status"`
+	Description       string         `json:"description"`
+	Instructions      string         `json:"instructions"`
+	Image             string         `json:"image"`
+	NumberOfQuestions int            `json:"numberOfQuestions"`
+	DefaultTime       int            `json:"defaultTime"`
+	MaxAttempts       int            `json:"maxAttempts"`
+	CreatedAt         time.Time      `json:"createdAt"`
+	DomainPercentages map[string]int `json:"domainPercentages"`
+	Questions         []ExamQuestion `json:"questions"`
+}
+
+type ExamQuestion struct {
+	ID          string   `json:"id"`
+	ExamID      string   `json:"examId"`
+	Domain      string   `json:"domain"`
+	Question    string   `json:"question"`
+	Choices     []string `json:"choices"`
+	AnswerKey   string   `json:"answerKey"`
+	Explanation string   `json:"explanation"`
+}
+
+type ExamDomainStat struct {
+	Correct int `json:"correct"`
+	Total   int `json:"total"`
+}
+
+type ExamAttemptAnswer struct {
+	QuestionID  string   `json:"questionId"`
+	Domain      string   `json:"domain"`
+	Question    string   `json:"question"`
+	Choices     []string `json:"choices"`
+	AnswerKey   string   `json:"answerKey"`
+	Explanation string   `json:"explanation"`
+	Selected    string   `json:"selected"`
+	IsCorrect   bool     `json:"isCorrect"`
+}
+
+type ExamAttempt struct {
+	ID             int64                      `json:"id"`
+	Username       string                     `json:"username,omitempty"`
+	ExamID         string                     `json:"examId,omitempty"`
+	CorrectCount   int                        `json:"correctCount"`
+	TotalQuestions int                        `json:"totalQuestions"`
+	ScorePercent   float64                    `json:"scorePercent"`
+	StartedAt      time.Time                  `json:"startedAt"`
+	FinishedAt     *time.Time                 `json:"finishedAt"`
+	DomainStats    map[string]ExamDomainStat  `json:"domainStats"`
+	Details        []ExamAttemptAnswer        `json:"details"`
+}
+
+// ExamAnswerInput is used when saving attempt answers
+type ExamAnswerInput struct {
+	QuestionID string
+	Selected   string
+	IsCorrect  bool
+}
+
 type AnswerProgress struct {
 	TypedAnswer string `json:"typedAnswer"`
 	IsCorrect   bool   `json:"isCorrect"`

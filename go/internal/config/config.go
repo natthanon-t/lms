@@ -26,6 +26,7 @@ func LoadConfig() AppConfig {
 		AdminName:   getStringEnv("APP_ADMIN_NAME", "System Admin"),
 		AdminUser:   getStringEnv("APP_ADMIN_USERNAME", getStringEnv("APP_ADMIN_EMAIL", "admin")),
 		AdminPass:   getStringEnv("APP_ADMIN_PASSWORD", "admin12345"),
+		ExamSeedDir: getStringEnv("EXAM_SEED_DIR", "../cbt-lms/public/exam"),
 	}
 }
 
