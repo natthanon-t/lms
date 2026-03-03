@@ -147,6 +147,14 @@
   overflow: hidden;
   border: 2px solid #b8cce0;
   flex-shrink: 0;
+  padding: 0;
+  cursor: pointer;
+  transition: opacity 0.15s, border-color 0.15s;
+}
+
+.topbar-avatar-circle:hover {
+  opacity: 0.85;
+  border-color: #7aa8ff;
 }
 
 .topbar-avatar-img {

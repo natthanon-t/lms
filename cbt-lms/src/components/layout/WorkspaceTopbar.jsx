@@ -17,7 +17,7 @@ const getInitials = (name, username) => {
   return text.slice(0, 2).toUpperCase();
 };
 
-export default function WorkspaceTopbar({ currentUser, username, onGoHome }) {
+export default function WorkspaceTopbar({ currentUser, username, onGoHome, onGoProfile }) {
   const handleLogoError = (event) => {
     if (event.currentTarget.dataset.fallbackApplied === "true") {
       return;
@@ -45,13 +45,19 @@ export default function WorkspaceTopbar({ currentUser, username, onGoHome }) {
       </button>
 
       <div className="workspace-topbar-user">
-        <div className="topbar-avatar-circle" style={{ background: avatar ? "transparent" : avatarColor }}>
+        <button
+          type="button"
+          className="topbar-avatar-circle"
+          style={{ background: avatar ? "transparent" : avatarColor }}
+          onClick={onGoProfile}
+          title="ไปหน้าโปรไฟล์"
+        >
           {avatar ? (
             <img src={avatar} alt="avatar" className="topbar-avatar-img" />
           ) : (
             <span className="topbar-avatar-initials">{initials}</span>
           )}
-        </div>
+        </button>
         <div>
           <p>
             <strong>ผู้ใช้:</strong> {currentUser?.name ?? "Guest"}

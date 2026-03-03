@@ -430,6 +430,7 @@ export default function ProfilePage({
                 <span className="profile-info-label">รหัสพนักงาน</span>
                 <span className="profile-info-value">{currentUser.employeeCode || "-"}</span>
               </div>
+
               <div className="profile-info-row">
                 <span className="profile-info-label">ชื่อ</span>
                 <input
@@ -462,6 +463,7 @@ export default function ProfilePage({
                 <span className="profile-info-label">รหัสพนักงาน</span>
                 <span className="profile-info-value">{currentUser.employeeCode || "-"}</span>
               </div>
+
               <div className="profile-info-row">
                 <span className="profile-info-label">ชื่อ</span>
                 <span className="profile-info-value">{currentUser.name}</span>
