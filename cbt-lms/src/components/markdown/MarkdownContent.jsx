@@ -4,6 +4,7 @@ import rehypeSanitize from "rehype-sanitize";
 import markdownStyles from "./markdownStyles";
 import { getPlainText, toHeadingId, toHeadingSlug } from "./headingUtils";
 
+
 const VIDEO_PREFIX = "video:";
 
 const buildYoutubeEmbedUrl = (url) => {
@@ -34,6 +35,16 @@ const buildYoutubeEmbedUrl = (url) => {
   return embedUrl.toString();
 };
 
+const buildSharePointEmbedUrl = (url) => {
+  const host = url.hostname.toLowerCase();
+  if (!host.includes("sharepoint.com")) {
+    return null;
+  }
+  const embedUrl = new URL(url.toString());
+  embedUrl.pathname = embedUrl.pathname.replace(/\/stream\.aspx$/i, "/embed.aspx");
+  return embedUrl.toString();
+};
+
 const toEmbedVideoUrl = (href) => {
   if (!href) {
     return null;
@@ -41,13 +52,13 @@ const toEmbedVideoUrl = (href) => {
 
   try {
     const parsedUrl = new URL(href);
-    return buildYoutubeEmbedUrl(parsedUrl);
+    return buildYoutubeEmbedUrl(parsedUrl) ?? buildSharePointEmbedUrl(parsedUrl);
   } catch {
     return null;
   }
 };
 
-export default function MarkdownContent({ content }) {
+export default function MarkdownContent({ content, images = {} }) {
   const headingSeenCount = {};
   const renderHeading = (Tag) =>
     function Heading({ children }) {
@@ -68,6 +79,17 @@ export default function MarkdownContent({ content }) {
       remarkPlugins={[remarkGfm]}
       rehypePlugins={[rehypeSanitize]}
       components={{
+        img({ src, alt }) {
+          const decodedSrc = src ? decodeURIComponent(src) : "";
+          const resolvedSrc = images[decodedSrc] || images[src ?? ""] || images[alt ?? ""] || src || "";
+          return (
+            <img
+              src={resolvedSrc}
+              alt={alt ?? ""}
+              style={{ maxWidth: "100%", height: "auto", borderRadius: 8, margin: "8px 0", display: "block" }}
+            />
+          );
+        },
         h1: renderHeading("h1"),
         h2: renderHeading("h2"),
         h3: renderHeading("h3"),
@@ -118,7 +140,7 @@ export default function MarkdownContent({ content }) {
                   title={getPlainText(children).replace(VIDEO_PREFIX, "").trim() || "embedded video"}
                   src={embedUrl}
                   style={markdownStyles.videoFrame}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                   allowFullScreen
                 />
               </div>

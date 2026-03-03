@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { getStoredImages } from "../services/contentImagesStore";
 import MarkdownContent from "../components/markdown/MarkdownContent";
 import TableOfContents from "../components/markdown/TableOfContents";
 import { getSubtopicPages } from "../components/markdown/headingUtils";
@@ -7,6 +8,11 @@ const normalizeAnswer = (value) => String(value ?? "").trim().toLowerCase();
 
 export default function StudyPage({ draft, onBack, progress, onMarkSubtopicComplete, onSubmitSubtopicAnswer }) {
   const [activeSubtopicId, setActiveSubtopicId] = useState("");
+  const [contentImages, setContentImages] = useState(() => getStoredImages(draft.sourceId ?? draft.id));
+
+  useEffect(() => {
+    setContentImages(getStoredImages(draft.sourceId ?? draft.id));
+  }, [draft.sourceId, draft.id]);
   const [answerInputs, setAnswerInputs] = useState({});
   const subtopicPages = useMemo(() => getSubtopicPages(draft.content, draft.title), [draft.content, draft.title]);
   const selectedSubtopic = subtopicPages.find((subtopic) => subtopic.id === activeSubtopicId) ?? subtopicPages[0];
@@ -107,7 +113,7 @@ export default function StudyPage({ draft, onBack, progress, onMarkSubtopicCompl
             </div>
           ) : null}
           <div className="preview-body study-preview-body">
-            <MarkdownContent content={selectedSubtopic?.content ?? draft.content} />
+            <MarkdownContent content={selectedSubtopic?.content ?? draft.content} images={contentImages} />
           </div>
 
           {selectedSubtopic && selectedSubtopic.questions.length > 0 ? (

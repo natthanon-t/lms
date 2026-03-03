@@ -39,19 +39,16 @@ const markdownStyles = {
     borderBottom: "1px solid #1f2a3a",
   },
   videoWrap: {
-    margin: "12px 0",
+    margin: "12px auto",
     borderRadius: 12,
     overflow: "hidden",
     border: "1px solid #1f2a3a",
-    background: "#050a12",
+    maxWidth: 720,
   },
   videoFrame: {
     width: "100%",
-    maxWidth: 720,
-    minHeight: 220,
     border: "0",
     aspectRatio: "16 / 9",
-    margin: "0 auto",
     display: "block",
   },
 };

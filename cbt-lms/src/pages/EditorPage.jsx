@@ -12,6 +12,7 @@ import {
   updateSubtopicBodyMarkdown,
 } from "../components/markdown/headingUtils";
 import { ensureCoverImage, fileToDataUrl } from "../services/imageService";
+import { getStoredImages, storeImage } from "../services/contentImagesStore";
 
 const getSkillRewards = (draft) => {
   if (Array.isArray(draft.skillRewards) && draft.skillRewards.length > 0) {
@@ -30,6 +31,11 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
   const editorViewRef = useRef(null);
   const [activeSubtopicId, setActiveSubtopicId] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
+  const [contentImages, setContentImages] = useState(() => getStoredImages(draft.sourceId));
+
+  useEffect(() => {
+    setContentImages(getStoredImages(draft.sourceId));
+  }, [draft.sourceId]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
@@ -237,6 +243,21 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
     }
   };
 
+
+  const handleUploadEditorImage = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      const newImages = storeImage(draft.sourceId, file.name, dataUrl);
+      setContentImages(newImages);
+      insertAtCursor(`\n![${file.name}](${encodeURIComponent(file.name)})\n`);
+    } catch {
+      setSaveMessage("อัพโหลดรูปไม่สำเร็จ");
+    }
+  };
+
   const handleMoveMainBefore = (sourceHeadingId, targetHeadingId) => {
     const nextContent = moveMainSectionBefore(draft.content, sourceHeadingId, targetHeadingId);
     if (nextContent !== draft.content) {
@@ -303,9 +324,6 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
           <p>แก้ไขเฉพาะหัวข้อย่อยที่เลือกจาก Table of Contents</p>
         </div>
         <div className="editor-header-actions">
-          <button type="button" className="back-button" onClick={() => setShowPreview((prev) => !prev)}>
-            {showPreview ? "ซ่อน Live Preview" : "แสดง Live Preview"}
-          </button>
           <button type="button" className="save-button" onClick={handleSave}>
             บันทึกเนื้อหา
           </button>
@@ -431,6 +449,13 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
         <button type="button" onClick={insertQuestionTemplate}>
           เพิ่มคำถามหัวข้อย่อย
         </button>
+        <button type="button" onClick={() => setShowPreview((prev) => !prev)}>
+          {showPreview ? "ซ่อน Preview" : "แสดง Preview"}
+        </button>
+        <label>
+          อัพโหลดรูป
+          <input type="file" accept="image/*" onChange={handleUploadEditorImage} style={{ display: "none" }} />
+        </label>
       </div>
 
       <div className="editor-hint">
@@ -460,7 +485,8 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
             <CodeMirror
               key={selectedSubtopic?.id ?? "no-subtopic"}
               value={selectedSubtopicBody}
-              height="420px"
+              height="auto"
+              minHeight="420px"
               extensions={[mdLang()]}
               onCreateEditor={captureEditorView}
               onChange={(value) => updateSelectedSubtopicBody(value)}
@@ -491,7 +517,7 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
               </div>
             ) : null}
             <div className="preview-body">
-              <MarkdownContent content={selectedSubtopic?.content ?? draft.content} />
+              <MarkdownContent content={selectedSubtopic?.content ?? draft.content} images={contentImages} />
             </div>
           </div>
         ) : null}

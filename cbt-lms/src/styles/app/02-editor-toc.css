@@ -131,7 +131,8 @@
   gap: 8px;
 }
 
-.editor-toolbar button {
+.editor-toolbar button,
+.editor-toolbar label {
   border: 1px solid #b8c4e0;
   border-radius: 10px;
   padding: 8px 12px;
@@ -139,9 +140,12 @@
   color: #1a2f57;
   font-weight: 700;
   cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
 }
 
-.editor-toolbar button:hover {
+.editor-toolbar button:hover,
+.editor-toolbar label:hover {
   background: #eef3ff;
   border-color: #97aedf;
 }
@@ -181,8 +185,8 @@
 }
 
 .preview-body {
-  max-height: 420px;
-  overflow: auto;
+  max-height: none;
+  overflow: visible;
   line-height: 1.65;
 }
 
@@ -343,8 +347,8 @@
 }
 
 .toc-list {
-  max-height: 420px;
-  overflow: auto;
+  max-height: none;
+  overflow: visible;
   display: grid;
   gap: 8px;
 }

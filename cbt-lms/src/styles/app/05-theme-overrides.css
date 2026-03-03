@@ -85,6 +85,7 @@
 .logout-button,
 .manage-button,
 .editor-toolbar button,
+.editor-toolbar label,
 .gear-button,
 .subtopic-nav-button,
 .toc-edit-button,
@@ -102,6 +103,7 @@
 .sidebar-nav button:hover,
 .manage-button:hover,
 .editor-toolbar button:hover,
+.editor-toolbar label:hover,
 .gear-button:hover,
 .subtopic-nav-button:hover,
 .toc-edit-button:hover {
@@ -199,6 +201,7 @@
 .logout-button:focus-visible,
 .manage-button:focus-visible,
 .editor-toolbar button:focus-visible,
+.editor-toolbar label:focus-visible,
 .gear-button:focus-visible,
 .subtopic-nav-button:focus-visible,
 .toc-edit-button:focus-visible,
