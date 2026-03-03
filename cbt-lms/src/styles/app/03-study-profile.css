@@ -502,3 +502,148 @@
   }
 }
 
+/* Profile info card layout */
+.profile-info-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+/* Avatar */
+.profile-avatar-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.profile-avatar-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  border: 2px solid #d5e0f7;
+  flex-shrink: 0;
+}
+
+.profile-avatar-circle:hover {
+  opacity: 0.85;
+}
+
+.profile-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-avatar-initials {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+.profile-avatar-change-btn {
+  border: 1px solid #b8c4e0;
+  border-radius: 8px;
+  background: #f4f8ff;
+  color: #2454b8;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.profile-avatar-change-btn:hover {
+  background: #e0eaff;
+}
+
+/* Info rows */
+.profile-info-rows {
+  display: grid;
+  gap: 6px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.profile-info-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-height: 30px;
+}
+
+.profile-info-label {
+  font-weight: 700;
+  color: #1a2f57;
+  min-width: 110px;
+  flex-shrink: 0;
+}
+
+.profile-info-label::after {
+  content: " :";
+}
+
+.profile-info-value {
+  color: #2d4a7a;
+  padding-left: 8px;
+}
+
+.profile-info-input {
+  flex: 1;
+  border: 1px solid #b8c4e0;
+  border-radius: 8px;
+  background: #fff;
+  color: #1a2f57;
+  padding: 5px 10px;
+  font-size: 0.97rem;
+  font-family: inherit;
+  margin-left: 8px;
+}
+
+.profile-info-input:focus {
+  outline: 2px solid #2f66da;
+  border-color: #2f66da;
+}
+
+/* Heatmap */
+.heatmap-title {
+  margin: 0;
+  letter-spacing: 0.04em;
+}
+
+.heatmap-subtitle {
+  margin: 4px 0 12px;
+  color: #6b8ab8;
+  font-size: 0.88rem;
+}
+
+.heatmap-scroll {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.heatmap-legend {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: #6b8ab8;
+}
+
+.heatmap-legend-cell {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border-radius: 2px;
+}
+

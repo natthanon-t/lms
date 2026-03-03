@@ -1,6 +1,114 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getSubtopicPages } from "../components/markdown/headingUtils";
 import { getCourseSkillRewards } from "../services/skillRewardsService";
+import { fileToDataUrl } from "../services/imageService";
+import { getLoginDates } from "../services/loginActivityStore";
+
+const avatarKey = (username) => `profile_avatar_${username}`;
+
+const getAvatarColor = (username) => {
+  let hash = 0;
+  for (let i = 0; i < username.length; i++) {
+    hash = username.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 55%, 48%)`;
+};
+
+const getInitials = (name, username) => {
+  const text = String(name || username || "?").trim();
+  const words = text.split(/\s+/);
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return text.slice(0, 2).toUpperCase();
+};
+
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
+const CELL = 13;
+const GAP = 3;
+const LEFT_W = 30;
+const TOP_H = 20;
+
+function LoginActivityHeatmap({ username }) {
+  const loginDateSet = useMemo(() => new Set(getLoginDates(username)), [username]);
+
+  const { weeks, monthLabels, totalWeeks } = useMemo(() => {
+    const year = new Date().getFullYear();
+    // Start from the Sunday of the week containing Jan 1
+    const jan1 = new Date(year, 0, 1);
+    const startDay = new Date(jan1);
+    startDay.setDate(jan1.getDate() - jan1.getDay());
+    // End at the Saturday of the week containing Dec 31
+    const dec31 = new Date(year, 11, 31);
+    const endDay = new Date(dec31);
+    endDay.setDate(dec31.getDate() + (6 - dec31.getDay()));
+    const numWeeks = Math.round((endDay - startDay) / (7 * 24 * 60 * 60 * 1000)) + 1;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().slice(0, 10);
+
+    const builtWeeks = [];
+    for (let w = 0; w < numWeeks; w++) {
+      const week = [];
+      for (let d = 0; d < 7; d++) {
+        const date = new Date(startDay);
+        date.setDate(startDay.getDate() + w * 7 + d);
+        const dateStr = date.toISOString().slice(0, 10);
+        const isFuture = dateStr > todayStr;
+        week.push({ dateStr, isActive: !isFuture && loginDateSet.has(dateStr), isFuture, dayOfWeek: d });
+      }
+      builtWeeks.push(week);
+    }
+
+    const builtMonthLabels = [];
+    for (let w = 0; w < numWeeks; w++) {
+      const hit = builtWeeks[w].find(({ dateStr }) => dateStr.slice(8) === "01");
+      if (hit) {
+        builtMonthLabels.push({ week: w, label: MONTH_NAMES[parseInt(hit.dateStr.slice(5, 7), 10) - 1] });
+      }
+    }
+
+    return { weeks: builtWeeks, monthLabels: builtMonthLabels, totalWeeks: numWeeks };
+  }, [loginDateSet]);
+
+  const svgWidth = LEFT_W + totalWeeks * (CELL + GAP);
+  const svgHeight = TOP_H + 7 * (CELL + GAP);
+
+  return (
+    <div className="heatmap-scroll">
+      <svg width={svgWidth} height={svgHeight} style={{ display: "block" }}>
+        {monthLabels.map(({ week, label }) => (
+          <text key={`m-${week}`} x={LEFT_W + week * (CELL + GAP)} y={14} fontSize="11" fill="#6b8ab8">
+            {label}
+          </text>
+        ))}
+        {DAY_LABELS.map((label, d) =>
+          label ? (
+            <text key={`d-${d}`} x={LEFT_W - 4} y={TOP_H + d * (CELL + GAP) + CELL - 2} fontSize="11" fill="#6b8ab8" textAnchor="end">
+              {label}
+            </text>
+          ) : null,
+        )}
+        {weeks.map((week, w) =>
+          week.map(({ dateStr, isActive, isFuture, dayOfWeek }) => (
+            <rect
+              key={dateStr}
+              x={LEFT_W + w * (CELL + GAP)}
+              y={TOP_H + dayOfWeek * (CELL + GAP)}
+              width={CELL}
+              height={CELL}
+              rx={2}
+              fill={isActive ? "#2ea043" : isFuture ? "#f0f2f5" : "#dde3ed"}
+            >
+              <title>{dateStr}</title>
+            </rect>
+          )),
+        )}
+      </svg>
+    </div>
+  );
+}
 
 const RADAR_SIZE = 520;
 const RADAR_CENTER = RADAR_SIZE / 2;
@@ -34,6 +142,10 @@ export default function ProfilePage({
   });
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState("");
+  const [avatar, setAvatar] = useState(() => {
+    try { return localStorage.getItem(avatarKey(username)) ?? ""; } catch { return ""; }
+  });
+  const avatarInputRef = useRef(null);
   const userSkillScores = learningStats?.[username]?.skillScores ?? {};
   const safeExamples = Array.isArray(examples) ? examples : [];
 
@@ -197,6 +309,23 @@ export default function ProfilePage({
     setPasswordMessage("");
   }, [currentUser.name]);
 
+  useEffect(() => {
+    try { setAvatar(localStorage.getItem(avatarKey(username)) ?? ""); } catch { setAvatar(""); }
+  }, [username]);
+
+  const handleAvatarUpload = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      localStorage.setItem(avatarKey(username), dataUrl);
+      setAvatar(dataUrl);
+    } catch {
+      // ignore upload errors
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -272,80 +401,100 @@ export default function ProfilePage({
         <p>ข้อมูลผู้ใช้ที่กำลังเข้าสู่ระบบ</p>
       </header>
 
-      <article className="info-card">
+      <article className="info-card profile-info-card">
+        {/* Avatar */}
+        <div className="profile-avatar-area">
+          <div
+            className="profile-avatar-circle"
+            style={{ background: avatar ? "transparent" : getAvatarColor(username) }}
+            onClick={() => avatarInputRef.current?.click()}
+            title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์"
+          >
+            {avatar ? (
+              <img src={avatar} alt="avatar" className="profile-avatar-img" />
+            ) : (
+              <span className="profile-avatar-initials">{getInitials(currentUser.name, username)}</span>
+            )}
+          </div>
+          <button type="button" className="profile-avatar-change-btn" onClick={() => avatarInputRef.current?.click()}>
+            เปลี่ยนรูป
+          </button>
+          <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarUpload} />
+        </div>
+
+        {/* Info */}
         {isEditingProfile ? (
           <form className="profile-form" onSubmit={handleSubmit}>
-            <label htmlFor="profile-name">ชื่อ</label>
-            <input
-              id="profile-name"
-              type="text"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-            />
-
-            <p>
-              <strong>Username:</strong> {username}
-            </p>
-            <p>
-              <strong>ตำแหน่ง:</strong> {currentUser.role}
-            </p>
-
+            <div className="profile-info-rows">
+              <div className="profile-info-row">
+                <span className="profile-info-label">รหัสพนักงาน</span>
+                <span className="profile-info-value">{currentUser.employeeCode || "-"}</span>
+              </div>
+              <div className="profile-info-row">
+                <span className="profile-info-label">ชื่อ</span>
+                <input
+                  id="profile-name"
+                  type="text"
+                  className="profile-info-input"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                />
+              </div>
+              <div className="profile-info-row">
+                <span className="profile-info-label">Username</span>
+                <span className="profile-info-value">{username}</span>
+              </div>
+              <div className="profile-info-row">
+                <span className="profile-info-label">ตำแหน่ง</span>
+                <span className="profile-info-value">{currentUser.role}</span>
+              </div>
+            </div>
             <div className="profile-action-row">
-              <button type="submit" className="enter-button">
-                บันทึก
-              </button>
-              <button
-                type="button"
-                className="back-button"
-                onClick={() => {
-                  setName(currentUser.name);
-                  setIsEditingProfile(false);
-                }}
-              >
-                ยกเลิก
-              </button>
-              <button
-                type="button"
-                className="back-button"
-                onClick={() => setShowPasswordForm(true)}
-              >
-                เปลี่ยนรหัสผ่าน
-              </button>
+              <button type="submit" className="enter-button">บันทึก</button>
+              <button type="button" className="back-button" onClick={() => { setName(currentUser.name); setIsEditingProfile(false); }}>ยกเลิก</button>
+              <button type="button" className="back-button" onClick={() => setShowPasswordForm(true)}>เปลี่ยนรหัสผ่าน</button>
             </div>
           </form>
         ) : (
-          <div className="profile-form">
-            <label>ชื่อ</label>
-            <p>{currentUser.name}</p>
-            <p>
-              <strong>Username:</strong> {username}
-            </p>
-            <p>
-              <strong>ตำแหน่ง:</strong> {currentUser.role}
-            </p>
-            <div className="profile-action-row">
-              <button
-                type="button"
-                className="enter-button"
-                onClick={() => {
-                  setName(currentUser.name);
-                  setIsEditingProfile(true);
-                }}
-              >
-                แก้ไขข้อมูล
-              </button>
-              <button
-                type="button"
-                className="back-button"
-                onClick={() => setShowPasswordForm(true)}
-              >
-                เปลี่ยนรหัสผ่าน
-              </button>
+          <div>
+            <div className="profile-info-rows">
+              <div className="profile-info-row">
+                <span className="profile-info-label">รหัสพนักงาน</span>
+                <span className="profile-info-value">{currentUser.employeeCode || "-"}</span>
+              </div>
+              <div className="profile-info-row">
+                <span className="profile-info-label">ชื่อ</span>
+                <span className="profile-info-value">{currentUser.name}</span>
+              </div>
+              <div className="profile-info-row">
+                <span className="profile-info-label">Username</span>
+                <span className="profile-info-value">{username}</span>
+              </div>
+              <div className="profile-info-row">
+                <span className="profile-info-label">ตำแหน่ง</span>
+                <span className="profile-info-value">{currentUser.role}</span>
+              </div>
+            </div>
+            <div className="profile-action-row" style={{ marginTop: 12 }}>
+              <button type="button" className="enter-button" onClick={() => { setName(currentUser.name); setIsEditingProfile(true); }}>แก้ไขข้อมูล</button>
+              <button type="button" className="back-button" onClick={() => setShowPasswordForm(true)}>เปลี่ยนรหัสผ่าน</button>
             </div>
           </div>
         )}
 
         {message ? <p className="profile-message">{message}</p> : null}
+      </article>
+
+      <article className="info-card">
+        <h3 className="heatmap-title">ACTIVITY</h3>
+        <p className="heatmap-subtitle">วันที่เข้าใช้งานระบบในช่วง 1 ปีที่ผ่านมา (นับจากการ Login)</p>
+        <LoginActivityHeatmap username={username} />
+        <div className="heatmap-legend">
+          <span>น้อย</span>
+          <span className="heatmap-legend-cell" style={{ background: "#dde3ed" }} />
+          <span className="heatmap-legend-cell" style={{ background: "#2ea043" }} />
+          <span>มาก</span>
+        </div>
       </article>
 
       {showPasswordForm ? (

@@ -40,6 +40,7 @@ import {
   writeStoredJson,
   writeStoredValue,
 } from "./services/storageService";
+import { recordLoginDate } from "./services/loginActivityStore";
 import {
   deleteExamApi,
   fetchExamApi,
@@ -231,6 +232,7 @@ export default function App() {
           },
         }));
         setCurrentUserKey(username);
+        recordLoginDate(username);
         void loadLearningProgressFromApi(username);
       } catch {
         clearTokens();
@@ -869,6 +871,7 @@ export default function App() {
       setCurrentUserKey(normalizedUsername);
       setAccessMessage("");
       setShowLogin(false);
+      recordLoginDate(normalizedUsername);
       void loadLearningProgressFromApi(normalizedUsername);
       return { success: true };
     } catch (error) {
@@ -912,6 +915,7 @@ export default function App() {
     <div className="workspace-layout">
       <WorkspaceTopbar
         currentUser={currentUser}
+        username={currentUserKey}
         onGoHome={() => handleSelectTab("home")}
       />
       <main className="workspace-shell">
