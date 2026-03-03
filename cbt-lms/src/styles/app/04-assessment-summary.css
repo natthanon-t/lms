@@ -271,6 +271,46 @@
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
 
+.summary-chart-grid {
+  margin-top: 20px;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.chart-card {
+  background: #ffffff;
+  border: 1px solid #d5e0f7;
+  border-radius: 14px;
+  padding: 16px;
+  overflow: hidden;
+}
+
+.chart-card-full {
+  grid-column: 1 / -1;
+}
+
+.chart-card-title {
+  margin: 0;
+  color: #16315d;
+  font-size: 1rem;
+}
+
+.chart-card-sub {
+  margin: 4px 0 12px;
+  color: #6b8ab8;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 860px) {
+  .summary-chart-grid {
+    grid-template-columns: 1fr;
+  }
+  .chart-card-full {
+    grid-column: auto;
+  }
+}
+
 .summary-list {
   display: grid;
   gap: 10px;
