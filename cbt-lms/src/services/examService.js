@@ -29,6 +29,7 @@ export const normalizeExamRecord = (item) => {
     ? item.questions.map((question, index) => ({
         id: question.id ?? `q-${index + 1}`,
         domain: question.domain ?? question.DomainOfKnowledge ?? "-",
+        questionType: question.questionType ?? "multiple_choice",
         question: question.question ?? question.Question ?? "",
         choices: Array.isArray(question.choices)
           ? question.choices

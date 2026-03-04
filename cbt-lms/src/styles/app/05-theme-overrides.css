@@ -334,6 +334,15 @@
   color: var(--secondary);
 }
 
+.status-dropdown {
+  background: var(--surface);
+  border-color: var(--divider);
+}
+
+.status-dropdown-item:hover {
+  background: var(--bg-hover, rgba(0,0,0,0.05));
+}
+
 .result-wrong,
 .exam-json-import-message.is-error {
   color: var(--danger);
@@ -343,6 +352,16 @@
 .exam-json-import-message.is-success,
 .save-message {
   color: var(--success);
+}
+
+.result-pending {
+  color: var(--warning, #7a5c00);
+}
+
+.text-answer-input {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
 }
 
 .user-management-metrics .metric-card p {

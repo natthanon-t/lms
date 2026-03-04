@@ -47,6 +47,8 @@ func EnsureExamSchema() error {
 	_, err := db.Exec(`
 		ALTER TABLE exams ADD COLUMN IF NOT EXISTS max_attempts INT NOT NULL DEFAULT 0;
 		ALTER TABLE exam_attempts ADD COLUMN IF NOT EXISTS domain_stats JSONB NOT NULL DEFAULT '{}';
+		ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS question_type TEXT NOT NULL DEFAULT 'multiple_choice';
+		ALTER TABLE exam_attempt_answers ALTER COLUMN is_correct DROP NOT NULL;
 	`)
 	return err
 }
@@ -135,7 +137,7 @@ func GetExam(id string) (*Exam, error) {
 
 	e.Questions = []ExamQuestion{}
 	qRows, err := db.Query(`
-		SELECT id, exam_id, domain, question,
+		SELECT id, exam_id, domain, COALESCE(question_type, 'multiple_choice'), question,
 		       choice_a, choice_b, choice_c, choice_d,
 		       answer_key, explanation
 		FROM exam_questions WHERE exam_id = $1 ORDER BY id`, id)
@@ -145,7 +147,7 @@ func GetExam(id string) (*Exam, error) {
 			var q ExamQuestion
 			var choiceA, choiceB, choiceC, choiceD string
 			if err := qRows.Scan(
-				&q.ID, &q.ExamID, &q.Domain, &q.Question,
+				&q.ID, &q.ExamID, &q.Domain, &q.QuestionType, &q.Question,
 				&choiceA, &choiceB, &choiceC, &choiceD,
 				&q.AnswerKey, &q.Explanation,
 			); err != nil {
@@ -240,6 +242,10 @@ func UpsertExam(exam Exam, callerUsername string, isAdmin bool) (Exam, error) {
 	savedQuestions := make([]ExamQuestion, 0, len(exam.Questions))
 	for i, q := range exam.Questions {
 		qID := fmt.Sprintf("%s-q-%d", exam.ID, i+1)
+		qType := q.QuestionType
+		if qType == "" {
+			qType = "multiple_choice"
+		}
 		choiceA, choiceB, choiceC, choiceD := "", "", "", ""
 		if len(q.Choices) > 0 {
 			choiceA = q.Choices[0]
@@ -255,22 +261,23 @@ func UpsertExam(exam Exam, callerUsername string, isAdmin bool) (Exam, error) {
 		}
 		if _, err := db.Exec(
 			`INSERT INTO exam_questions
-			 (id, exam_id, domain, question, choice_a, choice_b, choice_c, choice_d, answer_key, explanation)
-			 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-			qID, exam.ID, q.Domain, q.Question,
+			 (id, exam_id, domain, question_type, question, choice_a, choice_b, choice_c, choice_d, answer_key, explanation)
+			 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+			qID, exam.ID, q.Domain, qType, q.Question,
 			choiceA, choiceB, choiceC, choiceD,
 			q.AnswerKey, q.Explanation,
 		); err != nil {
 			return exam, err
 		}
 		savedQuestions = append(savedQuestions, ExamQuestion{
-			ID:          qID,
-			ExamID:      exam.ID,
-			Domain:      q.Domain,
-			Question:    q.Question,
-			Choices:     q.Choices,
-			AnswerKey:   q.AnswerKey,
-			Explanation: q.Explanation,
+			ID:           qID,
+			ExamID:       exam.ID,
+			Domain:       q.Domain,
+			QuestionType: qType,
+			Question:     q.Question,
+			Choices:      q.Choices,
+			AnswerKey:    q.AnswerKey,
+			Explanation:  q.Explanation,
 		})
 	}
 	exam.Questions = savedQuestions
@@ -353,7 +360,7 @@ func SaveExamAttempt(examID, username string, correctCount, totalQuestions int, 
 			 VALUES ($1,$2,$3,$4)
 			 ON CONFLICT (attempt_id, question_id) DO UPDATE
 			   SET selected = EXCLUDED.selected, is_correct = EXCLUDED.is_correct`,
-			attempt.ID, ans.QuestionID, ans.Selected, ans.IsCorrect,
+			attempt.ID, ans.QuestionID, ans.Selected, ans.IsCorrect, // *bool → NULL when nil
 		)
 	}
 
@@ -402,7 +409,7 @@ func GetUserExamAttempts(username, examID string) ([]ExamAttempt, error) {
 	// Load per-question details for each attempt
 	for i := range attempts {
 		ansRows, err := db.Query(`
-			SELECT a.question_id, q.domain, q.question,
+			SELECT a.question_id, q.domain, COALESCE(q.question_type, 'multiple_choice'), q.question,
 			       q.choice_a, q.choice_b, q.choice_c, q.choice_d,
 			       q.answer_key, q.explanation, a.selected, a.is_correct
 			FROM exam_attempt_answers a
@@ -419,7 +426,7 @@ func GetUserExamAttempts(username, examID string) ([]ExamAttempt, error) {
 			var d ExamAttemptAnswer
 			var choiceA, choiceB, choiceC, choiceD string
 			if err := ansRows.Scan(
-				&d.QuestionID, &d.Domain, &d.Question,
+				&d.QuestionID, &d.Domain, &d.QuestionType, &d.Question,
 				&choiceA, &choiceB, &choiceC, &choiceD,
 				&d.AnswerKey, &d.Explanation,
 				&d.Selected, &d.IsCorrect,

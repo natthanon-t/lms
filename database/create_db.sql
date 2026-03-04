@@ -181,18 +181,19 @@ CREATE TABLE exam_domain_percentages (
     FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE
 );
 
--- คำถามในข้อสอบ (multiple choice 4 ตัวเลือก)
+-- คำถามในข้อสอบ
 CREATE TABLE exam_questions (
-  id          TEXT  PRIMARY KEY,
-  exam_id     TEXT  NOT NULL,
-  domain      TEXT  NOT NULL DEFAULT '',
-  question    TEXT  NOT NULL,
-  choice_a    TEXT  NOT NULL DEFAULT '',
-  choice_b    TEXT  NOT NULL DEFAULT '',
-  choice_c    TEXT  NOT NULL DEFAULT '',
-  choice_d    TEXT  NOT NULL DEFAULT '',
-  answer_key  TEXT  NOT NULL DEFAULT '',   -- ข้อที่ถูก
-  explanation TEXT  NOT NULL DEFAULT '',
+  id            TEXT  PRIMARY KEY,
+  exam_id       TEXT  NOT NULL,
+  domain        TEXT  NOT NULL DEFAULT '',
+  question_type TEXT  NOT NULL DEFAULT 'multiple_choice',  -- multiple_choice | text
+  question      TEXT  NOT NULL,
+  choice_a      TEXT  NOT NULL DEFAULT '',
+  choice_b      TEXT  NOT NULL DEFAULT '',
+  choice_c      TEXT  NOT NULL DEFAULT '',
+  choice_d      TEXT  NOT NULL DEFAULT '',
+  answer_key    TEXT  NOT NULL DEFAULT '',   -- ข้อที่ถูก (ว่างสำหรับ text type)
+  explanation   TEXT  NOT NULL DEFAULT '',
   CONSTRAINT fk_exam_questions_exam
     FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE
 );
@@ -226,8 +227,8 @@ CREATE INDEX ix_exam_attempts_exam ON exam_attempts(exam_id);
 CREATE TABLE exam_attempt_answers (
   attempt_id  BIGINT   NOT NULL,
   question_id TEXT     NOT NULL,
-  selected    TEXT     NOT NULL DEFAULT '',  -- ตัวเลือกที่เลือก
-  is_correct  BOOLEAN  NOT NULL DEFAULT FALSE,
+  selected    TEXT     NOT NULL DEFAULT '',  -- ตัวเลือกที่เลือก / ข้อความที่พิมพ์
+  is_correct  BOOLEAN,                       -- NULL = text type (ไม่มีเฉลยตายตัว)
   PRIMARY KEY (attempt_id, question_id),
   CONSTRAINT fk_attempt_answers_attempt
     FOREIGN KEY (attempt_id)  REFERENCES exam_attempts(id)   ON DELETE CASCADE,

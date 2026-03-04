@@ -70,12 +70,17 @@ func (h *Handler) UpsertExam(c *fiber.Ctx) error {
 		for _, ch := range q.Choices {
 			choices = append(choices, strings.TrimSpace(ch))
 		}
+		qType := strings.TrimSpace(q.QuestionType)
+		if qType == "" {
+			qType = "multiple_choice"
+		}
 		questions = append(questions, data.ExamQuestion{
-			Domain:      strings.TrimSpace(q.Domain),
-			Question:    strings.TrimSpace(q.Question),
-			Choices:     choices,
-			AnswerKey:   strings.TrimSpace(q.AnswerKey),
-			Explanation: strings.TrimSpace(q.Explanation),
+			Domain:       strings.TrimSpace(q.Domain),
+			QuestionType: qType,
+			Question:     strings.TrimSpace(q.Question),
+			Choices:      choices,
+			AnswerKey:    strings.TrimSpace(q.AnswerKey),
+			Explanation:  strings.TrimSpace(q.Explanation),
 		})
 	}
 
@@ -187,7 +192,7 @@ func (h *Handler) SaveExamAttempt(c *fiber.Ctx) error {
 		answers = append(answers, data.ExamAnswerInput{
 			QuestionID: ans.QuestionID,
 			Selected:   ans.Selected,
-			IsCorrect:  ans.IsCorrect,
+			IsCorrect:  ans.IsCorrect, // *bool — nil for text-type questions
 		})
 	}
 

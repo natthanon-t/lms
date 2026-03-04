@@ -203,6 +203,31 @@
   font-weight: 700;
 }
 
+.result-pending {
+  color: #7a5c00;
+  font-weight: 700;
+}
+
+.text-answer-wrap {
+  margin: 8px 0;
+}
+
+.text-answer-input {
+  width: 100%;
+  border: 1px solid #d5e0f7;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.text-answer-input:focus {
+  outline: 2px solid #2f66da;
+  border-color: #2f66da;
+}
+
 .role-select {
   border: 1px solid #b8c4e0;
   border-radius: 8px;

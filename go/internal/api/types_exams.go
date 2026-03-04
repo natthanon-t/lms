@@ -16,12 +16,13 @@ type examRequest struct {
 }
 
 type examQuestionReq struct {
-	ID          string   `json:"id"`
-	Domain      string   `json:"domain"`
-	Question    string   `json:"question"`
-	Choices     []string `json:"choices"`
-	AnswerKey   string   `json:"answerKey"`
-	Explanation string   `json:"explanation"`
+	ID           string   `json:"id"`
+	Domain       string   `json:"domain"`
+	QuestionType string   `json:"questionType"`
+	Question     string   `json:"question"`
+	Choices      []string `json:"choices"`
+	AnswerKey    string   `json:"answerKey"`
+	Explanation  string   `json:"explanation"`
 }
 
 type examStatusRequest struct {
@@ -44,5 +45,5 @@ type examDomainStatBody struct {
 type examAnswerBody struct {
 	QuestionID string `json:"questionId"`
 	Selected   string `json:"selected"`
-	IsCorrect  bool   `json:"isCorrect"`
+	IsCorrect  *bool  `json:"isCorrect"`
 }

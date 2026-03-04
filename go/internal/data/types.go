@@ -41,13 +41,14 @@ type Exam struct {
 }
 
 type ExamQuestion struct {
-	ID          string   `json:"id"`
-	ExamID      string   `json:"examId"`
-	Domain      string   `json:"domain"`
-	Question    string   `json:"question"`
-	Choices     []string `json:"choices"`
-	AnswerKey   string   `json:"answerKey"`
-	Explanation string   `json:"explanation"`
+	ID           string   `json:"id"`
+	ExamID       string   `json:"examId"`
+	Domain       string   `json:"domain"`
+	QuestionType string   `json:"questionType"`
+	Question     string   `json:"question"`
+	Choices      []string `json:"choices"`
+	AnswerKey    string   `json:"answerKey"`
+	Explanation  string   `json:"explanation"`
 }
 
 type ExamDomainStat struct {
@@ -56,14 +57,15 @@ type ExamDomainStat struct {
 }
 
 type ExamAttemptAnswer struct {
-	QuestionID  string   `json:"questionId"`
-	Domain      string   `json:"domain"`
-	Question    string   `json:"question"`
-	Choices     []string `json:"choices"`
-	AnswerKey   string   `json:"answerKey"`
-	Explanation string   `json:"explanation"`
-	Selected    string   `json:"selected"`
-	IsCorrect   bool     `json:"isCorrect"`
+	QuestionID   string   `json:"questionId"`
+	Domain       string   `json:"domain"`
+	QuestionType string   `json:"questionType"`
+	Question     string   `json:"question"`
+	Choices      []string `json:"choices"`
+	AnswerKey    string   `json:"answerKey"`
+	Explanation  string   `json:"explanation"`
+	Selected     string   `json:"selected"`
+	IsCorrect    *bool    `json:"isCorrect"`
 }
 
 type ExamAttempt struct {
@@ -83,7 +85,7 @@ type ExamAttempt struct {
 type ExamAnswerInput struct {
 	QuestionID string
 	Selected   string
-	IsCorrect  bool
+	IsCorrect  *bool
 }
 
 type AnswerProgress struct {

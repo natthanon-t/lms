@@ -127,7 +127,8 @@ export default function ExamTakingPage({ draft, onEndExam, orderMode, durationSe
   const submitExam = useCallback(() => {
     const details = orderedQuestions.map((question, index) => {
       const selected = answers[question.id] ?? null;
-      const isCorrect = normalizeText(selected) === normalizeText(question.answerKey);
+      const isTextType = question.questionType === "text";
+      const isCorrect = isTextType ? null : normalizeText(selected) === normalizeText(question.answerKey);
 
       return {
         index: index + 1,
@@ -137,9 +138,14 @@ export default function ExamTakingPage({ draft, onEndExam, orderMode, durationSe
       };
     });
 
-    const correctCount = details.filter((item) => item.isCorrect).length;
-    const scorePercent = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
+    const gradedDetails = details.filter((item) => item.isCorrect !== null);
+    const correctCount = gradedDetails.filter((item) => item.isCorrect).length;
+    const gradedTotal = gradedDetails.length;
+    const scorePercent = gradedTotal > 0 ? Math.round((correctCount / gradedTotal) * 100) : 0;
     const domainStatsMap = details.reduce((acc, item) => {
+      if (item.isCorrect === null) {
+        return acc;
+      }
       const domain = item.question.domain || "-";
       if (!acc[domain]) {
         acc[domain] = { domain, total: 0, correct: 0 };
@@ -160,6 +166,7 @@ export default function ExamTakingPage({ draft, onEndExam, orderMode, durationSe
     const result = {
       correctCount,
       totalQuestions,
+      gradedTotal,
       scorePercent,
       details,
       domainStats,
@@ -213,8 +220,12 @@ export default function ExamTakingPage({ draft, onEndExam, orderMode, durationSe
           <div>
             <h1>ผลการสอบ: {draft.title}</h1>
             <p>
-              คะแนน {submittedResult.correctCount}/{submittedResult.totalQuestions} ({submittedResult.scorePercent}
-              %)
+              คะแนน {submittedResult.correctCount}/{submittedResult.gradedTotal} ({submittedResult.scorePercent}%)
+              {submittedResult.gradedTotal < submittedResult.totalQuestions ? (
+                <span style={{ fontSize: "0.85rem", color: "var(--text-muted, #888)", marginLeft: "0.5rem" }}>
+                  (รวม {submittedResult.totalQuestions} ข้อ, {submittedResult.totalQuestions - submittedResult.gradedTotal} ข้อพิมพ์ตอบ)
+                </span>
+              ) : null}
             </p>
           </div>
           <button type="button" className="back-button" onClick={onEndExam}>
@@ -247,18 +258,39 @@ export default function ExamTakingPage({ draft, onEndExam, orderMode, durationSe
               <h3>
                 ข้อ {item.index}: {item.question.question}
               </h3>
-              <p>
-                <strong>คำตอบที่เลือก:</strong> {item.selected ?? "ไม่ได้ตอบ"}
-              </p>
-              <p>
-                <strong>เฉลย:</strong> {item.question.answerKey}
-              </p>
-              <p className={item.isCorrect ? "result-correct" : "result-wrong"}>
-                {item.isCorrect ? "ถูก" : "ผิด"}
-              </p>
-              <p>
-                <strong>คำอธิบาย:</strong> {item.question.explanation}
-              </p>
+              {item.question.questionType === "text" ? (
+                <>
+                  <p>
+                    <strong>คำตอบที่พิมพ์:</strong>{" "}
+                    {item.selected ? (
+                      <span style={{ whiteSpace: "pre-wrap" }}>{item.selected}</span>
+                    ) : (
+                      <em style={{ color: "var(--text-muted, #888)" }}>ไม่ได้ตอบ</em>
+                    )}
+                  </p>
+                  <p className="result-pending">ข้อพิมพ์ตอบอิสระ — ไม่นับคะแนนอัตโนมัติ</p>
+                  {item.question.explanation ? (
+                    <p>
+                      <strong>แนวคำตอบ:</strong> {item.question.explanation}
+                    </p>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <p>
+                    <strong>คำตอบที่เลือก:</strong> {item.selected ?? "ไม่ได้ตอบ"}
+                  </p>
+                  <p>
+                    <strong>เฉลย:</strong> {item.question.answerKey}
+                  </p>
+                  <p className={item.isCorrect ? "result-correct" : "result-wrong"}>
+                    {item.isCorrect ? "ถูก" : "ผิด"}
+                  </p>
+                  <p>
+                    <strong>คำอธิบาย:</strong> {item.question.explanation}
+                  </p>
+                </>
+              )}
             </article>
           ))}
         </div>
@@ -286,29 +318,49 @@ export default function ExamTakingPage({ draft, onEndExam, orderMode, durationSe
         </p>
         <h3>{currentQuestion.question}</h3>
 
-        <div className="choice-list">
-          {currentQuestion.choices.map((choice, idx) => {
-            const key = `${currentQuestion.id}-${idx}`;
-            const checked = answers[currentQuestion.id] === choice;
+        {currentQuestion.questionType === "text" ? (
+          <div className="text-answer-wrap">
+            <p style={{ fontSize: "0.85rem", color: "var(--text-muted, #888)", marginBottom: "0.5rem" }}>
+              พิมพ์คำตอบของคุณด้านล่าง (ข้อนี้ไม่มีเฉลยตายตัว)
+            </p>
+            <textarea
+              className="text-answer-input"
+              rows={5}
+              value={answers[currentQuestion.id] ?? ""}
+              onChange={(event) =>
+                setAnswers((prevAnswers) => ({
+                  ...prevAnswers,
+                  [currentQuestion.id]: event.target.value,
+                }))
+              }
+              placeholder="พิมพ์คำตอบที่นี่..."
+            />
+          </div>
+        ) : (
+          <div className="choice-list">
+            {currentQuestion.choices.map((choice, idx) => {
+              const key = `${currentQuestion.id}-${idx}`;
+              const checked = answers[currentQuestion.id] === choice;
 
-            return (
-              <label key={key} className={checked ? "choice-item checked" : "choice-item"}>
-                <input
-                  type="radio"
-                  name={currentQuestion.id}
-                  checked={checked}
-                  onChange={() =>
-                    setAnswers((prevAnswers) => ({
-                      ...prevAnswers,
-                      [currentQuestion.id]: choice,
-                    }))
-                  }
-                />
-                <span>{choice}</span>
-              </label>
-            );
-          })}
-        </div>
+              return (
+                <label key={key} className={checked ? "choice-item checked" : "choice-item"}>
+                  <input
+                    type="radio"
+                    name={currentQuestion.id}
+                    checked={checked}
+                    onChange={() =>
+                      setAnswers((prevAnswers) => ({
+                        ...prevAnswers,
+                        [currentQuestion.id]: choice,
+                      }))
+                    }
+                  />
+                  <span>{choice}</span>
+                </label>
+              );
+            })}
+          </div>
+        )}
 
         <div className="exam-nav-actions">
           <button

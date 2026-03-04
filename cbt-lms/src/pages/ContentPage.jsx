@@ -1,16 +1,6 @@
-import { useState } from "react";
+import StatusSelect from "../components/StatusSelect";
 
 const CONTENT_STATUS_OPTIONS = ["inprogress", "active", "inactive"];
-
-const toStatusLabel = (status) => {
-  if (status === "inprogress") {
-    return "inprogress";
-  }
-  if (status === "inactive") {
-    return "inactive";
-  }
-  return "active";
-};
 
 export default function ContentPage({
   examples,
@@ -22,11 +12,9 @@ export default function ContentPage({
   isAdmin = false,
   canCreate = false,
 }) {
-  const [managingContentId, setManagingContentId] = useState("");
   const isOwner = (example) =>
     Boolean(currentUserKey) && String(example?.ownerUsername ?? "").trim() === currentUserKey;
-  const canManageExample = (example) =>
-    isAdmin || isOwner(example);
+  const canManageExample = (example) => isAdmin || isOwner(example);
   const canViewExample = (example) =>
     isAdmin ||
     String(example?.status ?? "active").toLowerCase() === "active" ||
@@ -59,50 +47,24 @@ export default function ContentPage({
               <h3 className="example-title">{example.title}</h3>
               <div className="example-action-box">
                 {canManageExample(example) ? (
-                  <span className={`content-status-badge ${example.status ?? "active"}`}>
-                    {toStatusLabel(example.status)}
-                  </span>
+                  <StatusSelect
+                    value={example.status ?? "active"}
+                    options={CONTENT_STATUS_OPTIONS}
+                    onChange={(status) => onUpdateContentStatus?.(example.id, status)}
+                  />
                 ) : null}
                 {canManageExample(example) ? (
                   <button
                     type="button"
                     className="gear-button"
                     aria-label={`จัดการ ${example.title}`}
-                    onClick={() =>
-                      setManagingContentId((prevId) => (prevId === example.id ? "" : example.id))
-                    }
+                    onClick={() => onOpenEditor(example)}
                   >
                     ⚙
                   </button>
                 ) : null}
               </div>
             </div>
-            {canManageExample(example) && managingContentId === example.id ? (
-              <div className="content-manage-menu">
-                <button
-                  type="button"
-                  className="manage-button"
-                  onClick={() => {
-                    onOpenEditor(example);
-                    setManagingContentId("");
-                  }}
-                >
-                  แก้ไขเนื้อหา
-                </button>
-                <label htmlFor={`status-${example.id}`}>สถานะ</label>
-                <select
-                  id={`status-${example.id}`}
-                  value={example.status ?? "active"}
-                  onChange={(event) => onUpdateContentStatus?.(example.id, event.target.value)}
-                >
-                  {CONTENT_STATUS_OPTIONS.map((status) => (
-                    <option key={`${example.id}-${status}`} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : null}
             {example.skills?.length ? (
               <div className="skill-tags">
                 {example.skills.map((skill) => (

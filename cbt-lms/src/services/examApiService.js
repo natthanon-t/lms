@@ -38,6 +38,7 @@ const normalizeAttempt = (attempt) => ({
       id: item.questionId,
       question: item.question,
       domain: item.domain,
+      questionType: item.questionType ?? "multiple_choice",
       choices: Array.isArray(item.choices) ? item.choices : [],
       answerKey: item.answerKey,
       explanation: item.explanation,
@@ -75,7 +76,10 @@ export const upsertExamApi = async (exam) =>
       defaultTime:       exam.defaultTime,
       maxAttempts:       exam.maxAttempts ?? 0,
       domainPercentages: exam.domainPercentages ?? {},
-      questions:         Array.isArray(exam.questions) ? exam.questions : [],
+      questions:         Array.isArray(exam.questions) ? exam.questions.map((q) => ({
+        ...q,
+        questionType: q.questionType ?? "multiple_choice",
+      })) : [],
     }),
   });
 

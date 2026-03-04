@@ -19,6 +19,7 @@ const toQuestions = (questions) => {
       {
         id: "q-1",
         domain: "ISC2 CC Domain 1: Security Principles",
+        questionType: "multiple_choice",
         question: "",
         choices: ["A. ", "B. ", "C. ", "D. "],
         answerKey: "",
@@ -29,6 +30,7 @@ const toQuestions = (questions) => {
   return questions.map((question, index) => ({
     id: question.id ?? `q-${index + 1}`,
     domain: question.domain ?? "-",
+    questionType: question.questionType ?? "multiple_choice",
     question: question.question ?? "",
     choices: Array.isArray(question.choices) && question.choices.length ? question.choices : ["A. ", "B. ", "C. ", "D. "],
     answerKey: question.answerKey ?? "",
@@ -43,6 +45,7 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft, onDeleteExa
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
   const [importStatus, setImportStatus] = useState({ type: "", message: "" });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [questionViewMode, setQuestionViewMode] = useState("single");
   const questionRefs = useRef({});
 
   useEffect(() => {
@@ -103,6 +106,7 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft, onDeleteExa
       {
         id: `q-${prevQuestions.length + 1}`,
         domain: domainRows[0]?.domain ?? "ISC2 CC Domain 1: Security Principles",
+        questionType: "multiple_choice",
         question: "",
         choices: ["A. ", "B. ", "C. ", "D. "],
         answerKey: "",
@@ -139,6 +143,7 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft, onDeleteExa
       ...question,
       id: `q-${index + 1}`,
       domain: String(question.domain ?? "").trim() || "-",
+      questionType: String(question.questionType ?? "multiple_choice").trim(),
       question: String(question.question ?? "").trim(),
       choices: (Array.isArray(question.choices) ? question.choices : []).map((choice) => String(choice ?? "").trim()),
       answerKey: String(question.answerKey ?? "").trim(),
@@ -479,7 +484,16 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft, onDeleteExa
         <div className="editor-skill-head">
           <h3>Questions</h3>
           <div className="editor-question-tools">
-            <label htmlFor="question-jump">แก้ข้อที่</label>
+            <label htmlFor="question-view-mode">แสดงผล</label>
+            <select
+              id="question-view-mode"
+              value={questionViewMode}
+              onChange={(event) => setQuestionViewMode(event.target.value)}
+            >
+              <option value="single">ทีละข้อ</option>
+              <option value="all">ทั้งหมด</option>
+            </select>
+            <label htmlFor="question-jump">ข้อที่</label>
             <select
               id="question-jump"
               value={selectedQuestionIndex}
@@ -491,6 +505,26 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft, onDeleteExa
                 </option>
               ))}
             </select>
+            {questionViewMode === "single" ? (
+              <>
+                <button
+                  type="button"
+                  className="back-button"
+                  onClick={() => jumpToQuestion(selectedQuestionIndex - 1)}
+                  disabled={selectedQuestionIndex === 0}
+                >
+                  ←
+                </button>
+                <button
+                  type="button"
+                  className="back-button"
+                  onClick={() => jumpToQuestion(selectedQuestionIndex + 1)}
+                  disabled={selectedQuestionIndex === questions.length - 1}
+                >
+                  →
+                </button>
+              </>
+            ) : null}
             <button type="button" className="create-content-button" onClick={addQuestion}>
               + เพิ่มคำถาม
             </button>
@@ -498,6 +532,7 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft, onDeleteExa
         </div>
         <div className="editor-question-list">
           {questions.map((question, index) => (
+            questionViewMode === "single" && index !== selectedQuestionIndex ? null : (
             <article
               key={`question-${index}`}
               ref={(element) => {
@@ -528,6 +563,17 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft, onDeleteExa
                     onChange={(event) => updateQuestion(index, "domain", event.target.value)}
                   />
                 </div>
+                <div className="editor-title-box">
+                  <label htmlFor={`q-type-${index}`}>รูปแบบการตอบ</label>
+                  <select
+                    id={`q-type-${index}`}
+                    value={question.questionType ?? "multiple_choice"}
+                    onChange={(event) => updateQuestion(index, "questionType", event.target.value)}
+                  >
+                    <option value="multiple_choice">เลือกตอบ (Multiple Choice)</option>
+                    <option value="text">พิมพ์ตอบอิสระ (ไม่มีเฉลยตายตัว)</option>
+                  </select>
+                </div>
                 <div className="editor-title-box editor-meta-full">
                   <label htmlFor={`q-question-${index}`}>Question</label>
                   <textarea
@@ -537,27 +583,37 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft, onDeleteExa
                     onChange={(event) => updateQuestion(index, "question", event.target.value)}
                   />
                 </div>
-                <div className="editor-title-box editor-meta-full">
-                  <label>Choices</label>
-                  <div className="editor-choice-list">
-                    {question.choices.map((choice, choiceIndex) => (
+                {(question.questionType ?? "multiple_choice") === "multiple_choice" ? (
+                  <>
+                    <div className="editor-title-box editor-meta-full">
+                      <label>Choices</label>
+                      <div className="editor-choice-list">
+                        {question.choices.map((choice, choiceIndex) => (
+                          <input
+                            key={`q-${index}-c-${choiceIndex}`}
+                            value={choice}
+                            onChange={(event) => updateQuestionChoice(index, choiceIndex, event.target.value)}
+                            placeholder={`Choice ${choiceIndex + 1}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div className="editor-title-box">
+                      <label htmlFor={`q-answer-${index}`}>AnswerKey</label>
                       <input
-                        key={`q-${index}-c-${choiceIndex}`}
-                        value={choice}
-                        onChange={(event) => updateQuestionChoice(index, choiceIndex, event.target.value)}
-                        placeholder={`Choice ${choiceIndex + 1}`}
+                        id={`q-answer-${index}`}
+                        value={question.answerKey}
+                        onChange={(event) => updateQuestion(index, "answerKey", event.target.value)}
                       />
-                    ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="editor-title-box editor-meta-full">
+                    <p style={{ fontSize: "0.85rem", color: "var(--text-muted, #888)", margin: 0 }}>
+                      ข้อนี้เป็นแบบพิมพ์ตอบอิสระ — ผู้เรียนจะพิมพ์คำตอบเองและไม่นับคะแนนอัตโนมัติ
+                    </p>
                   </div>
-                </div>
-                <div className="editor-title-box">
-                  <label htmlFor={`q-answer-${index}`}>AnswerKey</label>
-                  <input
-                    id={`q-answer-${index}`}
-                    value={question.answerKey}
-                    onChange={(event) => updateQuestion(index, "answerKey", event.target.value)}
-                  />
-                </div>
+                )}
                 <div className="editor-title-box editor-meta-full">
                   <label htmlFor={`q-explain-${index}`}>Explaination</label>
                   <textarea
@@ -569,6 +625,7 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft, onDeleteExa
                 </div>
               </div>
             </article>
+            )
           ))}
         </div>
       </div>
