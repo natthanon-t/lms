@@ -376,6 +376,7 @@ export default function ProfilePage({
       </header>
 
       <article className="info-card profile-info-card">
+        <div className="profile-left-panel">
         {/* Avatar */}
         <div className="profile-avatar-area">
           <div
@@ -459,17 +460,18 @@ export default function ProfilePage({
         )}
 
         {message ? <p className="profile-message">{message}</p> : null}
-      </article>
+        </div>
 
-      <article className="info-card">
-        <h3 className="heatmap-title">ACTIVITY</h3>
-        <p className="heatmap-subtitle">วันที่เข้าใช้งานระบบในช่วง 1 ปีที่ผ่านมา (นับจากการ Login)</p>
-        <LoginActivityHeatmap username={username} />
-        <div className="heatmap-legend">
-          <span>น้อย</span>
-          <span className="heatmap-legend-cell" style={{ background: "#dde3ed" }} />
-          <span className="heatmap-legend-cell" style={{ background: "#2ea043" }} />
-          <span>มาก</span>
+        <div className="profile-activity-panel">
+          <h3 className="heatmap-title">ACTIVITY</h3>
+          <p className="heatmap-subtitle">วันที่เข้าใช้งานระบบในช่วง 1 ปีที่ผ่านมา (นับจากการ Login)</p>
+          <LoginActivityHeatmap username={username} />
+          <div className="heatmap-legend">
+            <span>ไม่เข้าระบบ</span>
+            <span className="heatmap-legend-cell" style={{ background: "#dde3ed" }} />
+            <span className="heatmap-legend-cell" style={{ background: "#2ea043" }} />
+            <span>เข้าระบบ</span>
+          </div>
         </div>
       </article>
 
