@@ -1,6 +1,5 @@
 import StatusSelect from "../components/StatusSelect";
-
-const EXAM_STATUS_OPTIONS = ["inprogress", "active", "inactive"];
+import { STATUS_OPTIONS, isItemOwner, canViewItemByStatus } from "../services/accessControlService";
 
 export default function ExamPage({
   examBank,
@@ -12,14 +11,10 @@ export default function ExamPage({
   isAdmin = false,
   canCreate = false,
 }) {
-  const isOwner = (exam) =>
-    Boolean(currentUserKey) && String(exam?.ownerUsername ?? "").trim() === currentUserKey;
-  const canManageExam = (exam) => isAdmin || isOwner(exam);
-  const canViewExam = (exam) =>
-    isAdmin ||
-    String(exam?.status ?? "active").toLowerCase() === "active" ||
-    isOwner(exam);
-  const visibleExams = examBank.filter(canViewExam);
+  const canManageExam = (exam) => isAdmin || isItemOwner(exam, currentUserKey);
+  const visibleExams = examBank.filter((exam) =>
+    canViewItemByStatus({ item: exam, currentUserKey, isAdmin }),
+  );
 
   return (
     <section className="workspace-content">
@@ -47,7 +42,7 @@ export default function ExamPage({
                 <div className="example-action-box">
                   <StatusSelect
                     value={exam.status ?? "active"}
-                    options={EXAM_STATUS_OPTIONS}
+                    options={STATUS_OPTIONS}
                     onChange={(status) => onUpdateExamStatus?.(exam.id, status)}
                   />
                   <button

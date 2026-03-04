@@ -1,17 +1,5 @@
 import { useState } from "react";
-
-const CONTENT_STATUS_OPTIONS = ["inprogress", "active", "inactive"];
-const isActiveItem = (item) => String(item?.status ?? "active").toLowerCase() === "active";
-
-const toStatusLabel = (status) => {
-  if (status === "inprogress") {
-    return "inprogress";
-  }
-  if (status === "inactive") {
-    return "inactive";
-  }
-  return "active";
-};
+import { STATUS_OPTIONS, isItemOwner, canViewItemByStatus } from "../services/accessControlService";
 
 export default function LobbyPage({
   examples,
@@ -26,22 +14,16 @@ export default function LobbyPage({
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [managingContentId, setManagingContentId] = useState("");
-  const isExampleOwner = (example) =>
-    Boolean(currentUserKey) && String(example?.ownerUsername ?? "").trim() === currentUserKey;
-  const isExamOwner = (exam) =>
-    Boolean(currentUserKey) && String(exam?.ownerUsername ?? "").trim() === currentUserKey;
-  const canManageExample = (example) =>
-    isAdmin || isExampleOwner(example);
-  const canManageExam = (exam) =>
-    isAdmin || isExamOwner(exam);
-  const canViewExample = (example) =>
-    isAdmin || isActiveItem(example) || isExampleOwner(example);
-  const canViewExam = (exam) =>
-    isAdmin || isActiveItem(exam) || isExamOwner(exam);
+  const canManageExample = (example) => isAdmin || isItemOwner(example, currentUserKey);
+  const canManageExam = (exam) => isAdmin || isItemOwner(exam, currentUserKey);
 
   const keyword = searchTerm.trim().toLowerCase();
-  const baseExamples = examples.filter(canViewExample);
-  const baseExams = examBank.filter(canViewExam);
+  const baseExamples = examples.filter((example) =>
+    canViewItemByStatus({ item: example, currentUserKey, isAdmin }),
+  );
+  const baseExams = examBank.filter((exam) =>
+    canViewItemByStatus({ item: exam, currentUserKey, isAdmin }),
+  );
   const filteredExamples = baseExamples.filter((example) =>
     keyword ? example.title.toLowerCase().includes(keyword) : true,
   );
@@ -79,7 +61,7 @@ export default function LobbyPage({
               <div className="example-action-box">
                 {canManageExample(example) ? (
                   <span className={`content-status-badge ${example.status ?? "active"}`}>
-                    {toStatusLabel(example.status)}
+                    {example.status ?? "active"}
                   </span>
                 ) : null}
                 {canManageExample(example) ? (
@@ -114,7 +96,7 @@ export default function LobbyPage({
                   value={example.status ?? "active"}
                   onChange={(event) => onUpdateContentStatus?.(example.id, event.target.value)}
                 >
-                  {CONTENT_STATUS_OPTIONS.map((status) => (
+                  {STATUS_OPTIONS.map((status) => (
                     <option key={`${example.id}-${status}`} value={status}>
                       {status}
                     </option>

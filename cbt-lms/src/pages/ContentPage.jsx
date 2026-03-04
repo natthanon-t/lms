@@ -1,6 +1,5 @@
 import StatusSelect from "../components/StatusSelect";
-
-const CONTENT_STATUS_OPTIONS = ["inprogress", "active", "inactive"];
+import { STATUS_OPTIONS, isItemOwner, canViewItemByStatus } from "../services/accessControlService";
 
 export default function ContentPage({
   examples,
@@ -12,14 +11,10 @@ export default function ContentPage({
   isAdmin = false,
   canCreate = false,
 }) {
-  const isOwner = (example) =>
-    Boolean(currentUserKey) && String(example?.ownerUsername ?? "").trim() === currentUserKey;
-  const canManageExample = (example) => isAdmin || isOwner(example);
-  const canViewExample = (example) =>
-    isAdmin ||
-    String(example?.status ?? "active").toLowerCase() === "active" ||
-    isOwner(example);
-  const visibleExamples = examples.filter(canViewExample);
+  const canManageExample = (example) => isAdmin || isItemOwner(example, currentUserKey);
+  const visibleExamples = examples.filter((example) =>
+    canViewItemByStatus({ item: example, currentUserKey, isAdmin }),
+  );
 
   return (
     <section className="workspace-content content-theme-exam">
@@ -49,7 +44,7 @@ export default function ContentPage({
                 {canManageExample(example) ? (
                   <StatusSelect
                     value={example.status ?? "active"}
-                    options={CONTENT_STATUS_OPTIONS}
+                    options={STATUS_OPTIONS}
                     onChange={(status) => onUpdateContentStatus?.(example.id, status)}
                   />
                 ) : null}

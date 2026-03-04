@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useEscapeKey } from "../hooks/useEscapeKey";
 
 const roleOptions = ["ผู้ใช้งาน", "ผู้สอน", "ผู้ดูแลระบบ", "user", "admin"];
 const statusOptions = ["active", "inactive"];
@@ -131,43 +132,11 @@ export default function UserManagementPage({
     setShowCreateUserModal(false);
   };
 
-  const closeCreateUserModal = () => {
-    setShowCreateUserModal(false);
-  };
+  const closeCreateUserModal = () => setShowCreateUserModal(false);
+  const closeEditUserModal = () => setShowEditUserModal(false);
 
-  useEffect(() => {
-    if (!showCreateUserModal) {
-      return undefined;
-    }
-
-    const handleEscape = (event) => {
-      if (event.key === "Escape") {
-        closeCreateUserModal();
-      }
-    };
-
-    window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
-  }, [showCreateUserModal]);
-
-  const closeEditUserModal = () => {
-    setShowEditUserModal(false);
-  };
-
-  useEffect(() => {
-    if (!showEditUserModal) {
-      return undefined;
-    }
-
-    const handleEscape = (event) => {
-      if (event.key === "Escape") {
-        closeEditUserModal();
-      }
-    };
-
-    window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
-  }, [showEditUserModal]);
+  useEscapeKey(showCreateUserModal, closeCreateUserModal);
+  useEscapeKey(showEditUserModal, closeEditUserModal);
 
   const handleOpenEditUserModal = (row) => {
     setEditingUsername(row.username);

@@ -1,26 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useEscapeKey } from "../hooks/useEscapeKey";
 import { getSubtopicPages } from "../components/markdown/headingUtils";
 import { getCourseSkillRewards } from "../services/skillRewardsService";
 import { fileToDataUrl } from "../services/imageService";
 import { getLoginDates } from "../services/loginActivityStore";
 
+import { getAvatarColor, getInitials } from "../utils/avatar";
+
 const avatarKey = (username) => `profile_avatar_${username}`;
-
-const getAvatarColor = (username) => {
-  let hash = 0;
-  for (let i = 0; i < username.length; i++) {
-    hash = username.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const hue = Math.abs(hash) % 360;
-  return `hsl(${hue}, 55%, 48%)`;
-};
-
-const getInitials = (name, username) => {
-  const text = String(name || username || "?").trim();
-  const words = text.split(/\s+/);
-  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
-  return text.slice(0, 2).toUpperCase();
-};
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
@@ -379,20 +366,7 @@ export default function ProfilePage({
     setPasswordMessage("");
   };
 
-  useEffect(() => {
-    if (!showPasswordForm) {
-      return undefined;
-    }
-
-    const handleEscape = (event) => {
-      if (event.key === "Escape") {
-        closePasswordModal();
-      }
-    };
-
-    window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
-  }, [showPasswordForm]);
+  useEscapeKey(showPasswordForm, closePasswordModal);
 
   return (
     <section className="workspace-content">

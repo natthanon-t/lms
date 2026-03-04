@@ -1,3 +1,5 @@
+export const STATUS_OPTIONS = ["inprogress", "active", "inactive"];
+
 const toOwnerUsername = (item) => String(item?.ownerUsername ?? "").trim();
 
 export const isItemOwner = (item, currentUserKey) =>
