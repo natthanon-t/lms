@@ -57,6 +57,10 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	admin.Patch("/:username", handler.UpdateUserByAdmin)
 	admin.Post("/:username/reset-password", handler.ResetUserPasswordByAdmin)
 
+	adminExams := protected.Group("/admin", auth.AdminOnlyMiddleware)
+	adminExams.Get("/exam-attempts", handler.GetAllExamAttemptsAdmin)
+	adminExams.Get("/exam-attempts/:id", handler.GetExamAttemptDetailsAdmin)
+
 	courses := protected.Group("/courses")
 	courses.Post("", handler.UpsertCourse)
 	courses.Patch("/:id/status", handler.UpdateCourseStatus)

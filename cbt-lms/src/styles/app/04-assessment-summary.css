@@ -366,6 +366,392 @@
   }
 }
 
+/* ── Course user status section ─────────────────────────────────────────────── */
+.course-status-section {
+  margin-top: 24px;
+  background: #ffffff;
+  border: 1px solid #d5e0f7;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.course-status-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.course-status-select {
+  border: 1px solid #b8c4e0;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: #f8fbff;
+  color: #1a2f57;
+  min-width: 240px;
+  cursor: pointer;
+}
+
+.course-status-select:focus {
+  outline: 2px solid #2f66da;
+  border-color: #2f66da;
+}
+
+.course-status-table-wrap {
+  margin-top: 14px;
+  overflow-x: auto;
+}
+
+.course-status-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.course-status-table th,
+.course-status-table td {
+  text-align: left;
+  padding: 10px 10px;
+  border-bottom: 1px solid #e0e8f8;
+  white-space: nowrap;
+}
+
+.course-status-table th {
+  color: #1a2f57;
+  font-weight: 700;
+  background: #f4f7ff;
+}
+
+.course-status-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.course-status-table tbody tr:hover td {
+  background: #f8fbff;
+}
+
+.course-status-table .col-center {
+  text-align: center;
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.badge-completed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-in-progress {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.badge-not-started {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.badge-fail {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ── Exam history filters ────────────────────────────────────────────────────── */
+.exam-history-filters {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.exam-history-search {
+  flex: 1;
+  min-width: 220px;
+  border: 1px solid #b8c4e0;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: #f8fbff;
+  color: #1a2f57;
+}
+
+.exam-history-search:focus {
+  outline: 2px solid #2f66da;
+  border-color: #2f66da;
+}
+
+.view-answers-btn {
+  border: 1px solid #b8c4e0;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 0.82rem;
+  background: #f4f7ff;
+  color: #2454b8;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.view-answers-btn:hover {
+  background: #e8eeff;
+  border-color: #2f66da;
+}
+
+/* ── Exam answer modal ───────────────────────────────────────────────────────── */
+.exam-answer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 20, 50, 0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.exam-answer-modal {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 760px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 40px rgba(10, 20, 60, 0.18);
+}
+
+.exam-answer-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #e0e8f8;
+  flex-shrink: 0;
+}
+
+.exam-answer-modal-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1a2f57;
+}
+
+.exam-answer-modal-header p {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: #6b8ab8;
+}
+
+.exam-answer-close {
+  border: none;
+  background: #f1f5f9;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  font-size: 1rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  color: #45608f;
+}
+.exam-answer-close:hover { background: #e0e8f8; }
+
+.exam-answer-body {
+  overflow-y: auto;
+  padding: 16px 24px 24px;
+}
+
+.exam-answer-list {
+  display: grid;
+  gap: 12px;
+}
+
+.exam-answer-item {
+  border: 1px solid #e0e8f8;
+  border-radius: 12px;
+  padding: 14px;
+}
+.exam-answer-item.answer-correct { border-color: #86efac; background: #f0fdf4; }
+.exam-answer-item.answer-wrong   { border-color: #fca5a5; background: #fff5f5; }
+.exam-answer-item.answer-pending { border-color: #fde68a; background: #fffbeb; }
+
+.exam-answer-item-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.exam-answer-num {
+  min-width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #e0e8f8;
+  color: #1a2f57;
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.exam-answer-domain {
+  font-size: 0.78rem;
+  color: #6b8ab8;
+  border: 1px solid #d5e0f7;
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.exam-answer-result {
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.result-correct { color: #16a34a; }
+.result-wrong   { color: #dc2626; }
+.result-pending { color: #b45309; }
+
+.exam-answer-question {
+  margin: 0 0 10px;
+  color: #1a2f57;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.exam-answer-choices {
+  display: grid;
+  gap: 6px;
+}
+
+.exam-answer-choice {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: #334155;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+.exam-answer-choice.choice-key           { border-color: #86efac; background: #f0fdf4; color: #166534; font-weight: 700; }
+.exam-answer-choice.choice-selected-wrong { border-color: #fca5a5; background: #fff5f5; color: #b91c1c; }
+
+.choice-label {
+  min-width: 20px;
+  font-weight: 700;
+}
+
+.choice-tag {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #dcfce7;
+  color: #166534;
+  border-radius: 999px;
+  padding: 1px 8px;
+  white-space: nowrap;
+}
+.choice-tag-wrong { background: #fee2e2; color: #b91c1c; }
+
+.exam-answer-explain {
+  margin: 10px 0 0;
+  font-size: 0.83rem;
+  color: #45608f;
+  border-top: 1px dashed #d5e0f7;
+  padding-top: 8px;
+}
+
+/* ── Role permission table ───────────────────────────────────────────────────── */
+.role-perm-table-wrap {
+  margin-top: 16px;
+  overflow-x: auto;
+  background: #ffffff;
+  border: 1px solid #d5e0f7;
+  border-radius: 14px;
+}
+
+.role-perm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.role-perm-table th,
+.role-perm-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #e0e8f8;
+}
+
+.role-perm-table th {
+  background: #f4f7ff;
+  color: #1a2f57;
+  font-weight: 700;
+  text-align: center;
+}
+
+.role-perm-table th.perm-label-col {
+  text-align: left;
+  min-width: 220px;
+}
+
+.role-perm-table th.perm-role-col {
+  min-width: 130px;
+}
+
+.perm-group-row td {
+  background: #eef3ff;
+  color: #2454b8;
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border-bottom: 1px solid #d5e0f7;
+}
+
+.perm-label {
+  color: #1a2f57;
+}
+
+.perm-cell {
+  text-align: center;
+}
+
+.perm-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #2f66da;
+  cursor: pointer;
+}
+
+.perm-checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.role-perm-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.role-perm-table tbody tr:not(.perm-group-row):hover td {
+  background: #f8fbff;
+}
+
+.perm-note {
+  margin-top: 12px;
+  color: #6b8ab8;
+  font-size: 0.83rem;
+}
+
 .summary-list {
   display: grid;
   gap: 10px;

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 // ── Mock chart data (ข้อมูลจำลอง) ────────────────────────────────────────────
 const DAYS = ["จ.", "อ.", "พ.", "พฤ.", "ศ.", "ส.", "อา."];
@@ -31,6 +31,33 @@ const MOCK_ENROLLMENT = [
   { course: "UX/UI Design", count: 17 },
   { course: "SQL ขั้นสูง", count: 14 },
 ];
+
+// ── Mock course-user status data ──────────────────────────────────────────────
+const MOCK_EMPLOYEES = [
+  { empCode: "60001", name: "สมชาย ใจดี",        dept: "IT Security" },
+  { empCode: "60002", name: "วรรณา ศรีสุข",       dept: "Network Operations" },
+  { empCode: "60003", name: "ประยุทธ พิมลรัตน์",  dept: "SOC" },
+  { empCode: "60004", name: "นันทิดา แก้วมณี",    dept: "IT Security" },
+  { empCode: "60005", name: "ธนาธร วงษ์ศิริ",     dept: "Management" },
+  { empCode: "60006", name: "กมลรัตน์ สีดา",      dept: "Network Operations" },
+  { empCode: "60007", name: "วิชัย ธรรมรักษ์",    dept: "SOC" },
+  { empCode: "60008", name: "พรทิพย์ มีชัย",      dept: "HR" },
+  { empCode: "60009", name: "เจษฎา วารีรัตน์",    dept: "IT Security" },
+  { empCode: "60010", name: "สุภาพร จันทร์งาม",   dept: "Finance" },
+];
+const _ST = ["completed","in_progress","completed","in_progress","completed","in_progress","completed","in_progress","not_started","not_started"];
+const _AQ = [24, 12, 20, 8, 18, 6, 22, 4, 0, 0];
+const _SA = ["2025-01-10 09:00","2025-01-11 10:15","2025-01-09 14:30","2025-01-12 08:45","2025-01-13 11:20","2025-01-10 13:00","2025-01-14 09:30","2025-01-11 15:00",null,null];
+const _FA = ["2025-01-12 14:30",null,"2025-01-11 16:00",null,"2025-01-15 10:00",null,"2025-01-16 11:45",null,null,null];
+
+const _hashId = (str) => { let h = 0; for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0; return Math.abs(h) % MOCK_EMPLOYEES.length; };
+const buildMockRows = (courseId) => {
+  const shift = _hashId(courseId);
+  return MOCK_EMPLOYEES.map((emp, i) => {
+    const idx = (i + shift) % MOCK_EMPLOYEES.length;
+    return { ...emp, status: _ST[idx], answered: _AQ[idx], startedAt: _SA[idx], finishedAt: _FA[idx] };
+  });
+};
 
 // ── Catmull-Rom → cubic-bezier smooth path ────────────────────────────────────
 function smoothPath(pts) {
@@ -312,13 +339,31 @@ function TopEnrollmentChart() {
   );
 }
 
+// ── Status badge ──────────────────────────────────────────────────────────────
+const STATUS_MAP = {
+  completed:   { label: "เสร็จสิ้น",    cls: "badge-completed" },
+  in_progress: { label: "กำลังเรียน",   cls: "badge-in-progress" },
+  not_started: { label: "ยังไม่เริ่ม",  cls: "badge-not-started" },
+};
+function StatusBadge({ status }) {
+  const { label, cls } = STATUS_MAP[status] ?? { label: status, cls: "" };
+  return <span className={`status-badge ${cls}`}>{label}</span>;
+}
+
 // ── Main SummaryPage ──────────────────────────────────────────────────────────
 export default function SummaryPage({
   lessonCount,
   examCount,
   users,
   learningStats,
+  examples,
 }) {
+  const [selectedCourseId, setSelectedCourseId] = useState("");
+  const safeExamples = Array.isArray(examples) ? examples : [];
+  const mockRows = useMemo(
+    () => (selectedCourseId ? buildMockRows(selectedCourseId) : []),
+    [selectedCourseId],
+  );
   const learnerUsernames = useMemo(
     () =>
       Object.entries(users ?? {})
@@ -450,6 +495,57 @@ export default function SummaryPage({
           <p className="chart-card-sub">5 คอร์สที่มีผู้เรียนสูงสุด (ข้อมูลจำลอง)</p>
           <TopEnrollmentChart />
         </div>
+      </div>
+
+      {/* ── Course user status ── */}
+      <div className="course-status-section">
+        <div className="course-status-header">
+          <div>
+            <h2 className="chart-card-title">สถานะการเรียนรายบุคคล</h2>
+            <p className="chart-card-sub">เลือกคอร์สเพื่อดูความคืบหน้าของแต่ละคน (ข้อมูลจำลอง)</p>
+          </div>
+          <select
+            className="course-status-select"
+            value={selectedCourseId}
+            onChange={(e) => setSelectedCourseId(e.target.value)}
+          >
+            <option value="">— เลือกคอร์ส —</option>
+            {safeExamples.map((c) => (
+              <option key={c.id} value={c.id}>{c.title}</option>
+            ))}
+          </select>
+        </div>
+
+        {selectedCourseId && (
+          <div className="course-status-table-wrap">
+            <table className="course-status-table">
+              <thead>
+                <tr>
+                  <th>รหัสพนักงาน</th>
+                  <th>ชื่อ-นามสกุล</th>
+                  <th>แผนก</th>
+                  <th>สถานะ</th>
+                  <th>ตอบคำถาม</th>
+                  <th>เวลาเริ่ม</th>
+                  <th>เวลาเสร็จ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mockRows.map((row) => (
+                  <tr key={row.empCode}>
+                    <td>{row.empCode}</td>
+                    <td>{row.name}</td>
+                    <td>{row.dept}</td>
+                    <td><StatusBadge status={row.status} /></td>
+                    <td className="col-center">{row.answered > 0 ? `${row.answered} ครั้ง` : "—"}</td>
+                    <td>{row.startedAt ?? "—"}</td>
+                    <td>{row.finishedAt ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </section>
   );

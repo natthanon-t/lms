@@ -20,9 +20,11 @@ import ExamPage from "./pages/ExamPage";
 import ExamDetailPage from "./pages/ExamDetailPage";
 import ExamEditorPage from "./pages/ExamEditorPage";
 import ExamTakingPage from "./pages/ExamTakingPage";
+import ExamHistoryPage from "./pages/ExamHistoryPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import LobbyPage from "./pages/LobbyPage";
 import ProfilePage from "./pages/ProfilePage";
+import RolePermissionPage from "./pages/RolePermissionPage";
 import StudyPage from "./pages/StudyPage";
 import SummaryPage from "./pages/SummaryPage";
 import UserManagementPage from "./pages/UserManagementPage";
@@ -204,6 +206,15 @@ export default function App() {
       void loadExamCatalog();
     }
   }, [activeTab, loadExamCatalog]);
+
+  const loadUserScoresFromApi = useCallback(async () => {
+    try {
+      const { skills } = await fetchUserScoresApi();
+      setUserSkillScores(skills);
+    } catch {
+      // keep existing
+    }
+  }, []);
 
   useEffect(() => {
     if (activeTab === "profile" && currentUserKey) {
@@ -877,15 +888,6 @@ export default function App() {
     }
   }, []);
 
-  const loadUserScoresFromApi = useCallback(async () => {
-    try {
-      const { skills } = await fetchUserScoresApi();
-      setUserSkillScores(skills);
-    } catch {
-      // keep existing
-    }
-  }, []);
-
   const handleLoginFromBackend = async ({ username, password }) => {
     try {
       const payload = await loginAuth({ username, password });
@@ -1028,6 +1030,24 @@ export default function App() {
           examples={examples}
           learningProgress={learningProgress}
         />
+      ) : activeTab === "exam-history" && !isAdmin ? (
+        <section className="workspace-content">
+          <header className="content-header">
+            <h1>ประวัติการสอบ</h1>
+            <p>หน้านี้สำหรับผู้ดูแลระบบเท่านั้น</p>
+          </header>
+        </section>
+      ) : activeTab === "exam-history" ? (
+        <ExamHistoryPage />
+      ) : activeTab === "role-permission" && !isAdmin ? (
+        <section className="workspace-content">
+          <header className="content-header">
+            <h1>สิทธิ์การใช้งาน</h1>
+            <p>หน้านี้สำหรับผู้ดูแลระบบเท่านั้น</p>
+          </header>
+        </section>
+      ) : activeTab === "role-permission" ? (
+        <RolePermissionPage />
       ) : activeTab === "exam" ? (
         examView === "taking" ? (
           <ExamTakingPage

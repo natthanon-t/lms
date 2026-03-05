@@ -443,6 +443,77 @@ func GetUserExamAttempts(username, examID string) ([]ExamAttempt, error) {
 	return attempts, nil
 }
 
+// GetExamAttemptDetails returns the per-question answers for a single attempt.
+func GetExamAttemptDetails(attemptID int64) ([]ExamAttemptAnswer, error) {
+	rows, err := db.Query(`
+		SELECT a.question_id, q.domain, COALESCE(q.question_type, 'multiple_choice'), q.question,
+		       q.choice_a, q.choice_b, q.choice_c, q.choice_d,
+		       q.answer_key, q.explanation, a.selected, a.is_correct
+		FROM exam_attempt_answers a
+		JOIN exam_questions q ON q.id = a.question_id
+		WHERE a.attempt_id = $1
+		ORDER BY a.question_id`,
+		attemptID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	details := make([]ExamAttemptAnswer, 0)
+	for rows.Next() {
+		var d ExamAttemptAnswer
+		var choiceA, choiceB, choiceC, choiceD string
+		if err := rows.Scan(
+			&d.QuestionID, &d.Domain, &d.QuestionType, &d.Question,
+			&choiceA, &choiceB, &choiceC, &choiceD,
+			&d.AnswerKey, &d.Explanation,
+			&d.Selected, &d.IsCorrect,
+		); err != nil {
+			return nil, err
+		}
+		d.Choices = []string{choiceA, choiceB, choiceC, choiceD}
+		details = append(details, d)
+	}
+	return details, rows.Err()
+}
+
+// GetAllExamAttemptsAdmin returns all exam attempts across all users for admin view.
+func GetAllExamAttemptsAdmin() ([]AdminExamAttempt, error) {
+	rows, err := db.Query(`
+		SELECT ea.id, ea.username, u.name, u.employee_code,
+		       ea.exam_id, e.title,
+		       ea.correct_count, ea.total_questions, ea.score_percent::float8,
+		       ea.started_at, ea.finished_at
+		FROM exam_attempts ea
+		JOIN users u ON u.username = ea.username
+		JOIN exams e ON e.id = ea.exam_id
+		ORDER BY COALESCE(ea.finished_at, ea.started_at) DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	attempts := make([]AdminExamAttempt, 0)
+	for rows.Next() {
+		var a AdminExamAttempt
+		var finishedAt sql.NullTime
+		if err := rows.Scan(
+			&a.ID, &a.Username, &a.UserName, &a.EmployeeCode,
+			&a.ExamID, &a.ExamTitle,
+			&a.CorrectCount, &a.TotalQuestions, &a.ScorePercent,
+			&a.StartedAt, &finishedAt,
+		); err != nil {
+			return nil, err
+		}
+		if finishedAt.Valid {
+			a.FinishedAt = &finishedAt.Time
+		}
+		attempts = append(attempts, a)
+	}
+	return attempts, rows.Err()
+}
+
 // ── Seeding ───────────────────────────────────────────────────────────────────
 
 func SeedExamsFromDir(dir string) error {

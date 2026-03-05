@@ -81,6 +81,21 @@ type ExamAttempt struct {
 	Details        []ExamAttemptAnswer        `json:"details"`
 }
 
+// AdminExamAttempt extends ExamAttempt with user and exam display fields for admin view.
+type AdminExamAttempt struct {
+	ID             int64      `json:"id"`
+	Username       string     `json:"username"`
+	UserName       string     `json:"name"`
+	EmployeeCode   string     `json:"employeeCode"`
+	ExamID         string     `json:"examId"`
+	ExamTitle      string     `json:"examTitle"`
+	CorrectCount   int        `json:"correctCount"`
+	TotalQuestions int        `json:"totalQuestions"`
+	ScorePercent   float64    `json:"scorePercent"`
+	StartedAt      time.Time  `json:"startedAt"`
+	FinishedAt     *time.Time `json:"finishedAt"`
+}
+
 // ExamAnswerInput is used when saving attempt answers
 type ExamAnswerInput struct {
 	QuestionID string

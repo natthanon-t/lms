@@ -1,17 +1,21 @@
 const tabs = [
-  { key: "home", label: "หน้าหลัก" },
-  { key: "content", label: "เนื้อหา" },
-  { key: "exam", label: "ข้อสอบ" },
-  { key: "profile", label: "โปรไฟล์" },
-  { key: "user-management", label: "จัดการ user" },
-  { key: "leaderboard", label: "ลีดเดอร์บอร์ด" },
-  { key: "summary", label: "สรุปผล" },
+  { key: "home",            label: "หน้าหลัก" },
+  { key: "content",         label: "เนื้อหา" },
+  { key: "exam",            label: "ข้อสอบ" },
+  { key: "profile",         label: "โปรไฟล์" },
+  { key: "leaderboard",     label: "ลีดเดอร์บอร์ด" },
+  { key: "user-management", label: "จัดการ User" },
+  { key: "exam-history",    label: "ประวัติการสอบ" },
+  { key: "role-permission", label: "สิทธิ์การใช้งาน" },
+  { key: "summary",         label: "สรุปผล" },
 ];
+
+const ADMIN_ONLY = new Set(["user-management", "exam-history", "role-permission", "summary"]);
 
 const tabGroups = [
   ["home", "content", "exam"],
-  ["profile", "user-management", "summary"],
-  ["leaderboard"],
+  ["profile", "leaderboard"],
+  ["user-management", "exam-history", "role-permission", "summary"],
 ];
 
 export default function WorkspaceSidebar({
@@ -22,9 +26,7 @@ export default function WorkspaceSidebar({
   isAdmin = false,
 }) {
   const visibleTabs = tabs.filter((tab) => {
-    if (!isAdmin && (tab.key === "user-management" || tab.key === "summary")) {
-      return false;
-    }
+    if (!isAdmin && ADMIN_ONLY.has(tab.key)) return false;
     return true;
   });
   const visibleTabsByKey = new Map(visibleTabs.map((tab) => [tab.key, tab]));

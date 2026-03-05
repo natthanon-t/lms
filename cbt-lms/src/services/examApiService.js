@@ -111,3 +111,17 @@ export const fetchExamAttemptsApi = async (examId) => {
   });
   return (Array.isArray(payload?.attempts) ? payload.attempts : []).map(normalizeAttempt);
 };
+
+export const fetchAllExamAttemptsAdminApi = async () => {
+  const payload = await request("/api/admin/exam-attempts", {
+    headers: authHeaders(),
+  });
+  return Array.isArray(payload?.attempts) ? payload.attempts : [];
+};
+
+export const fetchExamAttemptDetailsAdminApi = async (attemptId) => {
+  const payload = await request(`/api/admin/exam-attempts/${encodeURIComponent(attemptId)}`, {
+    headers: authHeaders(),
+  });
+  return Array.isArray(payload?.details) ? payload.details : [];
+};

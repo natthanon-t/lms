@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -206,6 +207,27 @@ func (h *Handler) SaveExamAttempt(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{"attempt": attempt})
+}
+
+func (h *Handler) GetAllExamAttemptsAdmin(c *fiber.Ctx) error {
+	attempts, err := data.GetAllExamAttemptsAdmin()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot get attempts")
+	}
+	return c.JSON(fiber.Map{"attempts": attempts})
+}
+
+func (h *Handler) GetExamAttemptDetailsAdmin(c *fiber.Ctx) error {
+	idStr := strings.TrimSpace(c.Params("id"))
+	attemptID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || attemptID <= 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid attempt id")
+	}
+	details, err := data.GetExamAttemptDetails(attemptID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot get attempt details")
+	}
+	return c.JSON(fiber.Map{"details": details})
 }
 
 func (h *Handler) GetExamAttempts(c *fiber.Ctx) error {
