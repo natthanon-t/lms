@@ -70,6 +70,14 @@ export const meAuth = async () =>
     headers: toHeaders(getAccessToken()),
   });
 
+export const fetchLoginDates = async () => {
+  const payload = await request("/api/auth/login-dates", {
+    method: "GET",
+    headers: toHeaders(getAccessToken()),
+  });
+  return payload.dates ?? [];
+};
+
 export const logoutAuth = async () => {
   const refreshToken = getRefreshToken();
   try {

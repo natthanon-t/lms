@@ -40,6 +40,7 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 
 	authProtected := protected.Group("/auth")
 	authProtected.Get("/me", handler.Me)
+	authProtected.Get("/login-dates", handler.LoginDates)
 	protected.Get("/role", handler.RoleOptions)
 
 	profile := protected.Group("/profile")

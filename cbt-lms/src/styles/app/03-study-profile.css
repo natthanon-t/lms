@@ -631,9 +631,21 @@
 }
 
 /* Heatmap */
+.heatmap-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
 .heatmap-title {
   margin: 0;
   letter-spacing: 0.04em;
+}
+
+.heatmap-active-days {
+  font-size: 0.85rem;
+  color: #2ea043;
+  font-weight: 700;
 }
 
 .heatmap-subtitle {

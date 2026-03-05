@@ -259,6 +259,35 @@ func RevokeRefreshToken(tokenHash string) error {
 	return err
 }
 
+func RecordLoginLog(userID int64) error {
+	_, err := db.Exec(`INSERT INTO user_login_logs (user_id) VALUES ($1)`, userID)
+	return err
+}
+
+func GetLoginDatesByUserID(userID int64) ([]string, error) {
+	rows, err := db.Query(
+		`SELECT DISTINCT TO_CHAR(logged_in_at AT TIME ZONE 'Asia/Bangkok', 'YYYY-MM-DD')
+		 FROM user_login_logs
+		 WHERE user_id = $1
+		 ORDER BY 1`,
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	dates := make([]string, 0)
+	for rows.Next() {
+		var d string
+		if err := rows.Scan(&d); err != nil {
+			return nil, err
+		}
+		dates = append(dates, d)
+	}
+	return dates, rows.Err()
+}
+
 func Close() error {
 	if db == nil {
 		return nil

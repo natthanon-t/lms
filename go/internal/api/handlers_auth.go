@@ -86,6 +86,8 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot store refresh token")
 	}
 
+	_ = data.RecordLoginLog(user.ID)
+
 	return c.JSON(fiber.Map{
 		"message":       "login success",
 		"token":         accessToken,
@@ -167,6 +169,18 @@ func (h *Handler) Logout(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{"message": "logout success"})
+}
+
+func (h *Handler) LoginDates(c *fiber.Ctx) error {
+	userID, err := auth.CurrentUserID(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
+	}
+	dates, err := data.GetLoginDatesByUserID(userID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "failed to get login dates")
+	}
+	return c.JSON(fiber.Map{"dates": dates})
 }
 
 func (h *Handler) Me(c *fiber.Ctx) error {

@@ -3,7 +3,7 @@ import { useEscapeKey } from "../hooks/useEscapeKey";
 import { getSubtopicPages } from "../components/markdown/headingUtils";
 import { getCourseSkillRewards } from "../services/skillRewardsService";
 import { fileToDataUrl } from "../services/imageService";
-import { getLoginDates } from "../services/loginActivityStore";
+import { fetchLoginDates } from "../services/authService";
 
 import { getAvatarColor, getInitials } from "../utils/avatar";
 
@@ -16,10 +16,13 @@ const GAP = 3;
 const LEFT_W = 30;
 const TOP_H = 20;
 
-function LoginActivityHeatmap({ username }) {
-  const loginDateSet = useMemo(() => new Set(getLoginDates(username)), [username]);
+function LoginActivityHeatmap({ dates }) {
+  const loginDateSet = useMemo(() => new Set(dates), [dates]);
 
   const { weeks, monthLabels, totalWeeks } = useMemo(() => {
+    const pad = (n) => String(n).padStart(2, "0");
+    const toLocalStr = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
     const year = new Date().getFullYear();
     // Start from the Sunday of the week containing Jan 1
     const jan1 = new Date(year, 0, 1);
@@ -31,9 +34,7 @@ function LoginActivityHeatmap({ username }) {
     endDay.setDate(dec31.getDate() + (6 - dec31.getDay()));
     const numWeeks = Math.round((endDay - startDay) / (7 * 24 * 60 * 60 * 1000)) + 1;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString().slice(0, 10);
+    const todayStr = toLocalStr(new Date());
 
     const builtWeeks = [];
     for (let w = 0; w < numWeeks; w++) {
@@ -41,7 +42,7 @@ function LoginActivityHeatmap({ username }) {
       for (let d = 0; d < 7; d++) {
         const date = new Date(startDay);
         date.setDate(startDay.getDate() + w * 7 + d);
-        const dateStr = date.toISOString().slice(0, 10);
+        const dateStr = toLocalStr(date);
         const isFuture = dateStr > todayStr;
         week.push({ dateStr, isActive: !isFuture && loginDateSet.has(dateStr), isFuture, dayOfWeek: d });
       }
@@ -133,6 +134,12 @@ export default function ProfilePage({
     try { return localStorage.getItem(avatarKey(username)) ?? ""; } catch { return ""; }
   });
   const avatarInputRef = useRef(null);
+  const [loginActivityDates, setLoginActivityDates] = useState([]);
+  useEffect(() => {
+    fetchLoginDates().then(setLoginActivityDates).catch(() => {});
+  }, [username]);
+  const currentYear = new Date().getFullYear().toString();
+  const activeDaysThisYear = loginActivityDates.filter((d) => d.startsWith(currentYear)).length;
   const userSkillScores = learningStats?.[username]?.skillScores ?? {};
   const safeExamples = Array.isArray(examples) ? examples : [];
 
@@ -463,14 +470,17 @@ export default function ProfilePage({
         </div>
 
         <div className="profile-activity-panel">
-          <h3 className="heatmap-title">ACTIVITY</h3>
-          <p className="heatmap-subtitle">วันที่เข้าใช้งานระบบในช่วง 1 ปีที่ผ่านมา (นับจากการ Login)</p>
-          <LoginActivityHeatmap username={username} />
+          <div className="heatmap-header">
+            <h3 className="heatmap-title">ACTIVITY</h3>
+            <span className="heatmap-active-days">{activeDaysThisYear} วันที่เข้าใช้งานในปีนี้</span>
+          </div>
+          <p className="heatmap-subtitle">วันที่เข้าใช้งานระบบในปีนี้ (นับจากการ Login)</p>
+          <LoginActivityHeatmap dates={loginActivityDates} />
           <div className="heatmap-legend">
-            <span>ไม่เข้าระบบ</span>
             <span className="heatmap-legend-cell" style={{ background: "#dde3ed" }} />
+            <span>ไม่ได้เข้าใช้งาน</span>
             <span className="heatmap-legend-cell" style={{ background: "#2ea043" }} />
-            <span>เข้าระบบ</span>
+            <span>เข้าใช้งาน</span>
           </div>
         </div>
       </article>
