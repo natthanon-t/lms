@@ -188,9 +188,10 @@ func GetLeaderboard() ([]LeaderboardEntry, error) {
 			u.username,
 			u.name,
 			u.role,
-			COALESCE(s.total, 0)  AS total_score,
-			COALESCE(ec.cnt, 0)   AS completed_courses,
-			COALESCE(aq.cnt, 0)   AS solved_questions
+			COALESCE(s.total, 0)   AS total_score,
+			COALESCE(ec.cnt, 0)    AS completed_courses,
+			COALESCE(aq.cnt, 0)    AS solved_questions,
+			COALESCE(av.data_url, '') AS avatar_url
 		FROM users u
 		LEFT JOIN user_scores s ON s.username = u.username
 		LEFT JOIN (
@@ -205,6 +206,7 @@ func GetLeaderboard() ([]LeaderboardEntry, error) {
 			WHERE is_correct = true
 			GROUP BY username
 		) aq ON aq.username = u.username
+		LEFT JOIN user_avatars av ON av.username = u.username
 		WHERE u.status = 'active'
 		ORDER BY total_score DESC, completed_courses DESC`)
 	if err != nil {
@@ -214,7 +216,7 @@ func GetLeaderboard() ([]LeaderboardEntry, error) {
 	var entries []LeaderboardEntry
 	for rows.Next() {
 		var e LeaderboardEntry
-		if err := rows.Scan(&e.Username, &e.Name, &e.Role, &e.TotalScore, &e.CompletedCourses, &e.SolvedQuestions); err != nil {
+		if err := rows.Scan(&e.Username, &e.Name, &e.Role, &e.TotalScore, &e.CompletedCourses, &e.SolvedQuestions, &e.AvatarURL); err != nil {
 			return nil, err
 		}
 		entries = append(entries, e)

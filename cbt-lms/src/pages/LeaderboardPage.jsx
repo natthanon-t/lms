@@ -1,5 +1,26 @@
 import { useState, useEffect } from "react";
 import { fetchLeaderboardApi } from "../services/courseApiService";
+import { getAvatarColor, getInitials } from "../utils/avatar";
+
+function AvatarCell({ name, username, avatarUrl }) {
+  const color = getAvatarColor(username);
+  const initials = getInitials(name, username);
+  return (
+    <span className="leaderboard-name-cell">
+      <span
+        className="leaderboard-avatar"
+        style={{ background: avatarUrl ? "transparent" : color }}
+      >
+        {avatarUrl ? (
+          <img src={avatarUrl} alt={name} className="leaderboard-avatar-img" />
+        ) : (
+          <span className="leaderboard-avatar-initials">{initials}</span>
+        )}
+      </span>
+      {name}
+    </span>
+  );
+}
 
 export default function LeaderboardPage() {
   const [ranking, setRanking] = useState([]);
@@ -52,7 +73,9 @@ export default function LeaderboardPage() {
                   <td>
                     <span className="leaderboard-rank-badge">{index + 1}</span>
                   </td>
-                  <td>{item.name}</td>
+                  <td>
+                    <AvatarCell name={item.name} username={item.username} avatarUrl={item.avatar_url} />
+                  </td>
                   <td>{item.username}</td>
                   <td>{item.role}</td>
                   <td>{item.solved_questions}</td>

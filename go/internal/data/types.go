@@ -105,6 +105,7 @@ type LeaderboardEntry struct {
 	TotalScore       int    `json:"total_score"`
 	CompletedCourses int    `json:"completed_courses"`
 	SolvedQuestions  int    `json:"solved_questions"`
+	AvatarURL        string `json:"avatar_url"`
 }
 
 type AuthUser struct {
