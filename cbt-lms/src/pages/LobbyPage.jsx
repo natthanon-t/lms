@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { STATUS_OPTIONS, isItemOwner, canViewItemByStatus } from "../services/accessControlService";
+import StatusSelect from "../components/StatusSelect";
 
 export default function LobbyPage({
   examples,
@@ -90,18 +91,11 @@ export default function LobbyPage({
                 >
                   แก้ไขเนื้อหา
                 </button>
-                <label htmlFor={`status-${example.id}`}>สถานะ</label>
-                <select
-                  id={`status-${example.id}`}
+                <StatusSelect
                   value={example.status ?? "active"}
-                  onChange={(event) => onUpdateContentStatus?.(example.id, event.target.value)}
-                >
-                  {STATUS_OPTIONS.map((status) => (
-                    <option key={`${example.id}-${status}`} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
+                  options={STATUS_OPTIONS}
+                  onChange={(status) => onUpdateContentStatus?.(example.id, status)}
+                />
               </div>
             ) : null}
             {example.skills?.length ? (

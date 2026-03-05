@@ -1,29 +1,7 @@
-import { getAccessToken } from "./authService";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5020";
-
-const toHeaders = (token) => ({
-  "Content-Type": "application/json",
-  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-});
-
-const request = async (path, options = {}) => {
-  const response = await fetch(`${API_BASE_URL}${path}`, options);
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(payload?.message ?? "request failed");
-  }
-  return payload;
-};
+import { authHeaders, request } from "./apiClient";
 
 const authRequest = (path, options = {}) =>
-  request(path, {
-    ...options,
-    headers: {
-      ...toHeaders(getAccessToken()),
-      ...(options.headers ?? {}),
-    },
-  });
+  request(path, { ...options, headers: { ...authHeaders(), ...(options.headers ?? {}) } });
 
 export const listUsersAdmin = async () => {
   const payload = await authRequest("/api/users", { method: "GET" });

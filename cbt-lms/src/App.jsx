@@ -749,16 +749,17 @@ export default function App() {
     }
   };
 
+  const patchUserState = (username, fields) => {
+    setUsers((prevUsers) => ({
+      ...prevUsers,
+      [username]: { ...(prevUsers[username] ?? {}), ...fields },
+    }));
+  };
+
   const handleUpdateUserRole = async (username, role) => {
     try {
       await updateUserAdmin(username, { role });
-      setUsers((prevUsers) => ({
-        ...prevUsers,
-        [username]: {
-          ...(prevUsers[username] ?? {}),
-          role,
-        },
-      }));
+      patchUserState(username, { role });
       return { success: true };
     } catch (error) {
       return { success: false, message: error?.message ?? "ไม่สามารถอัปเดตตำแหน่งได้" };
@@ -768,13 +769,7 @@ export default function App() {
   const handleUpdateUserStatus = async (username, status) => {
     try {
       await updateUserAdmin(username, { status });
-      setUsers((prevUsers) => ({
-        ...prevUsers,
-        [username]: {
-          ...(prevUsers[username] ?? {}),
-          status,
-        },
-      }));
+      patchUserState(username, { status });
       return { success: true };
     } catch (error) {
       return { success: false, message: error?.message ?? "ไม่สามารถอัปเดตสถานะได้" };
