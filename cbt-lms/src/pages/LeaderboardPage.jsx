@@ -1,14 +1,16 @@
-export default function LeaderboardPage({ users, learningStats }) {
-  const ranking = Object.entries(users)
-    .map(([username, profile]) => ({
-      username,
-      name: profile.name,
-      role: profile.role,
-      score: learningStats?.[username]?.score ?? 0,
-      completedCourses: learningStats?.[username]?.completedCourses ?? 0,
-      solvedQuestions: learningStats?.[username]?.solvedQuestions ?? 0,
-    }))
-    .sort((a, b) => b.score - a.score);
+import { useState, useEffect } from "react";
+import { fetchLeaderboardApi } from "../services/courseApiService";
+
+export default function LeaderboardPage() {
+  const [ranking, setRanking] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchLeaderboardApi()
+      .then(setRanking)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <section className="workspace-content">
@@ -18,45 +20,49 @@ export default function LeaderboardPage({ users, learningStats }) {
       </header>
 
       <div className="leaderboard-card">
-        <table>
-          <thead>
-            <tr>
-              <th>อันดับ</th>
-              <th>ชื่อ</th>
-              <th>Username</th>
-              <th>ตำแหน่ง</th>
-              <th>คำถามที่ตอบถูก</th>
-              <th>เนื้อหาที่เรียนจบ</th>
-              <th>คะแนน</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ranking.map((item, index) => (
-              <tr
-                key={item.username}
-                className={
-                  index === 0
-                    ? "leaderboard-rank-1"
-                    : index === 1
-                      ? "leaderboard-rank-2"
-                      : index === 2
-                        ? "leaderboard-rank-3"
-                        : ""
-                }
-              >
-                <td>
-                  <span className="leaderboard-rank-badge">{index + 1}</span>
-                </td>
-                <td>{item.name}</td>
-                <td>{item.username}</td>
-                <td>{item.role}</td>
-                <td>{item.solvedQuestions}</td>
-                <td>{item.completedCourses}</td>
-                <td>{item.score}</td>
+        {loading ? (
+          <p>กำลังโหลด...</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>อันดับ</th>
+                <th>ชื่อ</th>
+                <th>Username</th>
+                <th>ตำแหน่ง</th>
+                <th>คำถามที่ตอบถูก</th>
+                <th>เนื้อหาที่เรียนจบ</th>
+                <th>คะแนน</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {ranking.map((item, index) => (
+                <tr
+                  key={item.username}
+                  className={
+                    index === 0
+                      ? "leaderboard-rank-1"
+                      : index === 1
+                        ? "leaderboard-rank-2"
+                        : index === 2
+                          ? "leaderboard-rank-3"
+                          : ""
+                  }
+                >
+                  <td>
+                    <span className="leaderboard-rank-badge">{index + 1}</span>
+                  </td>
+                  <td>{item.name}</td>
+                  <td>{item.username}</td>
+                  <td>{item.role}</td>
+                  <td>{item.solved_questions}</td>
+                  <td>{item.completed_courses}</td>
+                  <td>{item.total_score}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </section>
   );

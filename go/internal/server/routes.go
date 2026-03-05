@@ -71,6 +71,7 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	learning := protected.Group("/learning")
 	learning.Get("/progress", handler.GetLearningProgress)
 	learning.Get("/scores", handler.GetUserScores)
+	learning.Get("/leaderboard", handler.GetLeaderboard)
 	learning.Post("/courses/:courseId/subtopics/:subtopicId/complete", handler.MarkSubtopicComplete)
 	learning.Post("/courses/:courseId/subtopics/:subtopicId/answer", handler.SubmitSubtopicAnswer)
 	learning.Post("/courses/:courseId/complete", handler.CompleteCourse)

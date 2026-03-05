@@ -98,6 +98,15 @@ type CourseProgress struct {
 	Answers            map[string]map[string]AnswerProgress  `json:"answers"`
 }
 
+type LeaderboardEntry struct {
+	Username         string `json:"username"`
+	Name             string `json:"name"`
+	Role             string `json:"role"`
+	TotalScore       int    `json:"total_score"`
+	CompletedCourses int    `json:"completed_courses"`
+	SolvedQuestions  int    `json:"solved_questions"`
+}
+
 type AuthUser struct {
 	ID           int64     `json:"id"`
 	Name         string    `json:"name"`

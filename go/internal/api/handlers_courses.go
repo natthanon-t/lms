@@ -217,6 +217,14 @@ func (h *Handler) CompleteCourse(c *fiber.Ctx) error {
 	})
 }
 
+func (h *Handler) GetLeaderboard(c *fiber.Ctx) error {
+	entries, err := data.GetLeaderboard()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot get leaderboard")
+	}
+	return c.JSON(fiber.Map{"leaderboard": entries})
+}
+
 func (h *Handler) GetUserScores(c *fiber.Ctx) error {
 	username, err := auth.CurrentUsername(c)
 	if err != nil {

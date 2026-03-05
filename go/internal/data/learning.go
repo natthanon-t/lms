@@ -182,6 +182,46 @@ func GetLearningProgress(username string) (map[string]CourseProgress, error) {
 	return result, nil
 }
 
+func GetLeaderboard() ([]LeaderboardEntry, error) {
+	rows, err := db.Query(`
+		SELECT
+			u.username,
+			u.name,
+			u.role,
+			COALESCE(s.total, 0)  AS total_score,
+			COALESCE(ec.cnt, 0)   AS completed_courses,
+			COALESCE(aq.cnt, 0)   AS solved_questions
+		FROM users u
+		LEFT JOIN user_scores s ON s.username = u.username
+		LEFT JOIN (
+			SELECT username, COUNT(*) AS cnt
+			FROM user_course_enrollments
+			WHERE completed_at IS NOT NULL
+			GROUP BY username
+		) ec ON ec.username = u.username
+		LEFT JOIN (
+			SELECT username, COUNT(*) AS cnt
+			FROM learning_subtopic_answers
+			WHERE is_correct = true
+			GROUP BY username
+		) aq ON aq.username = u.username
+		WHERE u.status = 'active'
+		ORDER BY total_score DESC, completed_courses DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var entries []LeaderboardEntry
+	for rows.Next() {
+		var e LeaderboardEntry
+		if err := rows.Scan(&e.Username, &e.Name, &e.Role, &e.TotalScore, &e.CompletedCourses, &e.SolvedQuestions); err != nil {
+			return nil, err
+		}
+		entries = append(entries, e)
+	}
+	return entries, rows.Err()
+}
+
 func getOrCreateCourseProgress(result map[string]CourseProgress, courseID string) CourseProgress {
 	cp, ok := result[courseID]
 	if !ok {

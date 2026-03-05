@@ -79,3 +79,10 @@ export const submitSubtopicAnswerApi = async (courseId, subtopicId, questionId, 
       body: JSON.stringify({ questionId, typedAnswer, isCorrect }),
     },
   );
+
+export const fetchLeaderboardApi = async () => {
+  const payload = await request("/api/learning/leaderboard", {
+    headers: authHeaders(),
+  });
+  return Array.isArray(payload?.leaderboard) ? payload.leaderboard : [];
+};
