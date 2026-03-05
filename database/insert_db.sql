@@ -73,7 +73,7 @@ INSERT INTO courses (id, title, creator, owner_username, status, description, im
 
 ### Security Monitoring
 SOC เฝ้าระวังเหตุการณ์จาก SIEM, EDR และ Firewall เพื่อตรวจจับพฤติกรรมที่ผิดปกติแบบ near real-time
-[video: SOC Monitoring Basics](https://www.youtube.com/watch?v=JMY6fYL6l1Y)
+[video: SOC Monitoring Basics](https://youtu.be/TlB-vGW-xLQ?si=vLAnovx5iB4FPXN3)
 - [SCORE] 15
 - [Q] เครื่องมือรวม log จากหลายระบบเพื่อตรวจจับเหตุผิดปกติเรียกว่าอะไร :: SIEM :: 10
 - [Q] Endpoint Detection and Response ใช้ตัวย่อว่าอะไร :: EDR :: 10

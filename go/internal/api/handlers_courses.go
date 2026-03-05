@@ -161,11 +161,12 @@ func (h *Handler) MarkSubtopicComplete(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "courseId and subtopicId are required")
 	}
 
-	if err := data.MarkSubtopicComplete(username, courseID, subtopicID); err != nil {
+	awarded, err := data.MarkSubtopicComplete(username, courseID, subtopicID)
+	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot mark subtopic complete")
 	}
 
-	return c.JSON(fiber.Map{"message": "subtopic marked complete"})
+	return c.JSON(fiber.Map{"message": "subtopic marked complete", "awarded_score": awarded})
 }
 
 func (h *Handler) SubmitSubtopicAnswer(c *fiber.Ctx) error {
@@ -192,4 +193,40 @@ func (h *Handler) SubmitSubtopicAnswer(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{"message": "answer saved"})
+}
+
+func (h *Handler) CompleteCourse(c *fiber.Ctx) error {
+	username, err := auth.CurrentUsername(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
+	}
+	courseID := strings.TrimSpace(c.Params("courseId"))
+	if courseID == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "courseId is required")
+	}
+
+	awardedScore, skillRewards, err := data.AwardCourseCompletion(username, courseID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot complete course")
+	}
+
+	return c.JSON(fiber.Map{
+		"message":       "course completed",
+		"awarded_score": awardedScore,
+		"skill_rewards": skillRewards,
+	})
+}
+
+func (h *Handler) GetUserScores(c *fiber.Ctx) error {
+	username, err := auth.CurrentUsername(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
+	}
+
+	total, skills, err := data.GetUserScores(username)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot get scores")
+	}
+
+	return c.JSON(fiber.Map{"total": total, "skills": skills})
 }

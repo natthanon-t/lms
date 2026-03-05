@@ -19,6 +19,9 @@ DROP TABLE IF EXISTS user_course_enrollments CASCADE;
 DROP TABLE IF EXISTS course_skill_rewards CASCADE;
 DROP TABLE IF EXISTS courses CASCADE;
 
+DROP TABLE IF EXISTS user_score_events CASCADE;
+DROP TABLE IF EXISTS user_skill_scores CASCADE;
+DROP TABLE IF EXISTS user_scores CASCADE;
 DROP TABLE IF EXISTS user_login_logs CASCADE;
 DROP TABLE IF EXISTS refresh_tokens CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
@@ -61,6 +64,40 @@ CREATE TABLE user_login_logs (
 CREATE INDEX ix_login_logs_user ON user_login_logs(user_id);
 CREATE INDEX ix_login_logs_time ON user_login_logs(logged_in_at);
 
+-- คะแนนรวมของผู้ใช้
+CREATE TABLE user_scores (
+  username   TEXT        PRIMARY KEY,
+  total      INT         NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT fk_user_scores_user
+    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
+);
+
+-- ประวัติการได้คะแนนของผู้ใช้ (สำหรับ leaderboard รายช่วงเวลา)
+CREATE TABLE user_score_events (
+  id        BIGSERIAL    PRIMARY KEY,
+  username  TEXT         NOT NULL,
+  score     INT          NOT NULL,
+  reason    TEXT         NOT NULL,  -- 'subtopic_complete' | 'course_complete'
+  course_id TEXT,
+  earned_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  CONSTRAINT fk_score_events_user
+    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
+);
+
+CREATE INDEX ix_score_events_user ON user_score_events(username);
+CREATE INDEX ix_score_events_time ON user_score_events(earned_at);
+
+-- คะแนนแยกตามทักษะของผู้ใช้
+CREATE TABLE user_skill_scores (
+  username   TEXT NOT NULL,
+  skill      TEXT NOT NULL,
+  points     INT  NOT NULL DEFAULT 0,
+  PRIMARY KEY (username, skill),
+  CONSTRAINT fk_user_skill_scores_user
+    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
+);
+
 -- ==========================================================
 -- COURSES (เนื้อหา)
 -- ==========================================================
@@ -101,9 +138,10 @@ CREATE TABLE course_skill_rewards (
 
 -- รายการลงทะเบียนเรียนของพนักงานแต่ละคน (เริ่มเรียน course ไหน เมื่อไหร่)
 CREATE TABLE user_course_enrollments (
-  username    TEXT         NOT NULL,
-  course_id   TEXT         NOT NULL,
-  enrolled_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  username     TEXT         NOT NULL,
+  course_id    TEXT         NOT NULL,
+  enrolled_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMPTZ  NULL,
   PRIMARY KEY (username, course_id),
   CONSTRAINT fk_enrollments_user
     FOREIGN KEY (username)  REFERENCES users(username) ON DELETE CASCADE,
