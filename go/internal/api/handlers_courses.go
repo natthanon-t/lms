@@ -225,6 +225,36 @@ func (h *Handler) GetLeaderboard(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"leaderboard": entries})
 }
 
+func (h *Handler) GetCourseImages(c *fiber.Ctx) error {
+	id := strings.TrimSpace(c.Params("id"))
+	if id == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "course id is required")
+	}
+	images, err := data.GetCourseImages(id)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot get course images")
+	}
+	return c.JSON(fiber.Map{"images": images})
+}
+
+func (h *Handler) SaveCourseImage(c *fiber.Ctx) error {
+	id := strings.TrimSpace(c.Params("id"))
+	if id == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "course id is required")
+	}
+	var req courseImageRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	if strings.TrimSpace(req.Filename) == "" || req.DataURL == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "filename and data_url are required")
+	}
+	if err := data.SaveCourseImage(id, req.Filename, req.DataURL); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot save course image")
+	}
+	return c.JSON(fiber.Map{"message": "image saved"})
+}
+
 func (h *Handler) GetUserScores(c *fiber.Ctx) error {
 	username, err := auth.CurrentUsername(c)
 	if err != nil {

@@ -13,6 +13,7 @@ import {
 } from "../components/markdown/headingUtils";
 import { ensureCoverImage, fileToDataUrl } from "../services/imageService";
 import { getStoredImages, storeImage } from "../services/contentImagesStore";
+import { saveCourseImageApi } from "../services/mediaApiService";
 
 const getSkillRewards = (draft) => {
   if (Array.isArray(draft.skillRewards) && draft.skillRewards.length > 0) {
@@ -253,6 +254,9 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
       const newImages = storeImage(draft.sourceId, file.name, dataUrl);
       setContentImages(newImages);
       insertAtCursor(`\n![${file.name}](${encodeURIComponent(file.name)})\n`);
+      if (draft.sourceId) {
+        void saveCourseImageApi(draft.sourceId, file.name, dataUrl).catch(() => {});
+      }
     } catch {
       setSaveMessage("อัพโหลดรูปไม่สำเร็จ");
     }

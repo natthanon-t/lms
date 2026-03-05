@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getStoredImages } from "../services/contentImagesStore";
+import { fetchCourseImagesApi } from "../services/mediaApiService";
 import MarkdownContent from "../components/markdown/MarkdownContent";
 import TableOfContents from "../components/markdown/TableOfContents";
 import { getSubtopicPages } from "../components/markdown/headingUtils";
@@ -11,7 +12,17 @@ export default function StudyPage({ draft, onBack, progress, onMarkSubtopicCompl
   const [contentImages, setContentImages] = useState(() => getStoredImages(draft.sourceId ?? draft.id));
 
   useEffect(() => {
-    setContentImages(getStoredImages(draft.sourceId ?? draft.id));
+    const courseId = draft.sourceId ?? draft.id;
+    setContentImages(getStoredImages(courseId));
+    if (courseId) {
+      fetchCourseImagesApi(courseId)
+        .then((apiImages) => {
+          if (Object.keys(apiImages).length > 0) {
+            setContentImages((prev) => ({ ...prev, ...apiImages }));
+          }
+        })
+        .catch(() => {});
+    }
   }, [draft.sourceId, draft.id]);
   const [answerInputs, setAnswerInputs] = useState({});
   const subtopicPages = useMemo(() => getSubtopicPages(draft.content, draft.title), [draft.content, draft.title]);

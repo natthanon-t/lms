@@ -194,3 +194,30 @@ func (h *Handler) Me(c *fiber.Ctx) error {
 	}
 	return c.JSON(toUserPayload(user))
 }
+
+func (h *Handler) GetAvatar(c *fiber.Ctx) error {
+	username, err := auth.CurrentUsername(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
+	}
+	dataURL, err := data.GetAvatar(username)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot get avatar")
+	}
+	return c.JSON(fiber.Map{"data_url": dataURL})
+}
+
+func (h *Handler) UpdateAvatar(c *fiber.Ctx) error {
+	username, err := auth.CurrentUsername(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
+	}
+	var req avatarRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	if err := data.SaveAvatar(username, req.DataURL); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot save avatar")
+	}
+	return c.JSON(fiber.Map{"message": "avatar updated"})
+}

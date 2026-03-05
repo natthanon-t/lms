@@ -68,6 +68,7 @@ import {
   updateCourseStatusApi,
   upsertCourseApi,
 } from "./services/courseApiService";
+import { fetchAvatarApi } from "./services/mediaApiService";
 import {
   changeProfilePassword,
   createUserAdmin,
@@ -234,6 +235,9 @@ export default function App() {
         setCurrentUserKey(username);
         recordLoginDate(username);
         void loadLearningProgressFromApi(username);
+        void fetchAvatarApi().then((dataUrl) => {
+          if (dataUrl) try { localStorage.setItem(`profile_avatar_${username}`, dataUrl); } catch { /* ignore */ }
+        }).catch(() => {});
       } catch {
         clearTokens();
       } finally {
@@ -873,6 +877,9 @@ export default function App() {
       setShowLogin(false);
       recordLoginDate(normalizedUsername);
       void loadLearningProgressFromApi(normalizedUsername);
+      void fetchAvatarApi().then((dataUrl) => {
+        if (dataUrl) try { localStorage.setItem(`profile_avatar_${normalizedUsername}`, dataUrl); } catch { /* ignore */ }
+      }).catch(() => {});
       return { success: true };
     } catch (error) {
       return { success: false, message: error?.message ?? "เข้าสู่ระบบไม่สำเร็จ" };
@@ -971,7 +978,7 @@ export default function App() {
           onCreateUser={handleCreateUser}
         />
       ) : activeTab === "leaderboard" ? (
-        <LeaderboardPage users={users} learningStats={learningStats} />
+        <LeaderboardPage />
       ) : activeTab === "summary" && !isAdmin ? (
         <section className="workspace-content">
           <header className="content-header">

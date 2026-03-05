@@ -28,3 +28,12 @@ type subtopicAnswerRequest struct {
 	TypedAnswer string `json:"typedAnswer"`
 	IsCorrect   bool   `json:"isCorrect"`
 }
+
+type courseImageRequest struct {
+	Filename string `json:"filename"`
+	DataURL  string `json:"data_url"`
+}
+
+type avatarRequest struct {
+	DataURL string `json:"data_url"`
+}

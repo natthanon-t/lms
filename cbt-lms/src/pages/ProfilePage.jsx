@@ -4,6 +4,7 @@ import { getSubtopicPages } from "../components/markdown/headingUtils";
 import { getCourseSkillRewards } from "../services/skillRewardsService";
 import { fileToDataUrl } from "../services/imageService";
 import { fetchLoginDates } from "../services/authService";
+import { fetchAvatarApi, updateAvatarApi } from "../services/mediaApiService";
 
 import { getAvatarColor, getInitials } from "../utils/avatar";
 
@@ -304,7 +305,18 @@ export default function ProfilePage({
   }, [currentUser.name]);
 
   useEffect(() => {
-    try { setAvatar(localStorage.getItem(avatarKey(username)) ?? ""); } catch { setAvatar(""); }
+    fetchAvatarApi()
+      .then((dataUrl) => {
+        if (dataUrl) {
+          try { localStorage.setItem(avatarKey(username), dataUrl); } catch { /* ignore */ }
+          setAvatar(dataUrl);
+        } else {
+          try { setAvatar(localStorage.getItem(avatarKey(username)) ?? ""); } catch { setAvatar(""); }
+        }
+      })
+      .catch(() => {
+        try { setAvatar(localStorage.getItem(avatarKey(username)) ?? ""); } catch { setAvatar(""); }
+      });
   }, [username]);
 
   const handleAvatarUpload = async (event) => {
@@ -315,6 +327,7 @@ export default function ProfilePage({
       const dataUrl = await fileToDataUrl(file);
       localStorage.setItem(avatarKey(username), dataUrl);
       setAvatar(dataUrl);
+      void updateAvatarApi(dataUrl).catch(() => {});
     } catch {
       // ignore upload errors
     }

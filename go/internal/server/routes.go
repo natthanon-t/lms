@@ -30,6 +30,7 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 
 	// Courses & Exams — GET is public (register before JWT middleware)
 	api.Get("/courses", handler.ListCourses)
+	api.Get("/courses/:id/images", handler.GetCourseImages)
 	api.Get("/exams", handler.ListExams)
 	api.Get("/exams/:id", handler.GetExam)
 
@@ -46,6 +47,8 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	profile := protected.Group("/profile")
 	profile.Patch("", handler.UpdateProfileName)
 	profile.Post("/change-password", handler.ChangePassword)
+	profile.Get("/avatar", handler.GetAvatar)
+	profile.Put("/avatar", handler.UpdateAvatar)
 
 	admin := protected.Group("/users", auth.AdminOnlyMiddleware)
 	admin.Get("/options", handler.UserOptions)
@@ -58,6 +61,7 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	courses.Post("", handler.UpsertCourse)
 	courses.Patch("/:id/status", handler.UpdateCourseStatus)
 	courses.Delete("/:id", handler.DeleteCourse)
+	courses.Post("/:id/images", handler.SaveCourseImage)
 
 	// Exams — protected CRUD + attempts
 	exams := protected.Group("/exams")

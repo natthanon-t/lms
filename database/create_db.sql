@@ -19,6 +19,8 @@ DROP TABLE IF EXISTS user_course_enrollments CASCADE;
 DROP TABLE IF EXISTS course_skill_rewards CASCADE;
 DROP TABLE IF EXISTS courses CASCADE;
 
+DROP TABLE IF EXISTS course_content_images CASCADE;
+DROP TABLE IF EXISTS user_avatars CASCADE;
 DROP TABLE IF EXISTS user_score_events CASCADE;
 DROP TABLE IF EXISTS user_skill_scores CASCADE;
 DROP TABLE IF EXISTS user_scores CASCADE;
@@ -63,6 +65,23 @@ CREATE TABLE user_login_logs (
 
 CREATE INDEX ix_login_logs_user ON user_login_logs(user_id);
 CREATE INDEX ix_login_logs_time ON user_login_logs(logged_in_at);
+
+-- รูป avatar ของผู้ใช้
+CREATE TABLE user_avatars (
+  username   TEXT        PRIMARY KEY,
+  data_url   TEXT        NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT fk_user_avatars_user
+    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
+);
+
+-- รูปภาพในเนื้อหาของ course
+CREATE TABLE course_content_images (
+  course_id  TEXT NOT NULL,
+  filename   TEXT NOT NULL,
+  data_url   TEXT NOT NULL,
+  PRIMARY KEY (course_id, filename)
+);
 
 -- คะแนนรวมของผู้ใช้
 CREATE TABLE user_scores (
