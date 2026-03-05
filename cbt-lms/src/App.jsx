@@ -35,6 +35,7 @@ import { buildNewExamRecord, normalizeExamRecord, toExamTakingDraft } from "./se
 import { calculateLearningStats } from "./services/learningStatsService";
 import { ensureCoverImage } from "./services/imageService";
 import { withCompletedSubtopic, withSubmittedSubtopicAnswer } from "./services/progressService";
+import { getSubtopicPages } from "./components/markdown/headingUtils";
 import {
   readStoredObject,
   writeStoredJson,
@@ -60,9 +61,11 @@ import {
   registerAuth,
 } from "./services/authService";
 import {
+  completeCourseApi,
   deleteCourseApi,
   fetchCoursesApi,
   fetchLearningProgressApi,
+  fetchUserScoresApi,
   markSubtopicCompleteApi,
   submitSubtopicAnswerApi,
   updateCourseStatusApi,
@@ -106,6 +109,7 @@ export default function App() {
   const [examples, setExamples] = useState([]);
   const [examBank, setExamBank] = useState([]);
   const [learningProgress, setLearningProgress] = useState({});
+  const [userSkillScores, setUserSkillScores] = useState({});
   const [examView, setExamView] = useState("list");
   const [examOrderMode, setExamOrderMode] = useState("sequential");
   const [users, setUsers] = useState({
@@ -202,6 +206,12 @@ export default function App() {
   }, [activeTab, loadExamCatalog]);
 
   useEffect(() => {
+    if (activeTab === "profile" && currentUserKey) {
+      void loadUserScoresFromApi();
+    }
+  }, [activeTab, currentUserKey, loadUserScoresFromApi]);
+
+  useEffect(() => {
     const storedProgress = readStoredObject(LEARNING_PROGRESS_STORAGE_KEY);
     if (storedProgress) {
       setLearningProgress(storedProgress);
@@ -235,6 +245,7 @@ export default function App() {
         setCurrentUserKey(username);
         recordLoginDate(username);
         void loadLearningProgressFromApi(username);
+        void loadUserScoresFromApi();
         void fetchAvatarApi().then((dataUrl) => {
           if (dataUrl) try { localStorage.setItem(`profile_avatar_${username}`, dataUrl); } catch { /* ignore */ }
         }).catch(() => {});
@@ -832,6 +843,18 @@ export default function App() {
     );
 
     void markSubtopicCompleteApi(courseId, subtopicId).catch(() => {});
+
+    const course = examples.find((e) => e.id === courseId || e.sourceId === courseId);
+    if (course) {
+      const subtopics = getSubtopicPages(course.content, course.title);
+      if (subtopics.length > 0) {
+        const existing = learningProgress[currentUserKey]?.[courseId]?.completedSubtopics ?? {};
+        const afterCompleted = { ...existing, [subtopicId]: true };
+        if (subtopics.every((s) => afterCompleted[s.id])) {
+          void completeCourseApi(courseId).then(() => loadUserScoresFromApi()).catch(() => {});
+        }
+      }
+    }
   };
 
   const learningStats = useMemo(
@@ -851,6 +874,15 @@ export default function App() {
       }));
     } catch {
       // keep existing local progress
+    }
+  }, []);
+
+  const loadUserScoresFromApi = useCallback(async () => {
+    try {
+      const { skills } = await fetchUserScoresApi();
+      setUserSkillScores(skills);
+    } catch {
+      // keep existing
     }
   }, []);
 
@@ -877,6 +909,7 @@ export default function App() {
       setShowLogin(false);
       recordLoginDate(normalizedUsername);
       void loadLearningProgressFromApi(normalizedUsername);
+      void loadUserScoresFromApi();
       void fetchAvatarApi().then((dataUrl) => {
         if (dataUrl) try { localStorage.setItem(`profile_avatar_${normalizedUsername}`, dataUrl); } catch { /* ignore */ }
       }).catch(() => {});
@@ -949,8 +982,8 @@ export default function App() {
           onSaveName={handleSaveName}
           onChangePassword={handleChangePassword}
           examples={examples}
-          learningStats={learningStats}
           currentUserProgress={learningProgress[currentUserKey] ?? {}}
+          skillScores={userSkillScores}
         />
       ) : activeTab === "user-management" && !currentUser ? (
         <section className="workspace-content">

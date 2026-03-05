@@ -118,8 +118,8 @@ export default function ProfilePage({
   onSaveName,
   onChangePassword,
   examples,
-  learningStats,
   currentUserProgress,
+  skillScores,
 }) {
   const [name, setName] = useState(currentUser.name);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -141,7 +141,7 @@ export default function ProfilePage({
   }, [username]);
   const currentYear = new Date().getFullYear().toString();
   const activeDaysThisYear = loginActivityDates.filter((d) => d.startsWith(currentYear)).length;
-  const userSkillScores = learningStats?.[username]?.skillScores ?? {};
+  const userSkillScores = skillScores ?? {};
   const safeExamples = Array.isArray(examples) ? examples : [];
 
   const completedCourseIds = useMemo(() => {

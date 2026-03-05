@@ -49,6 +49,9 @@ func GetUserScores(username string) (total int, skills map[string]int, err error
 }
 
 func AwardCourseCompletion(username, courseID string) (int, []SkillReward, error) {
+	if err := EnsureEnrollment(username, courseID); err != nil {
+		return 0, nil, err
+	}
 	result, err := db.Exec(`
 		UPDATE user_course_enrollments
 		SET completed_at = NOW()

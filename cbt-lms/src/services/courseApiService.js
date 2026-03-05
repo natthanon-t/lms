@@ -80,9 +80,25 @@ export const submitSubtopicAnswerApi = async (courseId, subtopicId, questionId, 
     },
   );
 
+export const completeCourseApi = async (courseId) =>
+  request(`/api/learning/courses/${encodeURIComponent(courseId)}/complete`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+
 export const fetchLeaderboardApi = async () => {
   const payload = await request("/api/learning/leaderboard", {
     headers: authHeaders(),
   });
   return Array.isArray(payload?.leaderboard) ? payload.leaderboard : [];
+};
+
+export const fetchUserScoresApi = async () => {
+  const payload = await request("/api/learning/scores", {
+    headers: authHeaders(),
+  });
+  return {
+    total: Number(payload?.total ?? 0),
+    skills: payload?.skills && typeof payload.skills === "object" ? payload.skills : {},
+  };
 };
