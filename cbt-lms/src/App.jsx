@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import "./App.css";
 import LoginScreen from "./components/auth/LoginScreen";
-import Header from "./components/layout/Header";
 import ConfirmModal from "./components/ui/ConfirmModal";
 import AlertModal from "./components/ui/AlertModal";
 import WorkspaceSidebar from "./components/layout/WorkspaceSidebar";
