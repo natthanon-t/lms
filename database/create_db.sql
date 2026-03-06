@@ -63,6 +63,8 @@ CREATE TABLE user_login_logs (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE INDEX ix_refresh_tokens_user ON refresh_tokens(user_id);
+
 CREATE INDEX ix_login_logs_user ON user_login_logs(user_id);
 CREATE INDEX ix_login_logs_time ON user_login_logs(logged_in_at);
 
@@ -75,18 +77,10 @@ CREATE TABLE user_avatars (
     FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
 );
 
--- รูปภาพในเนื้อหาของ course
-CREATE TABLE course_content_images (
-  course_id  TEXT NOT NULL,
-  filename   TEXT NOT NULL,
-  data_url   TEXT NOT NULL,
-  PRIMARY KEY (course_id, filename)
-);
-
 -- คะแนนรวมของผู้ใช้
 CREATE TABLE user_scores (
   username   TEXT        PRIMARY KEY,
-  total      INT         NOT NULL DEFAULT 0,
+  total      INT         NOT NULL DEFAULT 0 CHECK (total >= 0),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT fk_user_scores_user
     FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
@@ -111,7 +105,7 @@ CREATE INDEX ix_score_events_time ON user_score_events(earned_at);
 CREATE TABLE user_skill_scores (
   username   TEXT NOT NULL,
   skill      TEXT NOT NULL,
-  points     INT  NOT NULL DEFAULT 0,
+  points     INT  NOT NULL DEFAULT 0 CHECK (points >= 0),
   PRIMARY KEY (username, skill),
   CONSTRAINT fk_user_skill_scores_user
     FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
@@ -140,6 +134,16 @@ CREATE TABLE courses (
 );
 
 CREATE INDEX ix_courses_owner ON courses(owner_username);
+
+-- รูปภาพในเนื้อหาของ course
+CREATE TABLE course_content_images (
+  course_id  TEXT NOT NULL,
+  filename   TEXT NOT NULL,
+  data_url   TEXT NOT NULL,
+  PRIMARY KEY (course_id, filename),
+  CONSTRAINT fk_content_images_course
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+);
 
 -- ทักษะและคะแนนที่ได้เมื่อเรียนจบ course นี้
 CREATE TABLE course_skill_rewards (

@@ -35,7 +35,7 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 
 	user, err := data.CreateUser(req.Name, req.Username, req.EmployeeCode, req.Password, "user", "active")
 	if err != nil {
-		if strings.Contains(strings.ToLower(err.Error()), "duplicate") || strings.Contains(strings.ToLower(err.Error()), "unique") {
+		if data.IsDuplicateKey(err) {
 			return fiber.NewError(fiber.StatusConflict, "username already exists")
 		}
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot create user")
@@ -66,7 +66,7 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "login failed")
 	}
 	if strings.ToLower(strings.TrimSpace(user.Status)) != "active" {
-		return fiber.NewError(fiber.StatusForbidden, "user is inactive")
+		return fiber.NewError(fiber.StatusUnauthorized, "user is inactive")
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
@@ -122,7 +122,7 @@ func (h *Handler) Refresh(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "invalid refresh token")
 	}
 	if strings.ToLower(strings.TrimSpace(user.Status)) != "active" {
-		return fiber.NewError(fiber.StatusForbidden, "user is inactive")
+		return fiber.NewError(fiber.StatusUnauthorized, "user is inactive")
 	}
 
 	if err := data.RevokeRefreshToken(currentHash); err != nil {
@@ -207,6 +207,8 @@ func (h *Handler) GetAvatar(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"data_url": dataURL})
 }
 
+const maxAvatarBytes = 2 * 1024 * 1024 // 2 MB (base64-encoded)
+
 func (h *Handler) UpdateAvatar(c *fiber.Ctx) error {
 	username, err := auth.CurrentUsername(c)
 	if err != nil {
@@ -215,6 +217,9 @@ func (h *Handler) UpdateAvatar(c *fiber.Ctx) error {
 	var req avatarRequest
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	if len(req.DataURL) > maxAvatarBytes {
+		return fiber.NewError(fiber.StatusRequestEntityTooLarge, "avatar must not exceed 2 MB")
 	}
 	if err := data.SaveAvatar(username, req.DataURL); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot save avatar")

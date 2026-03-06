@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: CBT LMS Backend API
-  version: 1.0.0
+  version: 1.1.0
   description: OpenAPI spec generated from current Go Fiber backend routes.
 servers:
   - url: http://localhost:5020
@@ -10,6 +10,7 @@ tags:
   - name: Auth
   - name: Profile
   - name: Admin Users
+  - name: Admin Exams
   - name: Courses
   - name: Learning
   - name: Exams
@@ -74,8 +75,7 @@ paths:
         "400":
           $ref: "#/components/responses/ErrorResponse"
         "401":
-          $ref: "#/components/responses/ErrorResponse"
-        "403":
+          description: Invalid credentials or inactive account
           $ref: "#/components/responses/ErrorResponse"
         "500":
           $ref: "#/components/responses/ErrorResponse"
@@ -100,8 +100,7 @@ paths:
         "400":
           $ref: "#/components/responses/ErrorResponse"
         "401":
-          $ref: "#/components/responses/ErrorResponse"
-        "403":
+          description: Invalid refresh token or inactive account
           $ref: "#/components/responses/ErrorResponse"
         "500":
           $ref: "#/components/responses/ErrorResponse"
@@ -146,6 +145,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserPayload"
         "401":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/auth/login-dates:
+    get:
+      tags: [Auth]
+      summary: Get login dates for current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Login dates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dates:
+                    type: array
+                    items:
+                      type: string
+                      format: date
+                      example: "2026-03-01"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
           $ref: "#/components/responses/ErrorResponse"
 
   /api/profile:
@@ -210,6 +234,57 @@ paths:
         "500":
           $ref: "#/components/responses/ErrorResponse"
 
+  /api/profile/avatar:
+    get:
+      tags: [Profile]
+      summary: Get current user avatar
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Avatar data URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data_url:
+                    type: string
+                    description: Base64-encoded data URL (e.g. data:image/png;base64,...)
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+    put:
+      tags: [Profile]
+      summary: Update current user avatar (max 2 MB base64)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvatarRequest"
+      responses:
+        "200":
+          description: Avatar updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: avatar updated
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "413":
+          description: Avatar data URL exceeds 2 MB limit
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
   /api/role:
     get:
       tags: [Admin Users]
@@ -229,9 +304,12 @@ paths:
   /api/users:
     get:
       tags: [Admin Users]
-      summary: List all users (admin only)
+      summary: List users with pagination (admin only)
       security:
         - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
       responses:
         "200":
           description: Users list
@@ -244,29 +322,13 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/AuthUser"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationMeta"
         "401":
           $ref: "#/components/responses/ErrorResponse"
         "403":
           $ref: "#/components/responses/ErrorResponse"
         "500":
-          $ref: "#/components/responses/ErrorResponse"
-
-  /api/users/options:
-    get:
-      tags: [Admin Users]
-      summary: Get available role and status options for user management (admin only)
-      security:
-        - bearerAuth: []
-      responses:
-        "200":
-          description: Role and status options
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UserManagementOptionsResponse"
-        "401":
-          $ref: "#/components/responses/ErrorResponse"
-        "403":
           $ref: "#/components/responses/ErrorResponse"
     post:
       tags: [Admin Users]
@@ -301,6 +363,24 @@ paths:
         "409":
           $ref: "#/components/responses/ErrorResponse"
         "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/users/options:
+    get:
+      tags: [Admin Users]
+      summary: Get available role and status options for user management (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Role and status options
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserManagementOptionsResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
           $ref: "#/components/responses/ErrorResponse"
 
   /api/users/{username}:
@@ -385,10 +465,77 @@ paths:
         "500":
           $ref: "#/components/responses/ErrorResponse"
 
+  /api/admin/exam-attempts:
+    get:
+      tags: [Admin Exams]
+      summary: List all exam attempts across all users with pagination (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
+      responses:
+        "200":
+          description: All exam attempts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  attempts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminExamAttempt"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/admin/exam-attempts/{id}:
+    get:
+      tags: [Admin Exams]
+      summary: Get per-question details for a single exam attempt (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Attempt detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  details:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ExamAttemptAnswer"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
   /api/courses:
     get:
       tags: [Courses]
-      summary: List all courses (public)
+      summary: List courses with pagination (public)
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
       responses:
         "200":
           description: Courses list
@@ -401,6 +548,8 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Course"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationMeta"
         "500":
           $ref: "#/components/responses/ErrorResponse"
     post:
@@ -429,6 +578,38 @@ paths:
         "401":
           $ref: "#/components/responses/ErrorResponse"
         "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/courses/{id}:
+    delete:
+      tags: [Courses]
+      summary: Delete a course
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Course deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: course deleted
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
           $ref: "#/components/responses/ErrorResponse"
         "500":
           $ref: "#/components/responses/ErrorResponse"
@@ -473,12 +654,10 @@ paths:
         "500":
           $ref: "#/components/responses/ErrorResponse"
 
-  /api/courses/{id}:
-    delete:
+  /api/courses/{id}/images:
+    get:
       tags: [Courses]
-      summary: Delete a course
-      security:
-        - bearerAuth: []
+      summary: Get all content images for a course (public)
       parameters:
         - name: id
           in: path
@@ -487,7 +666,41 @@ paths:
             type: string
       responses:
         "200":
-          description: Course deleted
+          description: Course images
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  images:
+                    type: object
+                    additionalProperties:
+                      type: string
+                      description: Base64 data URL keyed by filename
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+    post:
+      tags: [Courses]
+      summary: Save a content image for a course
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CourseImageRequest"
+      responses:
+        "200":
+          description: Image saved
           content:
             application/json:
               schema:
@@ -495,12 +708,10 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: course deleted
+                    example: image saved
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
         "401":
-          $ref: "#/components/responses/ErrorResponse"
-        "403":
-          $ref: "#/components/responses/ErrorResponse"
-        "404":
           $ref: "#/components/responses/ErrorResponse"
         "500":
           $ref: "#/components/responses/ErrorResponse"
@@ -522,6 +733,54 @@ paths:
                   progress:
                     type: object
                     description: Progress keyed by course ID
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/learning/scores:
+    get:
+      tags: [Learning]
+      summary: Get total and skill scores for current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User scores
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  skills:
+                    type: object
+                    additionalProperties:
+                      type: integer
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/learning/leaderboard:
+    get:
+      tags: [Learning]
+      summary: Get leaderboard
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Leaderboard entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  leaderboard:
+                    type: array
+                    items:
+                      type: object
         "401":
           $ref: "#/components/responses/ErrorResponse"
         "500":
@@ -555,6 +814,8 @@ paths:
                   message:
                     type: string
                     example: subtopic marked complete
+                  awarded_score:
+                    type: integer
         "400":
           $ref: "#/components/responses/ErrorResponse"
         "401":
@@ -603,10 +864,49 @@ paths:
         "500":
           $ref: "#/components/responses/ErrorResponse"
 
+  /api/learning/courses/{courseId}/complete:
+    post:
+      tags: [Learning]
+      summary: Mark a course as complete and award completion score
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Course completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: course completed
+                  awarded_score:
+                    type: integer
+                  skill_rewards:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SkillReward"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
   /api/exams:
     get:
       tags: [Exams]
-      summary: List all exams (public)
+      summary: List exams with pagination (public)
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/LimitParam"
       responses:
         "200":
           description: Exams list
@@ -619,6 +919,8 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Exam"
+                  pagination:
+                    $ref: "#/components/schemas/PaginationMeta"
         "500":
           $ref: "#/components/responses/ErrorResponse"
     post:
@@ -815,6 +1117,27 @@ components:
       scheme: bearer
       bearerFormat: JWT
 
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Page number (starts at 1)
+    LimitParam:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Items per page (max 100)
+
   responses:
     ErrorResponse:
       description: Error response
@@ -832,6 +1155,27 @@ components:
       required: [message]
       example:
         message: invalid request body
+
+    PaginationMeta:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of items
+          example: 87
+        page:
+          type: integer
+          description: Current page number
+          example: 1
+        limit:
+          type: integer
+          description: Items per page
+          example: 20
+        total_pages:
+          type: integer
+          description: Total number of pages
+          example: 5
+      required: [total, page, limit, total_pages]
 
     UserPayload:
       type: object
@@ -859,6 +1203,9 @@ components:
         - $ref: "#/components/schemas/UserPayload"
         - type: object
           properties:
+            employee_code:
+              type: string
+              example: ABCD-01-1234
             created_at:
               type: string
               format: date-time
@@ -872,10 +1219,13 @@ components:
           type: string
         username:
           type: string
+        employee_code:
+          type: string
+          description: Format XXXX-XX-XXXX
         password:
           type: string
           minLength: 8
-      required: [name, username, password]
+      required: [name, username, employee_code, password]
 
     RegisterResponse:
       type: object
@@ -948,6 +1298,14 @@ components:
           minLength: 8
       required: [current_password, new_password]
 
+    AvatarRequest:
+      type: object
+      properties:
+        data_url:
+          type: string
+          description: Base64-encoded data URL (max 2 MB)
+      required: [data_url]
+
     AdminCreateUserRequest:
       type: object
       properties:
@@ -955,6 +1313,9 @@ components:
           type: string
         username:
           type: string
+        employee_code:
+          type: string
+          description: Format XXXX-XX-XXXX
         password:
           type: string
           minLength: 8
@@ -966,13 +1327,16 @@ components:
           type: string
           enum: [active, inactive]
           description: Defaults to active when omitted
-      required: [name, username, password]
+      required: [name, username, employee_code, password]
 
     AdminUpdateUserRequest:
       type: object
       properties:
         name:
           type: string
+        employee_code:
+          type: string
+          description: Format XXXX-XX-XXXX
         role:
           type: string
           enum: ["ผู้ใช้งาน", "ผู้สอน", "ผู้ดูแลระบบ", "user", "admin"]
@@ -1025,6 +1389,38 @@ components:
           minLength: 8
       required: [new_password]
 
+    AdminExamAttempt:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        user_name:
+          type: string
+        employee_code:
+          type: string
+        exam_id:
+          type: string
+        exam_title:
+          type: string
+        correct_count:
+          type: integer
+        total_questions:
+          type: integer
+        score_percent:
+          type: number
+          format: float
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
+          nullable: true
+      required: [id, username, exam_id, correct_count, total_questions, score_percent, started_at]
+
     StatusRequest:
       type: object
       properties:
@@ -1052,7 +1448,7 @@ components:
           type: string
         creator:
           type: string
-        ownerUsername:
+        owner_username:
           type: string
         status:
           type: string
@@ -1064,16 +1460,16 @@ components:
         content:
           type: string
           description: Markdown content
-        skillPoints:
+        skill_points:
           type: integer
-        subtopicCompletionScore:
+        subtopic_completion_score:
           type: integer
-        courseCompletionScore:
+        course_completion_score:
           type: integer
-        createdAt:
+        created_at:
           type: string
           format: date-time
-        skillRewards:
+        skill_rewards:
           type: array
           items:
             $ref: "#/components/schemas/SkillReward"
@@ -1097,38 +1493,51 @@ components:
           type: string
         content:
           type: string
-        skillPoints:
+        skill_points:
           type: integer
-        subtopicCompletionScore:
+        subtopic_completion_score:
           type: integer
-        courseCompletionScore:
+        course_completion_score:
           type: integer
-        skillRewards:
+        skill_rewards:
           type: array
           items:
             $ref: "#/components/schemas/SkillReward"
       required: [id, title]
 
+    CourseImageRequest:
+      type: object
+      properties:
+        filename:
+          type: string
+        data_url:
+          type: string
+          description: Base64-encoded data URL
+      required: [filename, data_url]
+
     SubtopicAnswerRequest:
       type: object
       properties:
-        questionId:
+        question_id:
           type: string
-        typedAnswer:
+        typed_answer:
           type: string
-        isCorrect:
+        is_correct:
           type: boolean
-      required: [questionId]
+      required: [question_id]
 
     ExamQuestion:
       type: object
       properties:
         id:
           type: string
-        examId:
+        exam_id:
           type: string
         domain:
           type: string
+        question_type:
+          type: string
+          enum: [multiple_choice, text]
         question:
           type: string
         choices:
@@ -1137,11 +1546,11 @@ components:
             type: string
           minItems: 4
           maxItems: 4
-        answerKey:
+        answer_key:
           type: string
         explanation:
           type: string
-      required: [id, question, choices, answerKey]
+      required: [id, question, choices, answer_key]
 
     Exam:
       type: object
@@ -1154,7 +1563,7 @@ components:
           type: string
         creator:
           type: string
-        ownerUsername:
+        owner_username:
           type: string
         status:
           type: string
@@ -1165,18 +1574,18 @@ components:
           type: string
         image:
           type: string
-        numberOfQuestions:
+        number_of_questions:
           type: integer
-        defaultTime:
+        default_time:
           type: integer
           description: Duration in minutes
-        maxAttempts:
+        max_attempts:
           type: integer
           description: 0 = unlimited
-        createdAt:
+        created_at:
           type: string
           format: date-time
-        domainPercentages:
+        domain_percentages:
           type: object
           additionalProperties:
             type: integer
@@ -1213,14 +1622,14 @@ components:
           type: string
         image:
           type: string
-        numberOfQuestions:
+        number_of_questions:
           type: integer
-        defaultTime:
+        default_time:
           type: integer
-        maxAttempts:
+        max_attempts:
           type: integer
           description: 0 = unlimited
-        domainPercentages:
+        domain_percentages:
           type: object
           additionalProperties:
             type: integer
@@ -1242,25 +1651,30 @@ components:
     ExamAttemptAnswer:
       type: object
       properties:
-        questionId:
+        question_id:
           type: string
         domain:
           type: string
+        question_type:
+          type: string
+          enum: [multiple_choice, text]
         question:
           type: string
         choices:
           type: array
           items:
             type: string
-        answerKey:
+        answer_key:
           type: string
         explanation:
           type: string
         selected:
           type: string
-        isCorrect:
+        is_correct:
           type: boolean
-      required: [questionId, selected, isCorrect]
+          nullable: true
+          description: null for text-type questions
+      required: [question_id, selected]
 
     ExamAttempt:
       type: object
@@ -1268,21 +1682,21 @@ components:
         id:
           type: integer
           format: int64
-        correctCount:
+        correct_count:
           type: integer
-        totalQuestions:
+        total_questions:
           type: integer
-        scorePercent:
+        score_percent:
           type: number
           format: float
-        startedAt:
+        started_at:
           type: string
           format: date-time
-        finishedAt:
+        finished_at:
           type: string
           format: date-time
           nullable: true
-        domainStats:
+        domain_stats:
           type: object
           additionalProperties:
             $ref: "#/components/schemas/ExamDomainStat"
@@ -1290,19 +1704,19 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ExamAttemptAnswer"
-      required: [id, correctCount, totalQuestions, scorePercent, startedAt]
+      required: [id, correct_count, total_questions, score_percent, started_at]
 
     SaveAttemptRequest:
       type: object
       properties:
-        correctCount:
+        correct_count:
           type: integer
-        totalQuestions:
+        total_questions:
           type: integer
-        scorePercent:
+        score_percent:
           type: number
           format: float
-        domainStats:
+        domain_stats:
           type: object
           additionalProperties:
             $ref: "#/components/schemas/ExamDomainStat"
@@ -1311,11 +1725,12 @@ components:
           items:
             type: object
             properties:
-              questionId:
+              question_id:
                 type: string
               selected:
                 type: string
-              isCorrect:
+              is_correct:
                 type: boolean
-            required: [questionId, selected, isCorrect]
-      required: [correctCount, totalQuestions, scorePercent]
+                nullable: true
+            required: [question_id, selected]
+      required: [correct_count, total_questions, score_percent]

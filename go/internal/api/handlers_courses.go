@@ -14,11 +14,12 @@ import (
 var validCourseStatuses = []string{"active", "inprogress", "inactive"}
 
 func (h *Handler) ListCourses(c *fiber.Ctx) error {
-	courses, err := data.ListCourses()
+	limit, offset, page := parsePage(c)
+	courses, total, err := data.ListCourses(limit, offset)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot list courses")
 	}
-	return c.JSON(fiber.Map{"courses": courses})
+	return c.JSON(fiber.Map{"courses": courses, "pagination": paginationMeta(total, limit, page)})
 }
 
 func (h *Handler) UpsertCourse(c *fiber.Ctx) error {

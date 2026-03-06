@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -16,6 +17,12 @@ var db *sql.DB
 var employeeCodePattern = regexp.MustCompile(`^[A-Z0-9]{4}-[A-Z0-9]{2}-[A-Z0-9]{4}$`)
 
 var ErrForbidden = errors.New("forbidden")
+
+// IsDuplicateKey returns true when err is a PostgreSQL unique-constraint violation (code 23505).
+func IsDuplicateKey(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
+}
 
 func ConnectPostgres(databaseURL string) error {
 	if strings.TrimSpace(databaseURL) == "" {
@@ -116,13 +123,19 @@ func FindUserByID(id int64) (AuthUserRecord, error) {
 	return user, err
 }
 
-func ListUsers() ([]AuthUser, error) {
+func ListUsers(limit, offset int) ([]AuthUser, int, error) {
+	var total int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM users`).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
 	rows, err := db.Query(`
 SELECT id, name, username, employee_code, role, status, created_at
 FROM users
-ORDER BY created_at DESC`)
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2`, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -130,11 +143,11 @@ ORDER BY created_at DESC`)
 	for rows.Next() {
 		var user AuthUser
 		if err := rows.Scan(&user.ID, &user.Name, &user.Username, &user.EmployeeCode, &user.Role, &user.Status, &user.CreatedAt); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		result = append(result, user)
 	}
-	return result, rows.Err()
+	return result, total, rows.Err()
 }
 
 func UpdateUserName(userID int64, name string) (AuthUserRecord, error) {

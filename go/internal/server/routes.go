@@ -4,7 +4,10 @@ import (
 	"backend/internal/api"
 	"backend/internal/auth"
 	"backend/internal/config"
+	"time"
+
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	jwtware "github.com/gofiber/jwt/v2"
 )
 
@@ -23,6 +26,16 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	api := app.Group("/api")
 
 	authGroup := api.Group("/auth")
+	authGroup.Use(limiter.New(limiter.Config{
+		Max:        10,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return fiber.NewError(fiber.StatusTooManyRequests, "too many requests, please try again later")
+		},
+	}))
 	authGroup.Post("/register", handler.Register)
 	authGroup.Post("/login", handler.Login)
 	authGroup.Post("/refresh", handler.Refresh)

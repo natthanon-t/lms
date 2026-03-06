@@ -15,11 +15,12 @@ import (
 var validExamStatuses = []string{"active", "inprogress", "inactive"}
 
 func (h *Handler) ListExams(c *fiber.Ctx) error {
-	exams, err := data.ListExams()
+	limit, offset, page := parsePage(c)
+	exams, total, err := data.ListExams(limit, offset)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot list exams")
 	}
-	return c.JSON(fiber.Map{"exams": exams})
+	return c.JSON(fiber.Map{"exams": exams, "pagination": paginationMeta(total, limit, page)})
 }
 
 func (h *Handler) GetExam(c *fiber.Ctx) error {
@@ -210,11 +211,12 @@ func (h *Handler) SaveExamAttempt(c *fiber.Ctx) error {
 }
 
 func (h *Handler) GetAllExamAttemptsAdmin(c *fiber.Ctx) error {
-	attempts, err := data.GetAllExamAttemptsAdmin()
+	limit, offset, page := parsePage(c)
+	attempts, total, err := data.GetAllExamAttemptsAdmin(limit, offset)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot get attempts")
 	}
-	return c.JSON(fiber.Map{"attempts": attempts})
+	return c.JSON(fiber.Map{"attempts": attempts, "pagination": paginationMeta(total, limit, page)})
 }
 
 func (h *Handler) GetExamAttemptDetailsAdmin(c *fiber.Ctx) error {

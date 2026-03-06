@@ -55,15 +55,21 @@ func EnsureExamSchema() error {
 
 // ── Read ──────────────────────────────────────────────────────────────────────
 
-func ListExams() ([]Exam, error) {
+func ListExams(limit, offset int) ([]Exam, int, error) {
+	var total int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM exams`).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
 	rows, err := db.Query(`
 		SELECT id, title, creator, COALESCE(owner_username, ''), status,
 		       description, instructions, image,
 		       number_of_questions, default_time, max_attempts, created_at
 		FROM exams
-		ORDER BY created_at DESC`)
+		ORDER BY created_at DESC
+		LIMIT $1 OFFSET $2`, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -76,7 +82,7 @@ func ListExams() ([]Exam, error) {
 			&e.Description, &e.Instructions, &e.Image,
 			&e.NumberOfQuestions, &e.DefaultTime, &e.MaxAttempts, &e.CreatedAt,
 		); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		e.DomainPercentages = map[string]int{}
 		e.Questions = []ExamQuestion{}
@@ -84,26 +90,31 @@ func ListExams() ([]Exam, error) {
 		exams = append(exams, e)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	// Load domain percentages for all exams
-	dpRows, err := db.Query(`SELECT exam_id, domain, percentage FROM exam_domain_percentages`)
-	if err == nil {
-		defer dpRows.Close()
-		for dpRows.Next() {
-			var examID, domain string
-			var pct int
-			if err := dpRows.Scan(&examID, &domain, &pct); err != nil {
-				continue
-			}
-			if idx, ok := examIdx[examID]; ok {
-				exams[idx].DomainPercentages[domain] = pct
+	if len(exams) > 0 {
+		ids := make([]string, 0, len(exams))
+		for id := range examIdx {
+			ids = append(ids, id)
+		}
+		dpRows, err := db.Query(`SELECT exam_id, domain, percentage FROM exam_domain_percentages WHERE exam_id = ANY($1)`, ids)
+		if err == nil {
+			defer dpRows.Close()
+			for dpRows.Next() {
+				var examID, domain string
+				var pct int
+				if err := dpRows.Scan(&examID, &domain, &pct); err != nil {
+					continue
+				}
+				if idx, ok := examIdx[examID]; ok {
+					exams[idx].DomainPercentages[domain] = pct
+				}
 			}
 		}
 	}
 
-	return exams, nil
+	return exams, total, nil
 }
 
 func GetExam(id string) (*Exam, error) {
@@ -328,11 +339,21 @@ func SaveExamAttempt(examID, username string, correctCount, totalQuestions int, 
 		return ExamAttempt{}, err
 	}
 
+	tx, err := db.Begin()
+	if err != nil {
+		return ExamAttempt{}, err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
 	var attempt ExamAttempt
 	var domainStatsRaw json.RawMessage
 	var finishedAt sql.NullTime
 
-	err = db.QueryRow(`
+	err = tx.QueryRow(`
 		INSERT INTO exam_attempts
 		  (username, exam_id, correct_count, total_questions, score_percent, domain_stats, finished_at)
 		VALUES ($1,$2,$3,$4,$5,$6,NOW())
@@ -353,15 +374,20 @@ func SaveExamAttempt(examID, username string, correctCount, totalQuestions int, 
 	attempt.ExamID = examID
 	attempt.Username = username
 
-	// Save per-question answers (ignore FK errors if question was removed)
 	for _, ans := range answers {
-		_, _ = db.Exec(
+		if _, err = tx.Exec(
 			`INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
 			 VALUES ($1,$2,$3,$4)
 			 ON CONFLICT (attempt_id, question_id) DO UPDATE
 			   SET selected = EXCLUDED.selected, is_correct = EXCLUDED.is_correct`,
-			attempt.ID, ans.QuestionID, ans.Selected, ans.IsCorrect, // *bool → NULL when nil
-		)
+			attempt.ID, ans.QuestionID, ans.Selected, ans.IsCorrect,
+		); err != nil {
+			return ExamAttempt{}, err
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		return ExamAttempt{}, err
 	}
 
 	attempt.Details = []ExamAttemptAnswer{}
@@ -478,8 +504,13 @@ func GetExamAttemptDetails(attemptID int64) ([]ExamAttemptAnswer, error) {
 	return details, rows.Err()
 }
 
-// GetAllExamAttemptsAdmin returns all exam attempts across all users for admin view.
-func GetAllExamAttemptsAdmin() ([]AdminExamAttempt, error) {
+// GetAllExamAttemptsAdmin returns paginated exam attempts across all users for admin view.
+func GetAllExamAttemptsAdmin(limit, offset int) ([]AdminExamAttempt, int, error) {
+	var total int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM exam_attempts`).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
 	rows, err := db.Query(`
 		SELECT ea.id, ea.username, u.name, u.employee_code,
 		       ea.exam_id, e.title,
@@ -488,9 +519,10 @@ func GetAllExamAttemptsAdmin() ([]AdminExamAttempt, error) {
 		FROM exam_attempts ea
 		JOIN users u ON u.username = ea.username
 		JOIN exams e ON e.id = ea.exam_id
-		ORDER BY COALESCE(ea.finished_at, ea.started_at) DESC`)
+		ORDER BY COALESCE(ea.finished_at, ea.started_at) DESC
+		LIMIT $1 OFFSET $2`, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -504,14 +536,14 @@ func GetAllExamAttemptsAdmin() ([]AdminExamAttempt, error) {
 			&a.CorrectCount, &a.TotalQuestions, &a.ScorePercent,
 			&a.StartedAt, &finishedAt,
 		); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		if finishedAt.Valid {
 			a.FinishedAt = &finishedAt.Time
 		}
 		attempts = append(attempts, a)
 	}
-	return attempts, rows.Err()
+	return attempts, total, rows.Err()
 }
 
 // ── Seeding ───────────────────────────────────────────────────────────────────

@@ -30,11 +30,12 @@ func (h *Handler) UserOptions(c *fiber.Ctx) error {
 }
 
 func (h *Handler) ListUsers(c *fiber.Ctx) error {
-	users, err := data.ListUsers()
+	limit, offset, page := parsePage(c)
+	users, total, err := data.ListUsers(limit, offset)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot list users")
 	}
-	return c.JSON(fiber.Map{"users": users})
+	return c.JSON(fiber.Map{"users": users, "pagination": paginationMeta(total, limit, page)})
 }
 
 func (h *Handler) CreateUserByAdmin(c *fiber.Ctx) error {
@@ -73,7 +74,7 @@ func (h *Handler) CreateUserByAdmin(c *fiber.Ctx) error {
 
 	user, err := data.CreateUser(req.Name, req.Username, req.EmployeeCode, req.Password, req.Role, req.Status)
 	if err != nil {
-		if strings.Contains(strings.ToLower(err.Error()), "duplicate") || strings.Contains(strings.ToLower(err.Error()), "unique") {
+		if data.IsDuplicateKey(err) {
 			return fiber.NewError(fiber.StatusConflict, "username already exists")
 		}
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot create user")

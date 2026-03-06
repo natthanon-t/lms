@@ -5,14 +5,20 @@ import (
 	"strings"
 )
 
-func ListCourses() ([]Course, error) {
+func ListCourses(limit, offset int) ([]Course, int, error) {
+	var total int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM courses`).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
 	rows, err := db.Query(`
 		SELECT id, title, creator, COALESCE(owner_username, ''), status, description, image, content,
 		       skill_points, subtopic_completion_score, course_completion_score, created_at
 		FROM courses
-		ORDER BY created_at DESC`)
+		ORDER BY created_at DESC
+		LIMIT $1 OFFSET $2`, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -25,32 +31,38 @@ func ListCourses() ([]Course, error) {
 			&c.Description, &c.Image, &c.Content,
 			&c.SkillPoints, &c.SubtopicCompletionScore, &c.CourseCompletionScore, &c.CreatedAt,
 		); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		c.SkillRewards = []SkillReward{}
 		courseIdx[c.ID] = len(courses)
 		courses = append(courses, c)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	srRows, err := db.Query(`SELECT course_id, skill, points FROM course_skill_rewards`)
-	if err == nil {
-		defer srRows.Close()
-		for srRows.Next() {
-			var courseID, skill string
-			var points int
-			if err := srRows.Scan(&courseID, &skill, &points); err != nil {
-				continue
-			}
-			if idx, ok := courseIdx[courseID]; ok {
-				courses[idx].SkillRewards = append(courses[idx].SkillRewards, SkillReward{Skill: skill, Points: points})
+	if len(courses) > 0 {
+		ids := make([]string, 0, len(courses))
+		for id := range courseIdx {
+			ids = append(ids, id)
+		}
+		srRows, err := db.Query(`SELECT course_id, skill, points FROM course_skill_rewards WHERE course_id = ANY($1)`, ids)
+		if err == nil {
+			defer srRows.Close()
+			for srRows.Next() {
+				var courseID, skill string
+				var points int
+				if err := srRows.Scan(&courseID, &skill, &points); err != nil {
+					continue
+				}
+				if idx, ok := courseIdx[courseID]; ok {
+					courses[idx].SkillRewards = append(courses[idx].SkillRewards, SkillReward{Skill: skill, Points: points})
+				}
 			}
 		}
 	}
 
-	return courses, nil
+	return courses, total, nil
 }
 
 func UpsertCourse(c Course, callerUsername string, isAdmin bool) (Course, error) {
