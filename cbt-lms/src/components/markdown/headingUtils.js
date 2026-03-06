@@ -373,6 +373,65 @@ export const deleteHeadingById = (content, headingId) => {
   return content;
 };
 
+export const swapSubSections = (content, subId1, subId2) => {
+  if (!subId1 || !subId2 || subId1 === subId2) return content;
+
+  const outline = parseMarkdownOutline(content);
+  let sub1 = null;
+  let sub2 = null;
+  for (const mainSection of outline.mainSections) {
+    for (const subSection of mainSection.subSections) {
+      if (subSection.id === subId1) sub1 = subSection;
+      if (subSection.id === subId2) sub2 = subSection;
+    }
+  }
+  if (!sub1 || !sub2) return content;
+
+  const [first, second] = sub1.startLine < sub2.startLine ? [sub1, sub2] : [sub2, sub1];
+  const firstLines = outline.lines.slice(first.startLine, first.endLine);
+  const secondLines = outline.lines.slice(second.startLine, second.endLine);
+  const betweenLines = outline.lines.slice(first.endLine, second.startLine);
+
+  return [
+    ...outline.lines.slice(0, first.startLine),
+    ...secondLines,
+    ...betweenLines,
+    ...firstLines,
+    ...outline.lines.slice(second.endLine),
+  ].join("\n");
+};
+
+export const moveSubSectionToMain = (content, subId, targetMainId) => {
+  if (!subId || !targetMainId) return content;
+
+  const outline = parseMarkdownOutline(content);
+  const sourceMain = outline.mainSections.find((s) => s.subSections.some((sub) => sub.id === subId));
+  const targetMain = outline.mainSections.find((s) => s.id === targetMainId);
+
+  if (!sourceMain || !targetMain || sourceMain.id === targetMain.id) return content;
+
+  const sourceSub = sourceMain.subSections.find((sub) => sub.id === subId);
+  if (!sourceSub) return content;
+
+  const sourceLines = outline.lines.slice(sourceSub.startLine, sourceSub.endLine);
+  const linesWithoutSource = [
+    ...outline.lines.slice(0, sourceSub.startLine),
+    ...outline.lines.slice(sourceSub.endLine),
+  ];
+
+  const removedCount = sourceSub.endLine - sourceSub.startLine;
+  let insertAt = targetMain.endLine;
+  if (sourceSub.startLine < targetMain.endLine) {
+    insertAt -= removedCount;
+  }
+
+  return [
+    ...linesWithoutSource.slice(0, insertAt),
+    ...sourceLines,
+    ...linesWithoutSource.slice(insertAt),
+  ].join("\n");
+};
+
 export const getPlainText = (children) => {
   if (typeof children === "string") {
     return children;

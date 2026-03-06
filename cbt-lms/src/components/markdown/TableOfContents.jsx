@@ -9,6 +9,8 @@ export default function TableOfContents({
   editable = false,
   onMoveMainBefore,
   onMoveSubBefore,
+  onSwapSubSections,
+  onMoveSubToMain,
   onRenameHeading,
   onDeleteHeading,
   completedHeadingIds = [],
@@ -19,6 +21,7 @@ export default function TableOfContents({
   );
   const [draggingItem, setDraggingItem] = useState(null);
   const [dropTarget, setDropTarget] = useState(null);
+  const [dropMode, setDropMode] = useState(null); // "before" | "swap" | "into"
   const completedSet = useMemo(() => new Set(completedHeadingIds), [completedHeadingIds]);
   const activeItemRef = useRef(null);
 
@@ -27,32 +30,73 @@ export default function TableOfContents({
   }, [activeHeadingId]);
 
   const onDragStart = (type, id) => {
-    if (!editable) {
-      return;
-    }
+    if (!editable) return;
     setDraggingItem({ type, id });
     setDropTarget(null);
+    setDropMode(null);
   };
 
   const onDragEnd = () => {
     setDraggingItem(null);
     setDropTarget(null);
+    setDropMode(null);
   };
 
-  const onDrop = (targetType, targetId) => {
-    if (!editable || !draggingItem || draggingItem.id === targetId || draggingItem.type !== targetType) {
-      setDraggingItem(null);
-      setDropTarget(null);
+  const onDragOverHandler = (event, itemType, headingId) => {
+    if (!draggingItem) return;
+
+    // sub ลาก → main: รองรับย้ายข้ามหัวข้อหลัก
+    if (draggingItem.type === "sub" && itemType === "main") {
+      event.preventDefault();
+      setDropTarget(headingId);
+      setDropMode("into");
       return;
     }
 
-    if (targetType === "main") {
-      onMoveMainBefore?.(draggingItem.id, targetId);
-    } else if (targetType === "sub") {
-      onMoveSubBefore?.(draggingItem.id, targetId);
+    // ลากชนิดเดียวกัน
+    if (draggingItem.type === itemType && draggingItem.id !== headingId) {
+      event.preventDefault();
+      setDropTarget(headingId);
+      if (draggingItem.type === "sub") {
+        const rect = event.currentTarget.getBoundingClientRect();
+        setDropMode(event.clientY < rect.top + rect.height / 2 ? "before" : "swap");
+      } else {
+        setDropMode("before");
+      }
     }
+  };
+
+  const onDrop = (targetType, targetId) => {
+    if (!editable || !draggingItem) {
+      setDraggingItem(null);
+      setDropTarget(null);
+      setDropMode(null);
+      return;
+    }
+
+    if (draggingItem.type === "sub" && targetType === "main") {
+      onMoveSubToMain?.(draggingItem.id, targetId);
+    } else if (draggingItem.type === "sub" && targetType === "sub" && draggingItem.id !== targetId) {
+      if (dropMode === "swap") {
+        onSwapSubSections?.(draggingItem.id, targetId);
+      } else {
+        onMoveSubBefore?.(draggingItem.id, targetId);
+      }
+    } else if (draggingItem.type === "main" && targetType === "main" && draggingItem.id !== targetId) {
+      onMoveMainBefore?.(draggingItem.id, targetId);
+    }
+
     setDraggingItem(null);
     setDropTarget(null);
+    setDropMode(null);
+  };
+
+  const getDropClass = (headingId, itemType) => {
+    if (dropTarget !== headingId) return "";
+    if (dropMode === "before") return "drop-before";
+    if (dropMode === "swap") return "drop-swap";
+    if (dropMode === "into" && itemType === "main") return "drop-into";
+    return "";
   };
 
   return (
@@ -73,22 +117,20 @@ export default function TableOfContents({
             }
 
             const itemType = heading.level === 2 ? "main" : "sub";
-            const isDropTarget = dropTarget === heading.id;
+            const dropClass = getDropClass(heading.id, itemType);
 
             return (
               <div
                 key={heading.id}
-                className={`toc-row ${isDropTarget ? "drop-target" : ""} ${editable ? "draggable" : ""}`}
+                className={`toc-row ${dropClass} ${editable ? "draggable" : ""}`}
                 draggable={editable}
                 onDragStart={() => onDragStart(itemType, heading.id)}
                 onDragEnd={onDragEnd}
-                onDragOver={(event) => {
-                  if (draggingItem?.type === itemType) {
-                    event.preventDefault();
-                    setDropTarget(heading.id);
-                  }
+                onDragOver={(event) => onDragOverHandler(event, itemType, heading.id)}
+                onDragLeave={() => {
+                  setDropTarget((prev) => (prev === heading.id ? null : prev));
+                  setDropMode(null);
                 }}
-                onDragLeave={() => setDropTarget((prev) => (prev === heading.id ? null : prev))}
                 onDrop={() => onDrop(itemType, heading.id)}
               >
                 {editable ? <span className="drag-handle">⋮⋮</span> : null}

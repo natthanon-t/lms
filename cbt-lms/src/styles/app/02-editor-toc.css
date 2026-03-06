@@ -367,6 +367,21 @@
   background: rgba(75, 125, 232, 0.12);
 }
 
+.toc-row.drop-before {
+  border-top: 2px solid #4b7de8;
+  background: rgba(75, 125, 232, 0.06);
+}
+
+.toc-row.drop-swap {
+  border-color: #c97d00;
+  background: rgba(217, 140, 0, 0.12);
+}
+
+.toc-row.drop-into {
+  border-bottom: 2px solid #1f8d4e;
+  background: rgba(31, 141, 78, 0.1);
+}
+
 .drag-handle {
   width: 22px;
   min-width: 22px;

@@ -8,8 +8,10 @@ import {
   getSubtopicPages,
   moveMainSectionBefore,
   moveSubSectionBefore,
+  moveSubSectionToMain,
   parseMarkdownOutline,
   renameHeadingById,
+  swapSubSections,
   updateSubtopicBodyMarkdown,
 } from "../components/markdown/headingUtils";
 import { ensureCoverImage, fileToDataUrl } from "../services/imageService";
@@ -292,6 +294,20 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
     }
   };
 
+  const handleSwapSubSections = (subId1, subId2) => {
+    const nextContent = swapSubSections(draft.content, subId1, subId2);
+    if (nextContent !== draft.content) {
+      onChangeDraft("content", nextContent);
+    }
+  };
+
+  const handleMoveSubToMain = (subId, targetMainId) => {
+    const nextContent = moveSubSectionToMain(draft.content, subId, targetMainId);
+    if (nextContent !== draft.content) {
+      onChangeDraft("content", nextContent);
+    }
+  };
+
   const handleRenameHeading = (headingId, nextTitle) => {
     const nextContent = renameHeadingById(draft.content, headingId, nextTitle);
     if (nextContent !== draft.content) {
@@ -492,6 +508,8 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
           editable
           onMoveMainBefore={handleMoveMainBefore}
           onMoveSubBefore={handleMoveSubBefore}
+          onSwapSubSections={handleSwapSubSections}
+          onMoveSubToMain={handleMoveSubToMain}
           onRenameHeading={handleRenameHeading}
           onDeleteHeading={handleDeleteHeading}
         />
