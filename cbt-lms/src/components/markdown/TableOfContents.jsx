@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { parseMarkdownHeadings } from "./headingUtils";
 import ConfirmModal from "../ui/ConfirmModal";
+import PromptModal from "../ui/PromptModal";
 
 export default function TableOfContents({
   content,
@@ -26,6 +27,7 @@ export default function TableOfContents({
   const completedSet = useMemo(() => new Set(completedHeadingIds), [completedHeadingIds]);
   const activeItemRef = useRef(null);
   const [confirmDeleteHeading, setConfirmDeleteHeading] = useState(null); // { id, text } | null
+  const [promptRenameHeading, setPromptRenameHeading] = useState(null); // { id, text } | null
 
   useEffect(() => {
     activeItemRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -117,6 +119,20 @@ export default function TableOfContents({
           onCancel={() => setConfirmDeleteHeading(null)}
         />
       )}
+
+      {promptRenameHeading && (
+        <PromptModal
+          title="แก้ไขชื่อหัวข้อ"
+          defaultValue={promptRenameHeading.text}
+          onConfirm={(newValue) => {
+            if (newValue.trim()) {
+              onRenameHeading?.(promptRenameHeading.id, newValue.trim());
+            }
+            setPromptRenameHeading(null);
+          }}
+          onCancel={() => setPromptRenameHeading(null)}
+        />
+      )}
       <h3>{title}</h3>
       {editable ? <p className="toc-drag-help">ลากรายการที่มีสัญลักษณ์ `⋮⋮` เพื่อจัดเรียง</p> : null}
       {!headings.length ? (
@@ -168,13 +184,7 @@ export default function TableOfContents({
                     <button
                       type="button"
                       className="toc-edit-button"
-                      onClick={() => {
-                        const nextTitle = window.prompt("แก้ชื่อหัวข้อ", heading.text);
-                        if (!nextTitle || !nextTitle.trim()) {
-                          return;
-                        }
-                        onRenameHeading?.(heading.id, nextTitle.trim());
-                      }}
+                      onClick={() => setPromptRenameHeading({ id: heading.id, text: heading.text })}
                     >
                       แก้ชื่อ
                     </button>

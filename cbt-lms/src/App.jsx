@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import "./App.css";
 import LoginScreen from "./components/auth/LoginScreen";
+import Header from "./components/layout/Header";
+import ConfirmModal from "./components/ui/ConfirmModal";
+import AlertModal from "./components/ui/AlertModal";
 import WorkspaceSidebar from "./components/layout/WorkspaceSidebar";
 import WorkspaceTopbar from "./components/layout/WorkspaceTopbar";
 import { DEFAULT_PASSWORD, DEFAULT_USERNAME } from "./constants/mockData";
@@ -130,6 +133,7 @@ export default function App() {
   const [examDraft, setExamDraft] = useState(EMPTY_EXAM_DRAFT);
   const [examEditorDraft, setExamEditorDraft] = useState(normalizeExamRecord(EMPTY_EXAM_DRAFT));
   const [currentExamAttempts, setCurrentExamAttempts] = useState([]);
+  const [appAlert, setAppAlert] = useState(null); // { title: string, message: string } | null
 
   const currentUser = currentUserKey ? users[currentUserKey] : null;
   const isAdmin = currentUser?.role === "ผู้ดูแลระบบ" || currentUser?.role === "admin";
@@ -356,7 +360,10 @@ export default function App() {
       setExamEditorDraft(saved);
       setExamView("list");
     } catch (error) {
-      window.alert(`ไม่สามารถบันทึกข้อสอบได้: ${error?.message ?? "กรุณาลองใหม่"}`);
+      setAppAlert({
+        title: "ไม่สามารถบันทึกข้อสอบได้",
+        message: error?.message ?? "เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่ในภายหลัง",
+      });
     }
   };
 
@@ -956,7 +963,14 @@ export default function App() {
   }
 
   return (
-    <div className="workspace-layout">
+    <div className="app-container">
+      {appAlert && (
+        <AlertModal
+          title={appAlert.title}
+          message={appAlert.message}
+          onClose={() => setAppAlert(null)}
+        />
+      )}
       <WorkspaceTopbar
         currentUser={currentUser}
         username={currentUserKey}

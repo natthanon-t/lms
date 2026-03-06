@@ -30,13 +30,13 @@ export default function ConfirmModal({
     >
       <div
         style={{
-          background: "#f7f7f7", // สีพื้นหลังแบบในรูป
+          background: "#ffffff",
           borderRadius: "16px",
           width: "100%", maxWidth: "440px",
           padding: "2rem",
           display: "flex", flexDirection: "column", alignItems: "center",
           position: "relative",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+          boxShadow: "0 10px 30px rgba(25, 40, 75, 0.15)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -46,17 +46,20 @@ export default function ConfirmModal({
           onClick={onCancel}
           style={{
             position: "absolute", top: "1rem", right: "1rem",
-            background: "#ebebeb", border: "none",
+            background: "#f1f5ff", border: "none",
             width: "32px", height: "32px", borderRadius: "50%",
             display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", color: "#666", fontSize: "1rem",
+            cursor: "pointer", color: "#45608f", fontSize: "1rem",
+            transition: "background 0.2s",
           }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#e5edff")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#f1f5ff")}
         >
           ✕
         </button>
 
         {/* Title */}
-        <h2 style={{ margin: "0 0 0.75rem 0", color: "#111827", fontSize: "1.5rem", fontWeight: 700 }}>
+        <h2 style={{ margin: "0 0 0.75rem 0", color: "#1b2f56", fontSize: "1.5rem", fontWeight: 700 }}>
           {title}
         </h2>
 
@@ -73,14 +76,17 @@ export default function ConfirmModal({
             style={{
               flex: 1,
               padding: "0.75rem",
-              background: "transparent",
-              border: "1.5px solid #374151",
-              borderRadius: "8px",
-              color: "#374151",
-              fontWeight: 600,
+              background: "#ffffff",
+              border: "1px solid #b8c4e0",
+              borderRadius: "10px",
+              color: "#1b2f56",
+              fontWeight: 700,
               fontSize: "1rem",
               cursor: "pointer",
+              transition: "background 0.2s",
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f5ff")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "#ffffff")}
           >
             {cancelLabel}
           </button>
@@ -90,14 +96,17 @@ export default function ConfirmModal({
             style={{
               flex: 1,
               padding: "0.75rem",
-              background: confirmDanger ? "#f43f5e" : "#2563eb", // สีแดงชมพูแบบในภาพ (rose-500)
+              background: confirmDanger ? "#d22f2f" : "#2f66da",
               border: "none",
-              borderRadius: "8px",
+              borderRadius: "10px",
               color: "#fff",
-              fontWeight: 600,
+              fontWeight: 700,
               fontSize: "1rem",
               cursor: "pointer",
+              transition: "background 0.2s",
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = confirmDanger ? "#b32020" : "#2454b8")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = confirmDanger ? "#d22f2f" : "#2f66da")}
           >
             {confirmLabel}
           </button>
