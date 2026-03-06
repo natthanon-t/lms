@@ -34,21 +34,21 @@ const MOCK_ENROLLMENT = [
 
 // ── Mock course-user status data ──────────────────────────────────────────────
 const MOCK_EMPLOYEES = [
-  { empCode: "60001", name: "สมชาย ใจดี",        dept: "IT Security" },
-  { empCode: "60002", name: "วรรณา ศรีสุข",       dept: "Network Operations" },
-  { empCode: "60003", name: "ประยุทธ พิมลรัตน์",  dept: "SOC" },
-  { empCode: "60004", name: "นันทิดา แก้วมณี",    dept: "IT Security" },
-  { empCode: "60005", name: "ธนาธร วงษ์ศิริ",     dept: "Management" },
-  { empCode: "60006", name: "กมลรัตน์ สีดา",      dept: "Network Operations" },
-  { empCode: "60007", name: "วิชัย ธรรมรักษ์",    dept: "SOC" },
-  { empCode: "60008", name: "พรทิพย์ มีชัย",      dept: "HR" },
-  { empCode: "60009", name: "เจษฎา วารีรัตน์",    dept: "IT Security" },
-  { empCode: "60010", name: "สุภาพร จันทร์งาม",   dept: "Finance" },
+  { empCode: "60001", name: "สมชาย ใจดี", dept: "IT Security" },
+  { empCode: "60002", name: "วรรณา ศรีสุข", dept: "Network Operations" },
+  { empCode: "60003", name: "ประยุทธ พิมลรัตน์", dept: "SOC" },
+  { empCode: "60004", name: "นันทิดา แก้วมณี", dept: "IT Security" },
+  { empCode: "60005", name: "ธนาธร วงษ์ศิริ", dept: "Management" },
+  { empCode: "60006", name: "กมลรัตน์ สีดา", dept: "Network Operations" },
+  { empCode: "60007", name: "วิชัย ธรรมรักษ์", dept: "SOC" },
+  { empCode: "60008", name: "พรทิพย์ มีชัย", dept: "HR" },
+  { empCode: "60009", name: "เจษฎา วารีรัตน์", dept: "IT Security" },
+  { empCode: "60010", name: "สุภาพร จันทร์งาม", dept: "Finance" },
 ];
-const _ST = ["completed","in_progress","completed","in_progress","completed","in_progress","completed","in_progress","not_started","not_started"];
+const _ST = ["completed", "in_progress", "completed", "in_progress", "completed", "in_progress", "completed", "in_progress", "not_started", "not_started"];
 const _AQ = [24, 12, 20, 8, 18, 6, 22, 4, 0, 0];
-const _SA = ["2025-01-10 09:00","2025-01-11 10:15","2025-01-09 14:30","2025-01-12 08:45","2025-01-13 11:20","2025-01-10 13:00","2025-01-14 09:30","2025-01-11 15:00",null,null];
-const _FA = ["2025-01-12 14:30",null,"2025-01-11 16:00",null,"2025-01-15 10:00",null,"2025-01-16 11:45",null,null,null];
+const _SA = ["2025-01-10 09:00", "2025-01-11 10:15", "2025-01-09 14:30", "2025-01-12 08:45", "2025-01-13 11:20", "2025-01-10 13:00", "2025-01-14 09:30", "2025-01-11 15:00", null, null];
+const _FA = ["2025-01-12 14:30", null, "2025-01-11 16:00", null, "2025-01-15 10:00", null, "2025-01-16 11:45", null, null, null];
 
 const _hashId = (str) => { let h = 0; for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0; return Math.abs(h) % MOCK_EMPLOYEES.length; };
 const buildMockRows = (courseId) => {
@@ -341,9 +341,9 @@ function TopEnrollmentChart() {
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 const STATUS_MAP = {
-  completed:   { label: "เสร็จสิ้น",    cls: "badge-completed" },
-  in_progress: { label: "กำลังเรียน",   cls: "badge-in-progress" },
-  not_started: { label: "ยังไม่เริ่ม",  cls: "badge-not-started" },
+  completed: { label: "เสร็จสิ้น", cls: "badge-completed" },
+  in_progress: { label: "กำลังเรียน", cls: "badge-in-progress" },
+  not_started: { label: "ยังไม่เริ่ม", cls: "badge-not-started" },
 };
 function StatusBadge({ status }) {
   const { label, cls } = STATUS_MAP[status] ?? { label: status, cls: "" };
@@ -355,7 +355,7 @@ export default function SummaryPage({
   lessonCount,
   examCount,
   users,
-  learningStats,
+  userTotalScore = 0,
   examples,
 }) {
   const [selectedCourseId, setSelectedCourseId] = useState("");
@@ -374,29 +374,10 @@ export default function SummaryPage({
 
   const learnerCount = learnerUsernames.length;
 
-  const organizationSummary = useMemo(() => {
-    const avgScore =
-      learnerCount > 0
-        ? Math.round(
-            learnerUsernames.reduce((sum, username) => sum + Number(learningStats?.[username]?.score ?? 0), 0) /
-              learnerCount,
-          )
-        : 0;
-
-    const avgCompletedCourses =
-      learnerCount > 0
-        ? Math.round(
-            (learnerUsernames.reduce(
-              (sum, username) => sum + Number(learningStats?.[username]?.completedCourses ?? 0),
-              0,
-            ) /
-              learnerCount) *
-              10,
-          ) / 10
-        : 0;
-
-    return { avgScore, avgCompletedCourses };
-  }, [learnerCount, learnerUsernames, learningStats]);
+  const organizationSummary = useMemo(() => ({
+    avgScore: userTotalScore,
+    avgCompletedCourses: 0,
+  }), [userTotalScore]);
 
   const handleExportCsv = () => {
     const escapeCsv = (value) => {

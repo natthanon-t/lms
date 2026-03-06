@@ -34,7 +34,6 @@ import {
   toCourseDraft,
 } from "./services/courseService";
 import { buildNewExamRecord, normalizeExamRecord, toExamTakingDraft } from "./services/examService";
-import { calculateLearningStats } from "./services/learningStatsService";
 import { ensureCoverImage } from "./services/imageService";
 import { withCompletedSubtopic, withSubmittedSubtopicAnswer } from "./services/progressService";
 import { getSubtopicPages } from "./components/markdown/headingUtils";
@@ -113,6 +112,7 @@ export default function App() {
   const [learningProgress, setLearningProgress] = useState({});
   const [initialStudySubtopicId, setInitialStudySubtopicId] = useState("");
   const [userSkillScores, setUserSkillScores] = useState({});
+  const [userTotalScore, setUserTotalScore] = useState(0);
   const [examView, setExamView] = useState("list");
   const [examOrderMode, setExamOrderMode] = useState("sequential");
   const [users, setUsers] = useState({
@@ -210,7 +210,8 @@ export default function App() {
 
   const loadUserScoresFromApi = useCallback(async () => {
     try {
-      const { skills } = await fetchUserScoresApi();
+      const { total, skills } = await fetchUserScoresApi();
+      setUserTotalScore(total);
       setUserSkillScores(skills);
     } catch {
       // keep existing
@@ -260,7 +261,7 @@ export default function App() {
         void loadUserScoresFromApi();
         void fetchAvatarApi().then((dataUrl) => {
           if (dataUrl) try { localStorage.setItem(`profile_avatar_${username}`, dataUrl); } catch { /* ignore */ }
-        }).catch(() => {});
+        }).catch(() => { });
       } catch {
         clearTokens();
       } finally {
@@ -553,7 +554,7 @@ export default function App() {
       prevContent?.id === contentId ? { ...prevContent, status: normalizedStatus } : prevContent,
     );
 
-    void updateCourseStatusApi(contentId, normalizedStatus).catch(() => {});
+    void updateCourseStatusApi(contentId, normalizedStatus).catch(() => { });
   };
 
   const updateExamStatus = (examId, nextStatus) => {
@@ -576,7 +577,7 @@ export default function App() {
       prev.sourceId === examId ? { ...prev, status: normalizedStatus } : prev,
     );
 
-    void updateExamStatusApi(examId, normalizedStatus).catch(() => {});
+    void updateExamStatusApi(examId, normalizedStatus).catch(() => { });
   };
 
   const handleDeleteContent = async (contentId) => {
@@ -837,7 +838,7 @@ export default function App() {
       answerResult.id,
       answerResult.typedAnswer ?? "",
       Boolean(answerResult.isCorrect),
-    ).catch(() => {});
+    ).catch(() => { });
   };
 
   const handleMarkSubtopicComplete = (courseId, subtopicId) => {
@@ -854,7 +855,7 @@ export default function App() {
       }),
     );
 
-    void markSubtopicCompleteApi(courseId, subtopicId).catch(() => {});
+    void markSubtopicCompleteApi(courseId, subtopicId).catch(() => { });
 
     const course = examples.find((e) => e.id === courseId || e.sourceId === courseId);
     if (course) {
@@ -863,15 +864,15 @@ export default function App() {
         const existing = learningProgress[currentUserKey]?.[courseId]?.completedSubtopics ?? {};
         const afterCompleted = { ...existing, [subtopicId]: true };
         if (subtopics.every((s) => afterCompleted[s.id])) {
-          void completeCourseApi(courseId).then(() => loadUserScoresFromApi()).catch(() => {});
+          void completeCourseApi(courseId).then(() => loadUserScoresFromApi()).catch(() => { });
         }
       }
     }
   };
 
   const learningStats = useMemo(
-    () => calculateLearningStats(users, examples, learningProgress),
-    [users, examples, learningProgress],
+    () => ({ score: userTotalScore, skillScores: userSkillScores }),
+    [userTotalScore, userSkillScores],
   );
 
   const loadLearningProgressFromApi = useCallback(async (username) => {
@@ -915,7 +916,7 @@ export default function App() {
       void loadUserScoresFromApi();
       void fetchAvatarApi().then((dataUrl) => {
         if (dataUrl) try { localStorage.setItem(`profile_avatar_${normalizedUsername}`, dataUrl); } catch { /* ignore */ }
-      }).catch(() => {});
+      }).catch(() => { });
       return { success: true };
     } catch (error) {
       return { success: false, message: error?.message ?? "เข้าสู่ระบบไม่สำเร็จ" };
@@ -962,195 +963,195 @@ export default function App() {
         onGoHome={() => handleSelectTab("home")}
       />
       <main className="workspace-shell">
-      <div className="sidebar-hover-trigger" aria-hidden="true" />
-      <WorkspaceSidebar
-        activeTab={activeTab}
-        onSelectTab={handleSelectTab}
-        onAuthAction={handleAuthAction}
-        isAuthenticated={Boolean(currentUser)}
-        isAdmin={isAdmin}
-      />
+        <div className="sidebar-hover-trigger" aria-hidden="true" />
+        <WorkspaceSidebar
+          activeTab={activeTab}
+          onSelectTab={handleSelectTab}
+          onAuthAction={handleAuthAction}
+          isAuthenticated={Boolean(currentUser)}
+          isAdmin={isAdmin}
+        />
 
-      {activeTab === "profile" && !currentUser ? (
-        <section className="workspace-content">
-          <header className="content-header">
-            <h1>โปรไฟล์</h1>
-            <p>กรุณา Login ก่อนใช้งานหน้านี้</p>
-          </header>
-        </section>
-      ) : activeTab === "profile" ? (
-        <ProfilePage
-          currentUser={currentUser}
-          username={currentUserKey}
-          onSaveName={handleSaveName}
-          onChangePassword={handleChangePassword}
-          examples={examples}
-          currentUserProgress={learningProgress[currentUserKey] ?? {}}
-          skillScores={userSkillScores}
-        />
-      ) : activeTab === "user-management" && !currentUser ? (
-        <section className="workspace-content">
-          <header className="content-header">
-            <h1>จัดการ user</h1>
-            <p>กรุณา Login ก่อนใช้งานหน้านี้</p>
-          </header>
-        </section>
-      ) : activeTab === "user-management" && !isAdmin ? (
-        <section className="workspace-content">
-          <header className="content-header">
-            <h1>จัดการ user</h1>
-            <p>หน้านี้สำหรับผู้ดูแลระบบเท่านั้น</p>
-          </header>
-        </section>
-      ) : activeTab === "user-management" ? (
-        <UserManagementPage
-          users={users}
-          onUpdateUserRole={handleUpdateUserRole}
-          onUpdateUserStatus={handleUpdateUserStatus}
-          onUpdateUserProfile={handleUpdateUserProfileByAdmin}
-          defaultPassword={defaultUserPassword}
-          onUpdateDefaultPassword={handleUpdateDefaultPassword}
-          onResetUserPassword={handleResetUserPassword}
-          onCreateUser={handleCreateUser}
-        />
-      ) : activeTab === "leaderboard" ? (
-        <LeaderboardPage />
-      ) : activeTab === "summary" && !isAdmin ? (
-        <section className="workspace-content">
-          <header className="content-header">
-            <h1>สรุปผล</h1>
-            <p>หน้านี้สำหรับผู้ดูแลระบบเท่านั้น</p>
-          </header>
-        </section>
-      ) : activeTab === "summary" ? (
-        <SummaryPage
-          lessonCount={examples.length}
-          examCount={examBank.length}
-          users={users}
-          learningStats={learningStats}
-          examples={examples}
-          learningProgress={learningProgress}
-        />
-      ) : activeTab === "exam-history" && !isAdmin ? (
-        <section className="workspace-content">
-          <header className="content-header">
-            <h1>ประวัติการสอบ</h1>
-            <p>หน้านี้สำหรับผู้ดูแลระบบเท่านั้น</p>
-          </header>
-        </section>
-      ) : activeTab === "exam-history" ? (
-        <ExamHistoryPage />
-      ) : activeTab === "role-permission" && !isAdmin ? (
-        <section className="workspace-content">
-          <header className="content-header">
-            <h1>สิทธิ์การใช้งาน</h1>
-            <p>หน้านี้สำหรับผู้ดูแลระบบเท่านั้น</p>
-          </header>
-        </section>
-      ) : activeTab === "role-permission" ? (
-        <RolePermissionPage />
-      ) : activeTab === "exam" ? (
-        examView === "taking" ? (
-          <ExamTakingPage
-            draft={examDraft}
-            onEndExam={endExam}
-            orderMode={examOrderMode}
-            durationSeconds={(examDraft.defaultTime ?? 0) * 60}
-            onSaveAttempt={handleSaveAttempt}
-          />
-        ) : examView === "detail" ? (
-          <ExamDetailPage
-            exam={examDraft}
-            onBack={() => setExamView("list")}
-            onStartExam={startExam}
-            userAttempts={currentExamAttempts}
-            isLoggedIn={Boolean(currentUserKey)}
-          />
-        ) : examView === "auth-required" ? (
+        {activeTab === "profile" && !currentUser ? (
           <section className="workspace-content">
             <header className="content-header">
-              <h1>ข้อสอบ</h1>
+              <h1>โปรไฟล์</h1>
+              <p>กรุณา Login ก่อนใช้งานหน้านี้</p>
+            </header>
+          </section>
+        ) : activeTab === "profile" ? (
+          <ProfilePage
+            currentUser={currentUser}
+            username={currentUserKey}
+            onSaveName={handleSaveName}
+            onChangePassword={handleChangePassword}
+            examples={examples}
+            currentUserProgress={learningProgress[currentUserKey] ?? {}}
+            skillScores={userSkillScores}
+          />
+        ) : activeTab === "user-management" && !currentUser ? (
+          <section className="workspace-content">
+            <header className="content-header">
+              <h1>จัดการ user</h1>
+              <p>กรุณา Login ก่อนใช้งานหน้านี้</p>
+            </header>
+          </section>
+        ) : activeTab === "user-management" && !isAdmin ? (
+          <section className="workspace-content">
+            <header className="content-header">
+              <h1>จัดการ user</h1>
+              <p>หน้านี้สำหรับผู้ดูแลระบบเท่านั้น</p>
+            </header>
+          </section>
+        ) : activeTab === "user-management" ? (
+          <UserManagementPage
+            users={users}
+            onUpdateUserRole={handleUpdateUserRole}
+            onUpdateUserStatus={handleUpdateUserStatus}
+            onUpdateUserProfile={handleUpdateUserProfileByAdmin}
+            defaultPassword={defaultUserPassword}
+            onUpdateDefaultPassword={handleUpdateDefaultPassword}
+            onResetUserPassword={handleResetUserPassword}
+            onCreateUser={handleCreateUser}
+          />
+        ) : activeTab === "leaderboard" ? (
+          <LeaderboardPage />
+        ) : activeTab === "summary" && !isAdmin ? (
+          <section className="workspace-content">
+            <header className="content-header">
+              <h1>สรุปผล</h1>
+              <p>หน้านี้สำหรับผู้ดูแลระบบเท่านั้น</p>
+            </header>
+          </section>
+        ) : activeTab === "summary" ? (
+          <SummaryPage
+            lessonCount={examples.length}
+            examCount={examBank.length}
+            users={users}
+            userTotalScore={userTotalScore}
+            examples={examples}
+            learningProgress={learningProgress}
+          />
+        ) : activeTab === "exam-history" && !isAdmin ? (
+          <section className="workspace-content">
+            <header className="content-header">
+              <h1>ประวัติการสอบ</h1>
+              <p>หน้านี้สำหรับผู้ดูแลระบบเท่านั้น</p>
+            </header>
+          </section>
+        ) : activeTab === "exam-history" ? (
+          <ExamHistoryPage />
+        ) : activeTab === "role-permission" && !isAdmin ? (
+          <section className="workspace-content">
+            <header className="content-header">
+              <h1>สิทธิ์การใช้งาน</h1>
+              <p>หน้านี้สำหรับผู้ดูแลระบบเท่านั้น</p>
+            </header>
+          </section>
+        ) : activeTab === "role-permission" ? (
+          <RolePermissionPage />
+        ) : activeTab === "exam" ? (
+          examView === "taking" ? (
+            <ExamTakingPage
+              draft={examDraft}
+              onEndExam={endExam}
+              orderMode={examOrderMode}
+              durationSeconds={(examDraft.defaultTime ?? 0) * 60}
+              onSaveAttempt={handleSaveAttempt}
+            />
+          ) : examView === "detail" ? (
+            <ExamDetailPage
+              exam={examDraft}
+              onBack={() => setExamView("list")}
+              onStartExam={startExam}
+              userAttempts={currentExamAttempts}
+              isLoggedIn={Boolean(currentUserKey)}
+            />
+          ) : examView === "auth-required" ? (
+            <section className="workspace-content">
+              <header className="content-header">
+                <h1>ข้อสอบ</h1>
+                <p>{accessMessage || "กรุณา Login ก่อนใช้งานหน้านี้"}</p>
+              </header>
+            </section>
+          ) : examView === "editor" ? (
+            <ExamEditorPage
+              draft={examEditorDraft}
+              onBack={() => setExamView("list")}
+              onSaveDraft={saveExamEditorDraft}
+              onDeleteExam={handleDeleteExam}
+            />
+          ) : (
+            <ExamPage
+              examBank={examBank}
+              onOpenEditor={openExamEditor}
+              onEnterExam={openExam}
+              onCreateExam={createExam}
+              onUpdateExamStatus={updateExamStatus}
+              currentUserKey={currentUserKey}
+              isAdmin={isAdmin}
+              canCreate={canCreateLearningItems}
+            />
+          )
+        ) : activeTab === "content" ? (
+          <ContentPage
+            examples={examples}
+            onOpenEditor={openContentEditor}
+            onOpenDetail={openContentDetail}
+            onCreateContent={createContent}
+            onUpdateContentStatus={updateContentStatus}
+            currentUserKey={currentUserKey}
+            isAdmin={isAdmin}
+            canCreate={canCreateLearningItems}
+          />
+        ) : homeView === "auth-required" ? (
+          <section className="workspace-content">
+            <header className="content-header">
+              <h1>เนื้อหา</h1>
               <p>{accessMessage || "กรุณา Login ก่อนใช้งานหน้านี้"}</p>
             </header>
           </section>
-        ) : examView === "editor" ? (
-          <ExamEditorPage
-            draft={examEditorDraft}
-            onBack={() => setExamView("list")}
-            onSaveDraft={saveExamEditorDraft}
-            onDeleteExam={handleDeleteExam}
+        ) : homeView === "content-detail" && selectedContent ? (
+          <ContentDetailPage
+            contentItem={selectedContent}
+            onBack={() => {
+              setHomeView("lobby");
+              setSelectedContent(null);
+            }}
+            onEnterStudy={() => enterStudy(selectedContent)}
+            isLoggedIn={Boolean(currentUserKey)}
+          />
+        ) : homeView === "study" ? (
+          <StudyPage
+            draft={studyDraft}
+            onBack={() => setHomeView("lobby")}
+            progress={(learningProgress[currentUserKey] ?? {})[studyDraft.sourceId] ?? {}}
+            onMarkSubtopicComplete={handleMarkSubtopicComplete}
+            onSubmitSubtopicAnswer={handleSubmitSubtopicAnswer}
+            initialSubtopicId={initialStudySubtopicId}
+          />
+        ) : homeView === "editor" ? (
+          <EditorPage
+            draft={editorDraft}
+            onBack={() => setHomeView("lobby")}
+            onChangeDraft={updateEditorDraft}
+            onSaveDraft={saveEditorDraft}
+            onDeleteContent={handleDeleteContent}
+            isAdmin={isAdmin}
           />
         ) : (
-        <ExamPage
-          examBank={examBank}
-          onOpenEditor={openExamEditor}
-          onEnterExam={openExam}
-          onCreateExam={createExam}
-          onUpdateExamStatus={updateExamStatus}
-          currentUserKey={currentUserKey}
-          isAdmin={isAdmin}
-          canCreate={canCreateLearningItems}
-        />
-        )
-      ) : activeTab === "content" ? (
-        <ContentPage
-          examples={examples}
-          onOpenEditor={openContentEditor}
-          onOpenDetail={openContentDetail}
-          onCreateContent={createContent}
-          onUpdateContentStatus={updateContentStatus}
-          currentUserKey={currentUserKey}
-          isAdmin={isAdmin}
-          canCreate={canCreateLearningItems}
-        />
-      ) : homeView === "auth-required" ? (
-        <section className="workspace-content">
-          <header className="content-header">
-            <h1>เนื้อหา</h1>
-            <p>{accessMessage || "กรุณา Login ก่อนใช้งานหน้านี้"}</p>
-          </header>
-        </section>
-      ) : homeView === "content-detail" && selectedContent ? (
-        <ContentDetailPage
-          contentItem={selectedContent}
-          onBack={() => {
-            setHomeView("lobby");
-            setSelectedContent(null);
-          }}
-          onEnterStudy={() => enterStudy(selectedContent)}
-          isLoggedIn={Boolean(currentUserKey)}
-        />
-      ) : homeView === "study" ? (
-        <StudyPage
-          draft={studyDraft}
-          onBack={() => setHomeView("lobby")}
-          progress={(learningProgress[currentUserKey] ?? {})[studyDraft.sourceId] ?? {}}
-          onMarkSubtopicComplete={handleMarkSubtopicComplete}
-          onSubmitSubtopicAnswer={handleSubmitSubtopicAnswer}
-          initialSubtopicId={initialStudySubtopicId}
-        />
-      ) : homeView === "editor" ? (
-        <EditorPage
-          draft={editorDraft}
-          onBack={() => setHomeView("lobby")}
-          onChangeDraft={updateEditorDraft}
-          onSaveDraft={saveEditorDraft}
-          onDeleteContent={handleDeleteContent}
-          isAdmin={isAdmin}
-        />
-      ) : (
-        <LobbyPage
-          examples={examples}
-          examBank={examBank}
-          onOpenEditor={openContentEditor}
-          onOpenExamEditor={openExamEditor}
-          onEnterClass={openContentDetail}
-          onEnterExam={openExam}
-          onUpdateContentStatus={updateContentStatus}
-          currentUserKey={currentUserKey}
-          isAdmin={isAdmin}
-        />
-      )}
+          <LobbyPage
+            examples={examples}
+            examBank={examBank}
+            onOpenEditor={openContentEditor}
+            onOpenExamEditor={openExamEditor}
+            onEnterClass={openContentDetail}
+            onEnterExam={openExam}
+            onUpdateContentStatus={updateContentStatus}
+            currentUserKey={currentUserKey}
+            isAdmin={isAdmin}
+          />
+        )}
       </main>
     </div>
   );

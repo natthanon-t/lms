@@ -133,7 +133,8 @@ CREATE TABLE courses (
     FOREIGN KEY (owner_username) REFERENCES users(username) ON DELETE SET NULL
 );
 
-CREATE INDEX ix_courses_owner ON courses(owner_username);
+CREATE INDEX ix_courses_owner  ON courses(owner_username);
+CREATE INDEX ix_courses_status ON courses(status) WHERE status = 'active';  -- 🟡 partial index: browse active courses
 
 -- รูปภาพในเนื้อหาของ course
 CREATE TABLE course_content_images (
@@ -172,8 +173,10 @@ CREATE TABLE user_course_enrollments (
     FOREIGN KEY (course_id) REFERENCES courses(id)    ON DELETE CASCADE
 );
 
-CREATE INDEX ix_enrollments_user   ON user_course_enrollments(username);
-CREATE INDEX ix_enrollments_course ON user_course_enrollments(course_id);
+CREATE INDEX ix_enrollments_user       ON user_course_enrollments(username);
+CREATE INDEX ix_enrollments_course     ON user_course_enrollments(course_id);
+CREATE INDEX ix_enrollments_incomplete ON user_course_enrollments(username)    -- 🟡 partial index: in-progress courses
+  WHERE completed_at IS NULL;
 
 -- subtopic ที่ผู้ใช้ทำเสร็จแล้ว
 CREATE TABLE learning_subtopic_progress (
@@ -188,7 +191,8 @@ CREATE TABLE learning_subtopic_progress (
     FOREIGN KEY (course_id) REFERENCES courses(id)    ON DELETE CASCADE
 );
 
-CREATE INDEX ix_subtopic_progress_user ON learning_subtopic_progress(username);
+CREATE INDEX ix_subtopic_progress_user        ON learning_subtopic_progress(username);
+CREATE INDEX ix_subtopic_progress_user_course ON learning_subtopic_progress(username, course_id);  -- 🔴 composite: progress ใน course
 
 -- คำตอบของผู้ใช้ต่อคำถามในแต่ละ subtopic
 CREATE TABLE learning_subtopic_answers (
@@ -275,7 +279,8 @@ CREATE TABLE exam_questions (
     FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE
 );
 
-CREATE INDEX ix_exam_questions_exam ON exam_questions(exam_id);
+CREATE INDEX ix_exam_questions_exam        ON exam_questions(exam_id);
+CREATE INDEX ix_exam_questions_exam_domain ON exam_questions(exam_id, domain, id);  -- 🔴 composite: สุ่มข้อสอบตาม domain
 
 -- ==========================================================
 -- EXAM ATTEMPTS (การทำข้อสอบ)
