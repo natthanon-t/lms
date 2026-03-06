@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { parseMarkdownHeadings } from "./headingUtils";
+import ConfirmModal from "../ui/ConfirmModal";
 
 export default function TableOfContents({
   content,
@@ -24,6 +25,7 @@ export default function TableOfContents({
   const [dropMode, setDropMode] = useState(null); // "before" | "swap" | "into"
   const completedSet = useMemo(() => new Set(completedHeadingIds), [completedHeadingIds]);
   const activeItemRef = useRef(null);
+  const [confirmDeleteHeading, setConfirmDeleteHeading] = useState(null); // { id, text } | null
 
   useEffect(() => {
     activeItemRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -101,6 +103,20 @@ export default function TableOfContents({
 
   return (
     <aside className="toc-panel">
+      {confirmDeleteHeading && (
+        <ConfirmModal
+          title="ยืนยันการลบ?"
+          message={`คุณต้องการลบหัวข้อ "${confirmDeleteHeading.text}" ใช่หรือไม่? ไม่สามารถย้อนกลับได้`}
+          confirmLabel="ลบทิ้ง"
+          cancelLabel="ยกเลิก"
+          confirmDanger
+          onConfirm={() => {
+            onDeleteHeading?.(confirmDeleteHeading.id);
+            setConfirmDeleteHeading(null);
+          }}
+          onCancel={() => setConfirmDeleteHeading(null)}
+        />
+      )}
       <h3>{title}</h3>
       {editable ? <p className="toc-drag-help">ลากรายการที่มีสัญลักษณ์ `⋮⋮` เพื่อจัดเรียง</p> : null}
       {!headings.length ? (
@@ -165,13 +181,7 @@ export default function TableOfContents({
                     <button
                       type="button"
                       className="toc-delete-button"
-                      onClick={() => {
-                        const confirmed = window.confirm(`ลบหัวข้อ "${heading.text}" ใช่หรือไม่?`);
-                        if (!confirmed) {
-                          return;
-                        }
-                        onDeleteHeading?.(heading.id);
-                      }}
+                      onClick={() => setConfirmDeleteHeading({ id: heading.id, text: heading.text })}
                     >
                       ลบ
                     </button>

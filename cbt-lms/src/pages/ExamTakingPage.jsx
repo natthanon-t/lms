@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import ConfirmModal from "../components/ui/ConfirmModal";
 
 const shuffleArray = (items) => {
   const result = [...items];
@@ -114,6 +115,7 @@ export default function ExamTakingPage({ draft, onEndExam, orderMode, durationSe
   const [answers, setAnswers] = useState({});
   const [remainingSeconds, setRemainingSeconds] = useState(durationSeconds);
   const [submittedResult, setSubmittedResult] = useState(null);
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
 
   useEffect(() => {
     setCurrentIndex(0);
@@ -206,11 +208,7 @@ export default function ExamTakingPage({ draft, onEndExam, orderMode, durationSe
   }
 
   const handleEndExam = () => {
-    const confirmed = window.confirm("ต้องการสิ้นสุดการสอบและออกจากหน้าใช่หรือไม่?");
-    if (!confirmed) {
-      return;
-    }
-    submitExam();
+    setShowEndConfirm(true);
   };
 
   if (submittedResult) {
@@ -300,6 +298,17 @@ export default function ExamTakingPage({ draft, onEndExam, orderMode, durationSe
 
   return (
     <section className="workspace-content">
+      {showEndConfirm && (
+        <ConfirmModal
+          title="ต้องการสิ้นสุดการสอบ?"
+          message="หากกดยืนยัน ระบบจะนับคะแนนเฉพาะข้อที่ทำเสร็จแล้ว และจะไม่สามารถกลับมาทำต่อได้"
+          confirmLabel="สิ้นสุดการสอบ"
+          cancelLabel="ยกเลิก"
+          confirmDanger
+          onConfirm={() => { setShowEndConfirm(false); submitExam(); }}
+          onCancel={() => setShowEndConfirm(false)}
+        />
+      )}
       <header className="content-header editor-head">
         <div>
           <h1>เข้าสอบ: {draft.title}</h1>
