@@ -8,8 +8,8 @@ import { getSubtopicPages } from "../components/markdown/headingUtils";
 
 const normalizeAnswer = (value) => String(value ?? "").trim().toLowerCase();
 
-export default function StudyPage({ draft, onBack, progress, onMarkSubtopicComplete, onSubmitSubtopicAnswer }) {
-  const [activeSubtopicId, setActiveSubtopicId] = useState("");
+export default function StudyPage({ draft, onBack, progress, onMarkSubtopicComplete, onSubmitSubtopicAnswer, initialSubtopicId = "" }) {
+  const [activeSubtopicId, setActiveSubtopicId] = useState(initialSubtopicId);
   const [contentImages, setContentImages] = useState(() => getStoredImages(draft.sourceId ?? draft.id));
   const timeSpentRef = useRef(progress?.timeSpent ?? {});
   const pendingSecondsRef = useRef(0);

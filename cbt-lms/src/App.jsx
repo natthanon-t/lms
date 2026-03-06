@@ -111,6 +111,7 @@ export default function App() {
   const [examples, setExamples] = useState([]);
   const [examBank, setExamBank] = useState([]);
   const [learningProgress, setLearningProgress] = useState({});
+  const [initialStudySubtopicId, setInitialStudySubtopicId] = useState("");
   const [userSkillScores, setUserSkillScores] = useState({});
   const [examView, setExamView] = useState("list");
   const [examOrderMode, setExamOrderMode] = useState("sequential");
@@ -379,7 +380,12 @@ export default function App() {
       setHomeView("auth-required");
       return;
     }
-    setStudyDraft(toCourseDraft(normalizeExampleRecord(item)));
+    const normalized = normalizeExampleRecord(item);
+    const subtopics = getSubtopicPages(normalized.content, normalized.title);
+    const completedSubtopics = (learningProgress[currentUserKey] ?? {})[normalized.id]?.completedSubtopics ?? {};
+    const firstIncomplete = subtopics.find((s) => !completedSubtopics[s.id]);
+    setInitialStudySubtopicId(firstIncomplete?.id ?? "");
+    setStudyDraft(toCourseDraft(normalized));
     setAccessMessage("");
     setActiveTab("home");
     setHomeView("study");
@@ -1121,6 +1127,7 @@ export default function App() {
           progress={(learningProgress[currentUserKey] ?? {})[studyDraft.sourceId] ?? {}}
           onMarkSubtopicComplete={handleMarkSubtopicComplete}
           onSubmitSubtopicAnswer={handleSubmitSubtopicAnswer}
+          initialSubtopicId={initialStudySubtopicId}
         />
       ) : homeView === "editor" ? (
         <EditorPage

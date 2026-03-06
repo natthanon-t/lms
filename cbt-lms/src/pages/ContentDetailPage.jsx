@@ -71,7 +71,7 @@ export default function ContentDetailPage({ contentItem, onBack, onEnterStudy, i
 
         <TableOfContents
           content={contentItem.content}
-          activeHeadingId=""
+          activeHeadingId={null}
           onSelectHeading={() => {}}
         />
       </div>
