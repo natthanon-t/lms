@@ -64,6 +64,16 @@ export const submitSubtopicAnswerApi = async (courseId, subtopicId, questionId, 
     },
   );
 
+export const recordSubtopicTimeApi = async (courseId, subtopicId, seconds) =>
+  request(
+    `/api/learning/courses/${encodeURIComponent(courseId)}/subtopics/${encodeURIComponent(subtopicId)}/time`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ seconds }),
+    },
+  );
+
 export const completeCourseApi = async (courseId) =>
   request(`/api/learning/courses/${encodeURIComponent(courseId)}/complete`, {
     method: "POST",

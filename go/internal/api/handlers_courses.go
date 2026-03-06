@@ -196,6 +196,31 @@ func (h *Handler) SubmitSubtopicAnswer(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "answer saved"})
 }
 
+func (h *Handler) RecordSubtopicTime(c *fiber.Ctx) error {
+	username, err := auth.CurrentUsername(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
+	}
+	courseID := strings.TrimSpace(c.Params("courseId"))
+	subtopicID := strings.TrimSpace(c.Params("subtopicId"))
+	if courseID == "" || subtopicID == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "courseId and subtopicId are required")
+	}
+
+	var req subtopicTimeRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	if req.Seconds <= 0 {
+		return c.JSON(fiber.Map{"message": "ok"})
+	}
+
+	if err := data.UpsertSubtopicTime(username, courseID, subtopicID, req.Seconds); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot record time")
+	}
+	return c.JSON(fiber.Map{"message": "time recorded"})
+}
+
 func (h *Handler) CompleteCourse(c *fiber.Ctx) error {
 	username, err := auth.CurrentUsername(c)
 	if err != nil {

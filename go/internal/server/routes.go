@@ -95,5 +95,6 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	learning.Get("/leaderboard", handler.GetLeaderboard)
 	learning.Post("/courses/:courseId/subtopics/:subtopicId/complete", handler.MarkSubtopicComplete)
 	learning.Post("/courses/:courseId/subtopics/:subtopicId/answer", handler.SubmitSubtopicAnswer)
+	learning.Post("/courses/:courseId/subtopics/:subtopicId/time", handler.RecordSubtopicTime)
 	learning.Post("/courses/:courseId/complete", handler.CompleteCourse)
 }

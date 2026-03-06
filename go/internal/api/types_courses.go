@@ -29,6 +29,10 @@ type subtopicAnswerRequest struct {
 	IsCorrect   bool   `json:"isCorrect"`
 }
 
+type subtopicTimeRequest struct {
+	Seconds int `json:"seconds"`
+}
+
 type courseImageRequest struct {
 	Filename string `json:"filename"`
 	DataURL  string `json:"data_url"`

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { parseMarkdownHeadings } from "./headingUtils";
 
 export default function TableOfContents({
@@ -20,6 +20,11 @@ export default function TableOfContents({
   const [draggingItem, setDraggingItem] = useState(null);
   const [dropTarget, setDropTarget] = useState(null);
   const completedSet = useMemo(() => new Set(completedHeadingIds), [completedHeadingIds]);
+  const activeItemRef = useRef(null);
+
+  useEffect(() => {
+    activeItemRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [activeHeadingId]);
 
   const onDragStart = (type, id) => {
     if (!editable) {
@@ -89,6 +94,7 @@ export default function TableOfContents({
                 {editable ? <span className="drag-handle">⋮⋮</span> : null}
                 {itemType === "sub" ? (
                   <button
+                    ref={activeHeadingId === heading.id ? activeItemRef : null}
                     type="button"
                     className={`toc-item toc-level-${heading.level} ${activeHeadingId === heading.id ? "active" : ""}`}
                     onClick={() => onSelectHeading(heading.id)}

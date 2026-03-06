@@ -124,6 +124,20 @@ func MarkSubtopicComplete(username, courseID, subtopicID string) (awardedScore i
 	return score, nil
 }
 
+func UpsertSubtopicTime(username, courseID, subtopicID string, seconds int) error {
+	if err := EnsureEnrollment(username, courseID); err != nil {
+		return err
+	}
+	_, err := db.Exec(`
+		INSERT INTO learning_subtopic_time (username, course_id, subtopic_id, seconds_spent, updated_at)
+		VALUES ($1, $2, $3, $4, NOW())
+		ON CONFLICT (username, course_id, subtopic_id) DO UPDATE
+			SET seconds_spent = learning_subtopic_time.seconds_spent + EXCLUDED.seconds_spent,
+			    updated_at    = NOW()`,
+		username, courseID, subtopicID, seconds)
+	return err
+}
+
 func UpsertSubtopicAnswer(username, courseID, subtopicID, questionID, typedAnswer string, isCorrect bool) error {
 	if err := EnsureEnrollment(username, courseID); err != nil {
 		return err
@@ -182,6 +196,25 @@ func GetLearningProgress(username string) (map[string]CourseProgress, error) {
 		result[courseID] = cp
 	}
 
+	timeRows, err := db.Query(`
+		SELECT course_id, subtopic_id, seconds_spent
+		FROM learning_subtopic_time
+		WHERE username = $1`, username)
+	if err != nil {
+		return result, err
+	}
+	defer timeRows.Close()
+	for timeRows.Next() {
+		var courseID, subtopicID string
+		var secondsSpent int
+		if err := timeRows.Scan(&courseID, &subtopicID, &secondsSpent); err != nil {
+			continue
+		}
+		cp := getOrCreateCourseProgress(result, courseID)
+		cp.TimeSpent[subtopicID] = secondsSpent
+		result[courseID] = cp
+	}
+
 	return result, nil
 }
 
@@ -233,7 +266,11 @@ func getOrCreateCourseProgress(result map[string]CourseProgress, courseID string
 		cp = CourseProgress{
 			CompletedSubtopics: make(map[string]bool),
 			Answers:            make(map[string]map[string]AnswerProgress),
+			TimeSpent:          make(map[string]int),
 		}
+	}
+	if cp.TimeSpent == nil {
+		cp.TimeSpent = make(map[string]int)
 	}
 	return cp
 }

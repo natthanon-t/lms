@@ -110,11 +110,18 @@ export const getSubtopicPages = (content, fallbackTitle = "เนื้อหา
       const questions = [];
       const bodyLines = [];
       let baseScore = null;
+      let minTimeMinutes = 0;
 
       rawBodyLines.forEach((line) => {
         const scoreMatch = line.match(/^\s*-\s*\[SCORE\]\s*(\d+)\s*$/i);
         if (scoreMatch) {
           baseScore = Number(scoreMatch[1]);
+          return;
+        }
+
+        const minTimeMatch = line.match(/^\s*-\s*\[MINTIME\]\s*(\d+)\s*$/i);
+        if (minTimeMatch) {
+          minTimeMinutes = Number(minTimeMatch[1]);
           return;
         }
 
@@ -145,6 +152,7 @@ export const getSubtopicPages = (content, fallbackTitle = "เนื้อหา
         content: pageContent,
         questions,
         baseScore,
+        minTimeMinutes,
         bodyMarkdown: rawBodyLines.join("\n").replace(/\n+$/g, ""),
       });
     }

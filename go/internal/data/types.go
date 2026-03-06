@@ -109,8 +109,9 @@ type AnswerProgress struct {
 }
 
 type CourseProgress struct {
-	CompletedSubtopics map[string]bool                       `json:"completedSubtopics"`
-	Answers            map[string]map[string]AnswerProgress  `json:"answers"`
+	CompletedSubtopics map[string]bool                      `json:"completedSubtopics"`
+	Answers            map[string]map[string]AnswerProgress `json:"answers"`
+	TimeSpent          map[string]int                       `json:"timeSpent"`
 }
 
 type LeaderboardEntry struct {

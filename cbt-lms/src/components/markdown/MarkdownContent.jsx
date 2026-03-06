@@ -1,3 +1,4 @@
+import { memo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSanitize from "rehype-sanitize";
@@ -58,7 +59,7 @@ const toEmbedVideoUrl = (href) => {
   }
 };
 
-export default function MarkdownContent({ content, images = {} }) {
+export default memo(function MarkdownContent({ content, images = {} }) {
   const headingSeenCount = {};
   const renderHeading = (Tag) =>
     function Heading({ children }) {
@@ -158,4 +159,4 @@ export default function MarkdownContent({ content, images = {} }) {
       {content}
     </ReactMarkdown>
   );
-}
+});

@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getStoredImages } from "../services/contentImagesStore";
 import { fetchCourseImagesApi } from "../services/mediaApiService";
+import { recordSubtopicTimeApi } from "../services/courseApiService";
 import MarkdownContent from "../components/markdown/MarkdownContent";
 import TableOfContents from "../components/markdown/TableOfContents";
 import { getSubtopicPages } from "../components/markdown/headingUtils";
@@ -10,6 +11,10 @@ const normalizeAnswer = (value) => String(value ?? "").trim().toLowerCase();
 export default function StudyPage({ draft, onBack, progress, onMarkSubtopicComplete, onSubmitSubtopicAnswer }) {
   const [activeSubtopicId, setActiveSubtopicId] = useState("");
   const [contentImages, setContentImages] = useState(() => getStoredImages(draft.sourceId ?? draft.id));
+  const timeSpentRef = useRef(progress?.timeSpent ?? {});
+  const pendingSecondsRef = useRef(0);
+  // lockedDisplaySeconds: null = unlocked, number = seconds spent so far (countdown display)
+  const [lockedDisplaySeconds, setLockedDisplaySeconds] = useState(null);
 
   useEffect(() => {
     const courseId = draft.sourceId ?? draft.id;
@@ -64,11 +69,56 @@ export default function StudyPage({ draft, onBack, progress, onMarkSubtopicCompl
     }
   };
 
+  // Timer: track time spent per subtopic, flush to backend every 30 s
+  // Uses ref for accumulation to avoid re-renders every second.
+  // Only updates state when lock status changes or countdown needs display.
+  useEffect(() => {
+    const courseId = draft.sourceId;
+    const subtopicId = selectedSubtopic?.id;
+    if (!courseId || !subtopicId) return;
+
+    pendingSecondsRef.current = 0;
+    const minTimeSecs = (selectedSubtopic?.minTimeMinutes ?? 0) * 60;
+    const initial = timeSpentRef.current[subtopicId] ?? 0;
+    setLockedDisplaySeconds(minTimeSecs > 0 && initial < minTimeSecs ? initial : null);
+
+    const tick = () => {
+      pendingSecondsRef.current += 1;
+      const newTotal = (timeSpentRef.current[subtopicId] ?? 0) + 1;
+      timeSpentRef.current[subtopicId] = newTotal;
+
+      if (minTimeSecs > 0 && newTotal <= minTimeSecs) {
+        setLockedDisplaySeconds(newTotal < minTimeSecs ? newTotal : null);
+      }
+
+      if (pendingSecondsRef.current >= 30) {
+        const toFlush = pendingSecondsRef.current;
+        pendingSecondsRef.current = 0;
+        recordSubtopicTimeApi(courseId, subtopicId, toFlush).catch(() => {});
+      }
+    };
+
+    const id = setInterval(tick, 1000);
+    return () => {
+      clearInterval(id);
+      if (pendingSecondsRef.current > 0) {
+        recordSubtopicTimeApi(courseId, subtopicId, pendingSecondsRef.current).catch(() => {});
+        pendingSecondsRef.current = 0;
+      }
+    };
+  }, [selectedSubtopic?.id, draft.sourceId]);
+
+  const subtopicMinTime = selectedSubtopic?.minTimeMinutes ?? 0;
+  const requiredSeconds = subtopicMinTime * 60;
+  const isTimeUnlocked = lockedDisplaySeconds === null;
+  const subtopicSecondsSpent = lockedDisplaySeconds ?? (timeSpentRef.current[selectedSubtopic?.id] ?? 0);
+  const timeRemainingSeconds = Math.max(0, requiredSeconds - subtopicSecondsSpent);
+
   const areAllQuestionsCorrect = selectedSubtopic
     ? selectedSubtopic.questions.every((question) => selectedSubtopicAnswers[question.id]?.isCorrect)
     : false;
 
-  const canComplete = Boolean(selectedSubtopic) && (
+  const canComplete = Boolean(selectedSubtopic) && isTimeUnlocked && (
     selectedSubtopic.questions.length === 0 ||
     areAllQuestionsCorrect
   );
@@ -133,43 +183,58 @@ export default function StudyPage({ draft, onBack, progress, onMarkSubtopicCompl
                 <h3>Questions</h3>
                 <p>ตอบคำถามด้านล่างเพื่อปลดล็อกการเสร็จสิ้นหัวข้อย่อย</p>
               </div>
-              <div className="subtopic-quiz">
-                {selectedSubtopic.questions.map((question, index) => {
-                  const result = selectedSubtopicAnswers[question.id];
-                  const inputId = `${question.id}-answer`;
-                  return (
-                    <div key={question.id} className="quiz-question-card">
-                      <p className="quiz-question-text">
-                        <span className="question-points">+{question.points}</span>
-                        <strong>
-                          คำถาม {index + 1}: {question.question}
-                        </strong>
-                      </p>
-                      <label htmlFor={inputId} className="quiz-answer-label">
-                        คำตอบ
-                      </label>
-                      <div className="quiz-answer-row">
-                        <input
-                          id={inputId}
-                          value={answerInputs[question.id] ?? result?.typedAnswer ?? ""}
-                          onChange={(event) =>
-                            setAnswerInputs((prev) => ({ ...prev, [question.id]: event.target.value }))
-                          }
-                          placeholder="พิมพ์คำตอบ"
-                        />
-                        <button type="button" onClick={() => handleSubmitAnswer(question)}>
-                          Submit
-                        </button>
-                      </div>
-                      {result ? (
-                        <p className={result.isCorrect ? "result-correct" : "result-wrong"}>
-                          {result.isCorrect ? "ตอบถูก" : "ตอบไม่ถูก"}
+              {!isTimeUnlocked ? (
+                <div className="time-lock-notice">
+                  <p className="time-lock-text">
+                    🔒 ต้องอ่านเนื้อหาอีก {Math.floor(timeRemainingSeconds / 60)} นาที{" "}
+                    {timeRemainingSeconds % 60} วินาที จึงจะปลดล็อคคำถาม
+                  </p>
+                  <div className="time-lock-bar">
+                    <div
+                      className="time-lock-bar-fill"
+                      style={{ width: `${Math.min(100, (subtopicSecondsSpent / requiredSeconds) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="subtopic-quiz">
+                  {selectedSubtopic.questions.map((question, index) => {
+                    const result = selectedSubtopicAnswers[question.id];
+                    const inputId = `${question.id}-answer`;
+                    return (
+                      <div key={question.id} className="quiz-question-card">
+                        <p className="quiz-question-text">
+                          <span className="question-points">+{question.points}</span>
+                          <strong>
+                            คำถาม {index + 1}: {question.question}
+                          </strong>
                         </p>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
+                        <label htmlFor={inputId} className="quiz-answer-label">
+                          คำตอบ
+                        </label>
+                        <div className="quiz-answer-row">
+                          <input
+                            id={inputId}
+                            value={answerInputs[question.id] ?? result?.typedAnswer ?? ""}
+                            onChange={(event) =>
+                              setAnswerInputs((prev) => ({ ...prev, [question.id]: event.target.value }))
+                            }
+                            placeholder="พิมพ์คำตอบ"
+                          />
+                          <button type="button" onClick={() => handleSubmitAnswer(question)}>
+                            Submit
+                          </button>
+                        </div>
+                        {result ? (
+                          <p className={result.isCorrect ? "result-correct" : "result-wrong"}>
+                            {result.isCorrect ? "ตอบถูก" : "ตอบไม่ถูก"}
+                          </p>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           ) : null}
 
@@ -183,7 +248,11 @@ export default function StudyPage({ draft, onBack, progress, onMarkSubtopicCompl
               >
                 {selectedSubtopicCompleted ? "หัวข้อนี้เสร็จสิ้นแล้ว" : "เสร็จสิ้นหัวข้อย่อย"}
               </button>
-              {!canComplete && selectedSubtopic.questions.length > 0 ? (
+              {!canComplete && !isTimeUnlocked ? (
+                <p className="result-wrong">
+                  ต้องอ่านเนื้อหาให้ครบ {subtopicMinTime} นาทีก่อน
+                </p>
+              ) : !canComplete && selectedSubtopic.questions.length > 0 ? (
                 <p className="result-wrong">ต้องตอบคำถามของหัวข้อนี้ให้ครบและถูกต้องก่อน</p>
               ) : null}
             </div>

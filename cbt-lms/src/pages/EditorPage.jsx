@@ -8,6 +8,7 @@ import {
   getSubtopicPages,
   moveMainSectionBefore,
   moveSubSectionBefore,
+  parseMarkdownOutline,
   renameHeadingById,
   updateSubtopicBodyMarkdown,
 } from "../components/markdown/headingUtils";
@@ -48,6 +49,7 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
   const [videoUrl, setVideoUrl] = useState("");
   const [subtopicTitle, setSubtopicTitle] = useState("หัวข้อย่อยใหม่");
   const [subtopicScore, setSubtopicScore] = useState(20);
+  const [subtopicMinTime, setSubtopicMinTime] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
   const subtopicPages = useMemo(() => getSubtopicPages(draft.content, draft.title), [draft.content, draft.title]);
   const selectedSubtopic = subtopicPages.find((subtopic) => subtopic.id === activeSubtopicId) ?? subtopicPages[0];
@@ -92,7 +94,11 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
   );
 
   const insertMainSection = () => {
-    onChangeDraft("content", `${draft.content}\n\n## หัวข้อหลักใหม่\n\n### หัวข้อย่อย\n\nใส่รายละเอียดหัวข้อย่อย\n`);
+    const nextContent = `${draft.content}\n\n## หัวข้อหลักใหม่\n\n### หัวข้อย่อย\n\nใส่รายละเอียดหัวข้อย่อย\n`;
+    onChangeDraft("content", nextContent);
+    const nextPages = getSubtopicPages(nextContent, draft.title);
+    const newPage = nextPages.find((p) => !subtopicPages.some((sp) => sp.id === p.id));
+    if (newPage) setActiveSubtopicId(newPage.id);
   };
 
   const insertSubSection = () => {
@@ -103,6 +109,7 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
     setShowSubtopicModal(false);
     setSubtopicTitle("หัวข้อย่อยใหม่");
     setSubtopicScore(20);
+    setSubtopicMinTime(0);
   };
 
   const handleInsertSubSectionFromModal = () => {
@@ -113,7 +120,8 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
       return;
     }
 
-    const subtopicBlock = `\n\n### ${normalizedTitle}\n\nใส่รายละเอียดหัวข้อย่อย\n\n- [SCORE] ${Math.round(normalizedScore)}\n`;
+    const normalizedMinTime = Math.max(0, Math.round(Number(subtopicMinTime) || 0));
+    const subtopicBlock = `\n\n### ${normalizedTitle}\n\nใส่รายละเอียดหัวข้อย่อย\n\n- [SCORE] ${Math.round(normalizedScore)}\n${normalizedMinTime > 0 ? `- [MINTIME] ${normalizedMinTime}\n` : ""}`;
     if (!selectedSubtopic?.mainText) {
       insertAtCursor(subtopicBlock);
       setSaveMessage("");
@@ -121,17 +129,25 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
       return;
     }
 
-    const marker = `## ${selectedSubtopic.mainText}`;
-    const markerIndex = draft.content.indexOf(marker);
-    if (markerIndex < 0) {
+    const outline = parseMarkdownOutline(draft.content);
+    const currentMain = outline.mainSections.find((s) => s.id === selectedSubtopic.mainId);
+    if (!currentMain) {
       insertAtCursor(subtopicBlock);
       setSaveMessage("");
       closeSubtopicModal();
       return;
     }
-    const insertIndex = markerIndex + marker.length;
-    const nextContent = `${draft.content.slice(0, insertIndex)}${subtopicBlock}${draft.content.slice(insertIndex)}`;
+    const blockLines = subtopicBlock.split("\n");
+    const newLines = [
+      ...outline.lines.slice(0, currentMain.endLine),
+      ...blockLines,
+      ...outline.lines.slice(currentMain.endLine),
+    ];
+    const nextContent = newLines.join("\n");
     onChangeDraft("content", nextContent);
+    const nextPages = getSubtopicPages(nextContent, draft.title);
+    const newPage = nextPages.find((p) => !subtopicPages.some((sp) => sp.id === p.id));
+    if (newPage) setActiveSubtopicId(newPage.id);
     setSaveMessage("");
     closeSubtopicModal();
   };
@@ -617,6 +633,14 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
                 min={1}
                 value={subtopicScore}
                 onChange={(event) => setSubtopicScore(Number(event.target.value))}
+              />
+              <label htmlFor="subtopic-mintime-input">เวลาขั้นต่ำก่อนปลดล็อคคำถาม (นาที, 0 = ไม่ล็อค)</label>
+              <input
+                id="subtopic-mintime-input"
+                type="number"
+                min={0}
+                value={subtopicMinTime}
+                onChange={(event) => setSubtopicMinTime(Number(event.target.value))}
               />
               <div className="profile-action-row">
                 <button type="button" className="enter-button" onClick={handleInsertSubSectionFromModal}>

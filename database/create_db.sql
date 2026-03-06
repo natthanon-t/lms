@@ -208,6 +208,22 @@ CREATE TABLE learning_subtopic_answers (
 
 CREATE INDEX ix_subtopic_answers_user ON learning_subtopic_answers(username);
 
+-- เวลา (วินาที) ที่ผู้ใช้อยู่ในแต่ละ subtopic
+CREATE TABLE learning_subtopic_time (
+  username      TEXT        NOT NULL,
+  course_id     TEXT        NOT NULL,
+  subtopic_id   TEXT        NOT NULL,
+  seconds_spent INTEGER     NOT NULL DEFAULT 0,
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (username, course_id, subtopic_id),
+  CONSTRAINT fk_subtopic_time_user
+    FOREIGN KEY (username)  REFERENCES users(username) ON DELETE CASCADE,
+  CONSTRAINT fk_subtopic_time_course
+    FOREIGN KEY (course_id) REFERENCES courses(id)    ON DELETE CASCADE
+);
+
+CREATE INDEX ix_subtopic_time_user ON learning_subtopic_time(username);
+
 -- ==========================================================
 -- EXAMS (ข้อสอบ)
 -- ==========================================================
