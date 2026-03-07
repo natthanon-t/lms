@@ -4,7 +4,6 @@ import LoginScreen from "./components/auth/LoginScreen";
 import AlertModal from "./components/ui/AlertModal";
 import WorkspaceSidebar from "./components/layout/WorkspaceSidebar";
 import WorkspaceTopbar from "./components/layout/WorkspaceTopbar";
-import { DEFAULT_PASSWORD, DEFAULT_USERNAME } from "./constants/mockData";
 import {
   CONTENT_STATUS_OPTIONS,
   EXAM_STATUS_OPTIONS,
@@ -117,15 +116,8 @@ export default function App() {
   const [userTotalScore, setUserTotalScore] = useState(0);
   const [examView, setExamView] = useState("list");
   const [examOrderMode, setExamOrderMode] = useState("sequential");
-  const [users, setUsers] = useState({
-    [DEFAULT_USERNAME]: {
-      name: "Admin",
-      employeeCode: "",
-      role: "ผู้ดูแลระบบ",
-      status: "active",
-    },
-  });
-  const [defaultUserPassword, setDefaultUserPassword] = useState(DEFAULT_PASSWORD);
+  const [users, setUsers] = useState({});
+  const [defaultUserPassword, setDefaultUserPassword] = useState("");
   const [currentPermissions, setCurrentPermissions] = useState([]);
   const [sidebarItems, setSidebarItems] = useState([]);
 

@@ -8,7 +8,24 @@ export const listUsersAdmin = async () => {
   return Array.isArray(payload?.users) ? payload.users : [];
 };
 
+export const createRoleAdmin = async ({ code, name }) =>
+  authRequest("/api/role", {
+    method: "POST",
+    body: JSON.stringify({ code, name }),
+  });
+
 export const fetchRoleOptionsAdmin = async () => authRequest("/api/role", { method: "GET" });
+
+export const updateRoleAdmin = async (roleCode, { name }) =>
+  authRequest(`/api/role/${encodeURIComponent(roleCode)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ name }),
+  });
+
+export const deleteRoleAdmin = async (roleCode) =>
+  authRequest(`/api/role/${encodeURIComponent(roleCode)}`, {
+    method: "DELETE",
+  });
 
 export const createUserAdmin = async ({ name, username, employeeCode, password, role, status }) =>
   authRequest("/api/users", {

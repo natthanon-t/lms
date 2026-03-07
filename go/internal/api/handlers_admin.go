@@ -56,6 +56,104 @@ func (h *Handler) UserOptions(c *fiber.Ctx) error {
 	})
 }
 
+func (h *Handler) CreateRole(c *fiber.Ctx) error {
+	var req createRoleRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+
+	req.Code = data.NormalizeRoleName(req.Code)
+	req.Name = strings.TrimSpace(req.Name)
+	if req.Code == "" || req.Name == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "role code and name are required")
+	}
+	if data.IsBuiltInRole(req.Code) {
+		return fiber.NewError(fiber.StatusConflict, "role code is reserved")
+	}
+
+	role, err := data.CreateRole(req.Code, req.Name)
+	if err != nil {
+		if data.IsDuplicateKey(err) {
+			return fiber.NewError(fiber.StatusConflict, "role code already exists")
+		}
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot create role")
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"message": "create role success",
+		"role":    role,
+	})
+}
+
+func (h *Handler) UpdateRole(c *fiber.Ctx) error {
+	roleCode := data.NormalizeRoleName(c.Params("code"))
+	if roleCode == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "role code is required")
+	}
+	if data.IsBuiltInRole(roleCode) {
+		return fiber.NewError(fiber.StatusForbidden, "cannot rename a built-in role")
+	}
+	exists, err := data.RoleExists(roleCode)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot validate role")
+	}
+	if !exists {
+		return fiber.NewError(fiber.StatusNotFound, "role not found")
+	}
+
+	var req updateRoleRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	req.Name = strings.TrimSpace(req.Name)
+	if req.Name == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "role name is required")
+	}
+
+	role, err := data.UpdateRoleName(roleCode, req.Name)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fiber.NewError(fiber.StatusNotFound, "role not found")
+		}
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot update role")
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "update role success",
+		"role":    role,
+	})
+}
+
+func (h *Handler) DeleteRole(c *fiber.Ctx) error {
+	roleCode := data.NormalizeRoleName(c.Params("code"))
+	if roleCode == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "role code is required")
+	}
+	if data.IsBuiltInRole(roleCode) {
+		return fiber.NewError(fiber.StatusForbidden, "cannot delete a built-in role")
+	}
+	exists, err := data.RoleExists(roleCode)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot validate role")
+	}
+	if !exists {
+		return fiber.NewError(fiber.StatusNotFound, "role not found")
+	}
+
+	err = data.DeleteRole(roleCode)
+	if err != nil {
+		if errors.Is(err, data.ErrRoleAssignedToUsers) {
+			return fiber.NewError(fiber.StatusConflict, "cannot delete role while users are assigned")
+		}
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot delete role")
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "delete role success",
+		"role":    roleCode,
+	})
+}
+
 func (h *Handler) ListUsers(c *fiber.Ctx) error {
 	limit, offset, page := parsePage(c)
 	users, total, err := data.ListUsers(limit, offset)

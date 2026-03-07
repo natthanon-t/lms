@@ -19,10 +19,10 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
   -- ROLES
   -- ==========================================================
 
-  INSERT INTO roles (code, name, description) VALUES
-    ('admin', 'ผู้ดูแลระบบ', 'ผู้ดูแลระบบทั้งหมด'),
-    ('user', 'ผู้ใช้งาน', 'ผู้ใช้งานทั่วไป'),
-    ('instructor', 'ผู้สอน', 'ผู้สอนและผู้ดูแลเนื้อหา/ข้อสอบ');
+  INSERT INTO roles (code, name) VALUES
+    ('admin', 'ผู้ดูแลระบบ'),
+    ('user', 'ผู้ใช้งาน'),
+    ('instructor', 'ผู้สอน');
 
   -- ==========================================================
   -- PERMISSIONS

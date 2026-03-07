@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import ConfirmModal from "../components/ui/ConfirmModal";
-import { fetchRoleOptionsAdmin, updateRolePermissionsAdmin } from "../services/userApiService";
+import {
+  createRoleAdmin,
+  deleteRoleAdmin,
+  fetchRoleOptionsAdmin,
+  updateRoleAdmin,
+  updateRolePermissionsAdmin,
+} from "../services/userApiService";
 
 // Future API:
 //   GET /api/admin/permissions  → { matrix: { [roleKey]: { [permKey]: boolean } } }
@@ -12,6 +18,7 @@ const DEFAULT_MATRIX = {};
 
 // admin = greyed out, cannot edit permissions or rename
 const LOCKED_ROLES = new Set(["admin"]);
+const BUILT_IN_ROLES = new Set(["admin", "user", "instructor"]);
 // user = show "(Default)" label, but permissions ARE editable
 const DEFAULT_LABEL_ROLES = new Set(["user"]);
 
@@ -44,6 +51,7 @@ export default function RolePermissionPage() {
   const [isDirty, setIsDirty] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [actionError, setActionError] = useState("");
 
   // --- Add Role form state ---
   const [showAddRole, setShowAddRole] = useState(false);
@@ -68,7 +76,6 @@ export default function RolePermissionPage() {
           ? payload.roles.map((role) => ({
             key: String(role?.code ?? "").trim(),
             label: String(role?.name ?? role?.code ?? "").trim(),
-            description: String(role?.description ?? "").trim(),
           })).filter((role) => role.key)
           : [];
         const nextPermissions = Array.isArray(payload?.permission_catalog)
@@ -85,6 +92,7 @@ export default function RolePermissionPage() {
         setIsDirty(false);
         setSaveState("idle");
         setLoadError("");
+        setActionError("");
       })
       .catch((error) => {
         if (!mounted) return;
@@ -108,6 +116,7 @@ export default function RolePermissionPage() {
 
   const handleSave = async () => {
     setSaveState("saving");
+    setActionError("");
     try {
       // Save each non-locked role concurrently
       const editableRoles = roles.filter((r) => !LOCKED_ROLES.has(r.key));
@@ -123,52 +132,82 @@ export default function RolePermissionPage() {
       setIsDirty(false);
       setTimeout(() => setSaveState("idle"), 2000);
     } catch (err) {
+      setActionError(err?.message ?? "ไม่สามารถบันทึกสิทธิ์ได้");
       setSaveState("error");
       setTimeout(() => setSaveState("idle"), 3000);
     }
   };
 
-  const handleAddRole = () => {
+  const handleAddRole = async () => {
     const label = newRoleLabel.trim();
     if (!label) { setAddError("กรุณากรอกชื่อบทบาท"); return; }
     const key = label.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_ก-๙]/g, "");
     if (roles.some((r) => r.key === key)) { setAddError("ชื่อบทบาทนี้มีอยู่แล้ว"); return; }
-    setRoles((prev) => [...prev, { key, label }]);
-    setMatrix((prev) => ({ ...prev, [key]: buildEmptyPermissions(permissions) }));
-    setNewRoleLabel("");
-    setAddError("");
-    setShowAddRole(false);
-    setSaveState("idle");
-    setIsDirty(true);
+    try {
+      const payload = await createRoleAdmin({ code: key, name: label });
+      const createdRole = payload?.role ?? {};
+      const nextRole = {
+        key: String(createdRole?.code ?? key).trim(),
+        label: String(createdRole?.name ?? label).trim(),
+      };
+      setRoles((prev) => [...prev, nextRole]);
+      setMatrix((prev) => ({ ...prev, [nextRole.key]: buildEmptyPermissions(permissions) }));
+      setNewRoleLabel("");
+      setAddError("");
+      setShowAddRole(false);
+      setSaveState("idle");
+      setIsDirty(false);
+      setActionError("");
+    } catch (error) {
+      setAddError(error?.message ?? "ไม่สามารถเพิ่มบทบาทได้");
+    }
   };
 
   const handleRemoveRole = (roleKey) => {
-    if (LOCKED_ROLES.has(roleKey)) return;
+    if (BUILT_IN_ROLES.has(roleKey)) return;
     const role = roles.find((r) => r.key === roleKey);
     setConfirmDelete({ key: roleKey, label: role?.label ?? roleKey });
   };
 
-  const doRemoveRole = (roleKey) => {
-    setRoles((prev) => prev.filter((r) => r.key !== roleKey));
-    setMatrix((prev) => { const next = { ...prev }; delete next[roleKey]; return next; });
-    setSaveState("idle");
-    setIsDirty(true);
-    setConfirmDelete(null);
+  const doRemoveRole = async (roleKey) => {
+    try {
+      await deleteRoleAdmin(roleKey);
+      setRoles((prev) => prev.filter((r) => r.key !== roleKey));
+      setMatrix((prev) => { const next = { ...prev }; delete next[roleKey]; return next; });
+      setSaveState("idle");
+      setIsDirty(false);
+      setActionError("");
+      setConfirmDelete(null);
+    } catch (error) {
+      setActionError(error?.message ?? "ไม่สามารถลบบทบาทได้");
+      setConfirmDelete(null);
+    }
   };
 
   // --- Inline rename handlers ---
   const startRename = (role) => {
-    if (LOCKED_ROLES.has(role.key)) return;
+    if (BUILT_IN_ROLES.has(role.key)) return;
     setEditingRoleKey(role.key);
     setEditingRoleLabel(role.label);
   };
 
-  const commitRename = () => {
+  const commitRename = async () => {
     const trimmed = editingRoleLabel.trim();
     if (trimmed && editingRoleKey) {
-      setRoles((prev) => prev.map((r) => r.key === editingRoleKey ? { ...r, label: trimmed } : r));
-      setIsDirty(true);
-      setSaveState("idle");
+      try {
+        const payload = await updateRoleAdmin(editingRoleKey, { name: trimmed });
+        const updatedRole = payload?.role ?? {};
+        setRoles((prev) => prev.map((r) => (
+          r.key === editingRoleKey
+            ? { ...r, label: String(updatedRole?.name ?? trimmed).trim() }
+            : r
+        )));
+        setIsDirty(false);
+        setSaveState("idle");
+        setActionError("");
+      } catch (error) {
+        setActionError(error?.message ?? "ไม่สามารถแก้ไขชื่อบทบาทได้");
+      }
     }
     setEditingRoleKey(null);
     setEditingRoleLabel("");
@@ -231,6 +270,12 @@ export default function RolePermissionPage() {
         </div>
       ) : null}
 
+      {!loading && !loadError && actionError ? (
+        <div className="info-card" style={{ marginBottom: "1rem", color: "var(--color-danger, #e54)" }}>
+          {actionError}
+        </div>
+      ) : null}
+
       {/* ── Add Role inline form ── */}
       {showAddRole && !loading && !loadError && (
         <div className="info-card" style={{ marginBottom: "1rem", display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
@@ -261,6 +306,7 @@ export default function RolePermissionPage() {
               <th className="perm-label-col">สิทธิ์การใช้งาน</th>
               {roles.map((r) => {
                 const isLocked = LOCKED_ROLES.has(r.key);
+                const isBuiltIn = BUILT_IN_ROLES.has(r.key);
                 const isDefaultLabel = DEFAULT_LABEL_ROLES.has(r.key);
                 const isEditing = editingRoleKey === r.key;
 
@@ -285,13 +331,13 @@ export default function RolePermissionPage() {
                         />
                       ) : (
                         <span
-                          title={isLocked ? "บทบาทนี้ไม่สามารถแก้ไขได้" : "คลิกเพื่อแก้ไขชื่อ"}
+                          title={isBuiltIn ? "บทบาทนี้ไม่สามารถแก้ไขชื่อได้" : "คลิกเพื่อแก้ไขชื่อ"}
                           style={{
-                            cursor: isLocked ? "default" : "text",
-                            borderBottom: isLocked ? "none" : "1px dashed #9ca3af",
+                            cursor: isBuiltIn ? "default" : "text",
+                            borderBottom: isBuiltIn ? "none" : "1px dashed #9ca3af",
                             paddingBottom: "1px",
                           }}
-                          onClick={() => !isLocked && startRename(r)}
+                          onClick={() => !isBuiltIn && startRename(r)}
                         >
                           {r.label}
                         </span>
@@ -310,7 +356,7 @@ export default function RolePermissionPage() {
                       )}
 
                       {/* ── Delete button (hidden for locked roles) ── */}
-                      {!isLocked && !isEditing && (
+                      {!isBuiltIn && !isEditing && (
                         <button
                           type="button"
                           title={`ลบบทบาท ${r.label}`}

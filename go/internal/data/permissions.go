@@ -2,6 +2,7 @@ package data
 
 import (
 	"database/sql"
+	"errors"
 	"sort"
 	"strings"
 )
@@ -14,9 +15,8 @@ type Permission struct {
 }
 
 type Role struct {
-	Code        string `json:"code"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	Code string `json:"code"`
+	Name string `json:"name"`
 }
 
 type AllowedMenuItem struct {
@@ -38,9 +38,9 @@ var defaultPermissions = []Permission{
 }
 
 var defaultRoles = []Role{
-	{Code: "instructor", Name: "ผู้สอน", Description: "ผู้สอนและผู้ดูแลเนื้อหา/ข้อสอบ"},
-	{Code: "admin", Name: "ผู้ดูแลระบบ", Description: "ผู้ดูแลระบบทั้งหมด"},
-	{Code: "user", Name: "ผู้ใช้งาน", Description: "ผู้ใช้งานทั่วไป"},
+	{Code: "instructor", Name: "ผู้สอน"},
+	{Code: "admin", Name: "ผู้ดูแลระบบ"},
+	{Code: "user", Name: "ผู้ใช้งาน"},
 }
 
 var sidebarPermissionItems = []AllowedMenuItem{
@@ -80,6 +80,8 @@ var defaultRolePermissions = map[string][]string{
 	},
 }
 
+var ErrRoleAssignedToUsers = errors.New("role is assigned to users")
+
 func NormalizeRoleName(role string) string {
 	switch strings.TrimSpace(strings.ToLower(role)) {
 	case "admin", "ผู้ดูแลระบบ":
@@ -98,6 +100,16 @@ func NormalizeRoleName(role string) string {
 // Only "admin" is fully locked; "user" is a default role but its permissions are editable.
 func IsDefaultRole(code string) bool {
 	return NormalizeRoleName(code) == "admin"
+}
+
+func IsBuiltInRole(code string) bool {
+	normalized := NormalizeRoleName(code)
+	for _, role := range defaultRoles {
+		if role.Code == normalized {
+			return true
+		}
+	}
+	return false
 }
 
 func GetPermissionsByRole(role string) ([]string, error) {
@@ -135,14 +147,12 @@ func PermissionsForUser(userID int64) ([]string, error) {
 func EnsureDefaultRoles() error {
 	for _, role := range defaultRoles {
 		_, err := db.Exec(
-			`INSERT INTO roles (code, name, description)
-			 VALUES ($1, $2, $3)
+			`INSERT INTO roles (code, name)
+			 VALUES ($1, $2)
 			 ON CONFLICT (code) DO UPDATE
-			 SET name = EXCLUDED.name,
-			     description = EXCLUDED.description`,
+			 SET name = EXCLUDED.name`,
 			role.Code,
 			role.Name,
-			role.Description,
 		)
 		if err != nil {
 			return err
@@ -153,7 +163,7 @@ func EnsureDefaultRoles() error {
 
 func ListRoles() ([]Role, error) {
 	rows, err := db.Query(
-		`SELECT code, name, description
+		`SELECT code, name
 		 FROM roles
 		 ORDER BY CASE code
 		   WHEN 'admin'      THEN 1
@@ -170,7 +180,7 @@ func ListRoles() ([]Role, error) {
 	roles := make([]Role, 0)
 	for rows.Next() {
 		var role Role
-		if err := rows.Scan(&role.Code, &role.Name, &role.Description); err != nil {
+		if err := rows.Scan(&role.Code, &role.Name); err != nil {
 			return nil, err
 		}
 		roles = append(roles, role)
@@ -185,6 +195,55 @@ func RoleExists(role string) (bool, error) {
 		NormalizeRoleName(role),
 	).Scan(&exists)
 	return exists, err
+}
+
+func CreateRole(code, name string) (Role, error) {
+	normalizedCode := NormalizeRoleName(code)
+	trimmedName := strings.TrimSpace(name)
+
+	var role Role
+	err := db.QueryRow(
+		`INSERT INTO roles (code, name)
+		 VALUES ($1, $2)
+		 RETURNING code, name`,
+		normalizedCode,
+		trimmedName,
+	).Scan(&role.Code, &role.Name)
+	return role, err
+}
+
+func UpdateRoleName(code, name string) (Role, error) {
+	normalizedCode := NormalizeRoleName(code)
+	trimmedName := strings.TrimSpace(name)
+
+	var role Role
+	err := db.QueryRow(
+		`UPDATE roles
+		 SET name = $2
+		 WHERE code = $1
+		 RETURNING code, name`,
+		normalizedCode,
+		trimmedName,
+	).Scan(&role.Code, &role.Name)
+	return role, err
+}
+
+func DeleteRole(code string) error {
+	normalizedCode := NormalizeRoleName(code)
+
+	var inUse bool
+	if err := db.QueryRow(
+		`SELECT EXISTS(SELECT 1 FROM users WHERE role_code = $1)`,
+		normalizedCode,
+	).Scan(&inUse); err != nil {
+		return err
+	}
+	if inUse {
+		return ErrRoleAssignedToUsers
+	}
+
+	_, err := db.Exec(`DELETE FROM roles WHERE code = $1`, normalizedCode)
+	return err
 }
 
 func EnsurePermissionCatalog() error {
