@@ -8,12 +8,12 @@ export default function ContentPage({
   onCreateContent,
   onUpdateContentStatus,
   currentUserKey = "",
-  isAdmin = false,
+  hasManageAccess = false,
   canCreate = false,
 }) {
-  const canManageExample = (example) => isAdmin || isItemOwner(example, currentUserKey);
+  const canManageExample = (example) => hasManageAccess || isItemOwner(example, currentUserKey);
   const visibleExamples = examples.filter((example) =>
-    canViewItemByStatus({ item: example, currentUserKey, isAdmin }),
+    canViewItemByStatus({ item: example, currentUserKey, hasManageAccess }),
   );
 
   return (

@@ -8,6 +8,8 @@ export const listUsersAdmin = async () => {
   return Array.isArray(payload?.users) ? payload.users : [];
 };
 
+export const fetchRoleOptionsAdmin = async () => authRequest("/api/role", { method: "GET" });
+
 export const createUserAdmin = async ({ name, username, employeeCode, password, role, status }) =>
   authRequest("/api/users", {
     method: "POST",
@@ -39,4 +41,10 @@ export const changeProfilePassword = async (currentPassword, nextPassword) =>
       current_password: currentPassword,
       new_password: nextPassword,
     }),
+  });
+
+export const updateRolePermissionsAdmin = async (roleCode, permissions) =>
+  authRequest(`/api/role/${encodeURIComponent(roleCode)}/permissions`, {
+    method: "PUT",
+    body: JSON.stringify({ permissions }),
   });

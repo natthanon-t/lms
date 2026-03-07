@@ -8,12 +8,12 @@ export default function ExamPage({
   onCreateExam,
   onUpdateExamStatus,
   currentUserKey = "",
-  isAdmin = false,
+  hasManageAccess = false,
   canCreate = false,
 }) {
-  const canManageExam = (exam) => isAdmin || isItemOwner(exam, currentUserKey);
+  const canManageExam = (exam) => hasManageAccess || isItemOwner(exam, currentUserKey);
   const visibleExams = examBank.filter((exam) =>
-    canViewItemByStatus({ item: exam, currentUserKey, isAdmin }),
+    canViewItemByStatus({ item: exam, currentUserKey, hasManageAccess }),
   );
 
   return (

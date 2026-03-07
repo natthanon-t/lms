@@ -170,6 +170,39 @@ func (h *Handler) UpdateUserByAdmin(c *fiber.Ctx) error {
 	})
 }
 
+func (h *Handler) UpdateRolePermissions(c *fiber.Ctx) error {
+	roleCode := data.NormalizeRoleName(c.Params("code"))
+	if roleCode == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "role code is required")
+	}
+	if data.IsDefaultRole(roleCode) {
+		return fiber.NewError(fiber.StatusForbidden, "cannot modify permissions of a default role")
+	}
+	exists, err := data.RoleExists(roleCode)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot validate role")
+	}
+	if !exists {
+		return fiber.NewError(fiber.StatusNotFound, "role not found")
+	}
+
+	var req updateRolePermissionsRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	if req.Permissions == nil {
+		req.Permissions = []string{}
+	}
+
+	if err := data.SetRolePermissions(roleCode, req.Permissions); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot update permissions")
+	}
+	return c.JSON(fiber.Map{
+		"message": "permissions updated",
+		"role":    roleCode,
+	})
+}
+
 func (h *Handler) ResetUserPasswordByAdmin(c *fiber.Ctx) error {
 	username := data.NormalizeUsername(c.Params("username"))
 	if username == "" {

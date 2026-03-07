@@ -57,6 +57,7 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	authProtected.Get("/login-dates", handler.LoginDates)
 	authProtected.Get("/permissions", handler.MyPermissions)
 	protected.Get("/role", auth.RequirePermissions(auth.PermissionUserManage), handler.RoleOptions)
+	protected.Put("/role/:code/permissions", auth.RequirePermissions(auth.PermissionUserManage), handler.UpdateRolePermissions)
 
 	profile := protected.Group("/profile")
 	profile.Patch("", handler.UpdateProfileName)

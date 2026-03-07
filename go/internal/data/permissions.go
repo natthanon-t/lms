@@ -38,9 +38,9 @@ var defaultPermissions = []Permission{
 }
 
 var defaultRoles = []Role{
-	{Code: "user", Name: "ผู้ใช้งาน", Description: "ผู้ใช้งานทั่วไป"},
 	{Code: "instructor", Name: "ผู้สอน", Description: "ผู้สอนและผู้ดูแลเนื้อหา/ข้อสอบ"},
 	{Code: "admin", Name: "ผู้ดูแลระบบ", Description: "ผู้ดูแลระบบทั้งหมด"},
+	{Code: "user", Name: "ผู้ใช้งาน", Description: "ผู้ใช้งานทั่วไป"},
 }
 
 var sidebarPermissionItems = []AllowedMenuItem{
@@ -84,13 +84,20 @@ func NormalizeRoleName(role string) string {
 	switch strings.TrimSpace(strings.ToLower(role)) {
 	case "admin", "ผู้ดูแลระบบ":
 		return "admin"
-	case "teacher", "instructor", "ผู้สอน":
+	case "instructor", "ผู้สอน":
 		return "instructor"
 	case "user", "ผู้ใช้งาน":
 		return "user"
 	default:
 		return strings.TrimSpace(strings.ToLower(role))
 	}
+}
+
+// IsDefaultRole returns true if the role is a built-in protected role
+// whose permissions cannot be modified.
+// Only "admin" is fully locked; "user" is a default role but its permissions are editable.
+func IsDefaultRole(code string) bool {
+	return NormalizeRoleName(code) == "admin"
 }
 
 func GetPermissionsByRole(role string) ([]string, error) {
@@ -148,7 +155,12 @@ func ListRoles() ([]Role, error) {
 	rows, err := db.Query(
 		`SELECT code, name, description
 		 FROM roles
-		 ORDER BY code`,
+		 ORDER BY CASE code
+		   WHEN 'admin'      THEN 1
+		   WHEN 'user'       THEN 2
+		   WHEN 'instructor' THEN 3
+		   ELSE 4
+		 END, code`,
 	)
 	if err != nil {
 		return nil, err
@@ -243,6 +255,34 @@ func EnsureRolePermissions(role string, permissions []string) error {
 		}
 	}
 	return nil
+}
+
+// SetRolePermissions replaces the full permission set for a role inside a single transaction.
+func SetRolePermissions(roleCode string, permissionCodes []string) error {
+	normalized := NormalizeRoleName(roleCode)
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	if _, err = tx.Exec(`DELETE FROM role_permissions WHERE role_code = $1`, normalized); err != nil {
+		return err
+	}
+	for _, code := range permissionCodes {
+		if _, err = tx.Exec(
+			`INSERT INTO role_permissions (role_code, permission_code) VALUES ($1, $2)
+			 ON CONFLICT (role_code, permission_code) DO NOTHING`,
+			normalized, code,
+		); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 func EnsureDefaultAdminPermissions() error {

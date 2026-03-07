@@ -48,3 +48,7 @@ type adminUpdateUserRequest struct {
 type adminResetPasswordRequest struct {
 	NewPassword string `json:"new_password"`
 }
+
+type updateRolePermissionsRequest struct {
+	Permissions []string `json:"permissions"`
+}

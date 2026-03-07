@@ -56,6 +56,7 @@ import {
 import { canManageOwnedItem, canViewItemByStatus } from "./services/accessControlService";
 import {
   clearTokens,
+  fetchMyPermissions,
   loginAuth,
   logoutAuth,
   meAuth,
@@ -125,6 +126,8 @@ export default function App() {
     },
   });
   const [defaultUserPassword, setDefaultUserPassword] = useState(DEFAULT_PASSWORD);
+  const [currentPermissions, setCurrentPermissions] = useState([]);
+  const [sidebarItems, setSidebarItems] = useState([]);
 
   const [editorDraft, setEditorDraft] = useState(() => toCourseDraft(normalizeExampleRecord({ id: "" })));
   const [studyDraft, setStudyDraft] = useState(() => toCourseDraft(normalizeExampleRecord({ id: "" })));
@@ -134,17 +137,52 @@ export default function App() {
   const [appAlert, setAppAlert] = useState(null); // { title: string, message: string } | null
 
   const currentUser = currentUserKey ? users[currentUserKey] : null;
-  const isAdmin = currentUser?.role === "ผู้ดูแลระบบ" || currentUser?.role === "admin";
-  const canCreateLearningItems =
-    Boolean(currentUser) && (isAdmin || currentUser?.role === "ผู้สอน");
-  const canManageItem = useCallback(
-    (item) => canManageOwnedItem({ item, currentUser, currentUserKey, isAdmin }),
-    [currentUser, currentUserKey, isAdmin],
+  const permissionSet = useMemo(() => new Set(currentPermissions), [currentPermissions]);
+  const canManageUsers = permissionSet.has("management.users.manage");
+  const canViewAllExamHistory = permissionSet.has("management.exam_history.view");
+  const canViewOwnExamHistory = permissionSet.has("system.exam_history.view");
+  const canViewExamHistory = canViewAllExamHistory || canViewOwnExamHistory;
+  const canViewSummary = permissionSet.has("system.report.view");
+  const canManageContent = permissionSet.has("content.manage");
+  const canManageExams = permissionSet.has("exam.manage");
+  const canManageContentItem = useCallback(
+    (item) => canManageOwnedItem({ item, currentUser, currentUserKey, hasManageAccess: canManageContent }),
+    [currentUser, currentUserKey, canManageContent],
   );
-  const canViewItem = useCallback(
-    (item) => canViewItemByStatus({ item, currentUserKey, isAdmin }),
-    [currentUserKey, isAdmin],
+  const canManageExamItem = useCallback(
+    (item) => canManageOwnedItem({ item, currentUser, currentUserKey, hasManageAccess: canManageExams }),
+    [currentUser, currentUserKey, canManageExams],
   );
+  const canViewContentItem = useCallback(
+    (item) => canViewItemByStatus({ item, currentUserKey, hasManageAccess: canManageContent }),
+    [currentUserKey, canManageContent],
+  );
+  const visibleSidebarTabs = useMemo(() => {
+    if (!currentUser) {
+      return null;
+    }
+    const allowedTabKeys = new Set(["home", "profile", "leaderboard"]);
+    sidebarItems.forEach((item) => {
+      const key = String(item?.key ?? "").trim();
+      if (key === "content.learn" || key === "content.manage") {
+        allowedTabKeys.add("content");
+      }
+      if (key === "exam.take" || key === "exam.manage") {
+        allowedTabKeys.add("exam");
+      }
+      if (key === "system.report") {
+        allowedTabKeys.add("summary");
+      }
+      if (key === "system.exam_history" || key === "management.exam_history") {
+        allowedTabKeys.add("exam-history");
+      }
+      if (key === "management.users") {
+        allowedTabKeys.add("user-management");
+        allowedTabKeys.add("role-permission");
+      }
+    });
+    return Array.from(allowedTabKeys);
+  }, [currentUser, sidebarItems]);
 
   const syncPrimaryCourseDrafts = useCallback((course) => {
     if (!course) {
@@ -221,6 +259,42 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (!currentUserKey) {
+      setCurrentPermissions([]);
+      setSidebarItems([]);
+      return;
+    }
+    let mounted = true;
+    void fetchMyPermissions()
+      .then((payload) => {
+        if (!mounted) {
+          return;
+        }
+        setCurrentPermissions(Array.isArray(payload?.permissions) ? payload.permissions : []);
+        setSidebarItems(Array.isArray(payload?.sidebar) ? payload.sidebar : []);
+      })
+      .catch(() => {
+        if (!mounted) {
+          return;
+        }
+        setCurrentPermissions([]);
+        setSidebarItems([]);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [currentUserKey]);
+
+  useEffect(() => {
+    if (!visibleSidebarTabs?.length || visibleSidebarTabs.includes(activeTab)) {
+      return;
+    }
+    setActiveTab("home");
+    setHomeView("lobby");
+    setExamView("list");
+  }, [activeTab, visibleSidebarTabs]);
+
+  useEffect(() => {
     if (activeTab === "profile" && currentUserKey) {
       void loadUserScoresFromApi();
     }
@@ -257,6 +331,7 @@ export default function App() {
             status: profile?.status ?? prevUsers[username]?.status ?? "active",
           },
         }));
+        setCurrentPermissions(Array.isArray(profile?.permissions) ? profile.permissions : []);
         setCurrentUserKey(username);
         recordLoginDate(username);
         void loadLearningProgressFromApi(username);
@@ -279,7 +354,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!currentUserKey || !isAdmin) {
+    if (!currentUserKey || !canManageUsers) {
       return;
     }
     void (async () => {
@@ -293,10 +368,10 @@ export default function App() {
         // noop
       }
     })();
-  }, [currentUserKey, isAdmin, toUserMap]);
+  }, [currentUserKey, canManageUsers, toUserMap]);
 
   const openContentEditor = (item) => {
-    if (!canManageItem(item)) {
+    if (!canManageContentItem(item)) {
       return;
     }
     const nextItem = normalizeExampleRecord(item);
@@ -306,7 +381,7 @@ export default function App() {
   };
 
   const openExamEditor = async (item) => {
-    if (!canManageItem(item)) {
+    if (!canManageExamItem(item)) {
       return;
     }
     try {
@@ -366,7 +441,7 @@ export default function App() {
   };
 
   const openContentDetail = (item) => {
-    if (!canViewItem(item)) {
+    if (!canViewContentItem(item)) {
       setAccessMessage("ไม่มีสิทธิ์เข้าถึงเนื้อหานี้");
       setActiveTab("home");
       setHomeView("auth-required");
@@ -380,7 +455,7 @@ export default function App() {
   };
 
   const enterStudy = (item) => {
-    if (!canViewItem(item)) {
+    if (!canViewContentItem(item)) {
       setAccessMessage("ไม่มีสิทธิ์เข้าถึงเนื้อหานี้");
       setActiveTab("home");
       setHomeView("auth-required");
@@ -634,6 +709,8 @@ export default function App() {
   const handleLogout = async () => {
     await logoutAuth();
     setCurrentUserKey("");
+    setCurrentPermissions([]);
+    setSidebarItems([]);
     setShowLogin(false);
     setAccessMessage("");
     setActiveTab("home");
@@ -698,7 +775,7 @@ export default function App() {
   };
 
   const refreshUsersForAdmin = useCallback(async () => {
-    if (!isAdmin) {
+    if (!canManageUsers) {
       return;
     }
     try {
@@ -710,7 +787,7 @@ export default function App() {
     } catch {
       // noop
     }
-  }, [isAdmin, toUserMap]);
+  }, [canManageUsers, toUserMap]);
 
   const handleResetUserPassword = async (username) => {
     try {
@@ -913,6 +990,7 @@ export default function App() {
           status: profile?.status ?? "active",
         },
       }));
+      setCurrentPermissions(Array.isArray(profile?.permissions) ? profile.permissions : []);
       setCurrentUserKey(normalizedUsername);
       setAccessMessage("");
       setShowLogin(false);
@@ -981,7 +1059,8 @@ export default function App() {
           onSelectTab={handleSelectTab}
           onAuthAction={handleAuthAction}
           isAuthenticated={Boolean(currentUser)}
-          isAdmin={isAdmin}
+          canViewRestrictedTabs={Boolean(currentUser && (canManageUsers || canViewAllExamHistory || canViewSummary))}
+          visibleTabKeys={visibleSidebarTabs}
         />
 
         {activeTab === "profile" && !currentUser ? (
@@ -1008,11 +1087,11 @@ export default function App() {
               <p>กรุณา Login ก่อนใช้งานหน้านี้</p>
             </header>
           </section>
-        ) : activeTab === "user-management" && !isAdmin ? (
+        ) : activeTab === "user-management" && !canManageUsers ? (
           <section className="workspace-content">
             <header className="content-header">
               <h1>จัดการ user</h1>
-              <p>หน้านี้สำหรับผู้ดูแลระบบเท่านั้น</p>
+              <p>คุณไม่มีสิทธิ์เข้าถึงหน้านี้</p>
             </header>
           </section>
         ) : activeTab === "user-management" ? (
@@ -1028,11 +1107,11 @@ export default function App() {
           />
         ) : activeTab === "leaderboard" ? (
           <LeaderboardPage />
-        ) : activeTab === "summary" && !isAdmin ? (
+        ) : activeTab === "summary" && !canViewSummary ? (
           <section className="workspace-content">
             <header className="content-header">
               <h1>สรุปผล</h1>
-              <p>หน้านี้สำหรับผู้ดูแลระบบเท่านั้น</p>
+              <p>คุณไม่มีสิทธิ์เข้าถึงหน้านี้</p>
             </header>
           </section>
         ) : activeTab === "summary" ? (
@@ -1044,20 +1123,34 @@ export default function App() {
             examples={examples}
             learningProgress={learningProgress}
           />
-        ) : activeTab === "exam-history" && !isAdmin ? (
+        ) : activeTab === "exam-history" && !currentUser ? (
           <section className="workspace-content">
             <header className="content-header">
               <h1>ประวัติการสอบ</h1>
-              <p>หน้านี้สำหรับผู้ดูแลระบบเท่านั้น</p>
+              <p>กรุณา Login ก่อนใช้งานหน้านี้</p>
+            </header>
+          </section>
+        ) : activeTab === "exam-history" && !canViewExamHistory ? (
+          <section className="workspace-content">
+            <header className="content-header">
+              <h1>ประวัติการสอบ</h1>
+              <p>คุณไม่มีสิทธิ์เข้าถึงหน้านี้</p>
             </header>
           </section>
         ) : activeTab === "exam-history" ? (
-          <ExamHistoryPage />
-        ) : activeTab === "role-permission" && !isAdmin ? (
+          <ExamHistoryPage mode={canViewAllExamHistory ? "management" : "self"} />
+        ) : activeTab === "role-permission" && !currentUser ? (
           <section className="workspace-content">
             <header className="content-header">
               <h1>สิทธิ์การใช้งาน</h1>
-              <p>หน้านี้สำหรับผู้ดูแลระบบเท่านั้น</p>
+              <p>กรุณา Login ก่อนใช้งานหน้านี้</p>
+            </header>
+          </section>
+        ) : activeTab === "role-permission" && !canManageUsers ? (
+          <section className="workspace-content">
+            <header className="content-header">
+              <h1>สิทธิ์การใช้งาน</h1>
+              <p>คุณไม่มีสิทธิ์เข้าถึงหน้านี้</p>
             </header>
           </section>
         ) : activeTab === "role-permission" ? (
@@ -1101,8 +1194,8 @@ export default function App() {
               onCreateExam={createExam}
               onUpdateExamStatus={updateExamStatus}
               currentUserKey={currentUserKey}
-              isAdmin={isAdmin}
-              canCreate={canCreateLearningItems}
+              hasManageAccess={canManageExams}
+              canCreate={canManageExams}
             />
           )
         ) : activeTab === "content" ? (
@@ -1113,8 +1206,8 @@ export default function App() {
             onCreateContent={createContent}
             onUpdateContentStatus={updateContentStatus}
             currentUserKey={currentUserKey}
-            isAdmin={isAdmin}
-            canCreate={canCreateLearningItems}
+            hasManageAccess={canManageContent}
+            canCreate={canManageContent}
           />
         ) : homeView === "auth-required" ? (
           <section className="workspace-content">
@@ -1149,7 +1242,7 @@ export default function App() {
             onChangeDraft={updateEditorDraft}
             onSaveDraft={saveEditorDraft}
             onDeleteContent={handleDeleteContent}
-            isAdmin={isAdmin}
+            canPublish={canManageContent}
           />
         ) : (
           <LobbyPage
@@ -1161,7 +1254,8 @@ export default function App() {
             onEnterExam={openExam}
             onUpdateContentStatus={updateContentStatus}
             currentUserKey={currentUserKey}
-            isAdmin={isAdmin}
+            canManageContent={canManageContent}
+            canManageExams={canManageExams}
           />
         )}
       </main>

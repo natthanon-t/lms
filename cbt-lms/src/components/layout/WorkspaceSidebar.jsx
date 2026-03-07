@@ -10,7 +10,7 @@ const tabs = [
   { key: "summary",         label: "สรุปผล" },
 ];
 
-const ADMIN_ONLY = new Set(["user-management", "exam-history", "role-permission", "summary"]);
+const RESTRICTED_TABS = new Set(["user-management", "exam-history", "role-permission", "summary"]);
 
 const tabGroups = [
   ["home", "content", "exam"],
@@ -23,10 +23,15 @@ export default function WorkspaceSidebar({
   onSelectTab,
   onAuthAction,
   isAuthenticated,
-  isAdmin = false,
+  canViewRestrictedTabs = false,
+  visibleTabKeys = null,
 }) {
+  const allowedTabSet = Array.isArray(visibleTabKeys) ? new Set(visibleTabKeys) : null;
   const visibleTabs = tabs.filter((tab) => {
-    if (!isAdmin && ADMIN_ONLY.has(tab.key)) return false;
+    if (allowedTabSet) {
+      return allowedTabSet.has(tab.key);
+    }
+    if (!canViewRestrictedTabs && RESTRICTED_TABS.has(tab.key)) return false;
     return true;
   });
   const visibleTabsByKey = new Map(visibleTabs.map((tab) => [tab.key, tab]));

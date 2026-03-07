@@ -5,15 +5,14 @@ const toOwnerUsername = (item) => String(item?.ownerUsername ?? "").trim();
 export const isItemOwner = (item, currentUserKey) =>
   Boolean(currentUserKey) && toOwnerUsername(item) === currentUserKey;
 
-export const canManageOwnedItem = ({ item, currentUser, currentUserKey, isAdmin }) => {
+export const canManageOwnedItem = ({ item, currentUser, currentUserKey, hasManageAccess }) => {
   if (!currentUser) {
     return false;
   }
-  return isAdmin || isItemOwner(item, currentUserKey);
+  return hasManageAccess || isItemOwner(item, currentUserKey);
 };
 
-export const canViewItemByStatus = ({ item, currentUserKey, isAdmin }) => {
+export const canViewItemByStatus = ({ item, currentUserKey, hasManageAccess }) => {
   const normalizedStatus = String(item?.status ?? "active").toLowerCase();
-  return isAdmin || normalizedStatus === "active" || isItemOwner(item, currentUserKey);
+  return hasManageAccess || normalizedStatus === "active" || isItemOwner(item, currentUserKey);
 };
-

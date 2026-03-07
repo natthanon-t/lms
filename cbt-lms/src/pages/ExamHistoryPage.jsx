@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchAllExamAttemptsAdminApi, fetchExamAttemptDetailsAdminApi } from "../services/examApiService";
+import {
+  fetchAllExamAttemptsAdminApi,
+  fetchExamAttemptDetailsAdminApi,
+  fetchExamAttemptsApi,
+  fetchExamsApi,
+} from "../services/examApiService";
 
 const PASS_THRESHOLD = 70;
 
@@ -15,23 +20,42 @@ function ResultBadge({ score }) {
 function formatDate(dateStr) {
   if (!dateStr) return "—";
   const d = new Date(dateStr);
-  if (isNaN(d)) return dateStr;
+  if (Number.isNaN(d.getTime())) return dateStr;
   return d.toLocaleString("th-TH", {
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
-// ── Answer detail modal ───────────────────────────────────────────────────────
 function AnswerModal({ attempt, onClose }) {
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchExamAttemptDetailsAdminApi(attempt.id)
-      .then(setDetails)
-      .catch(() => setDetails([]))
-      .finally(() => setLoading(false));
+    let mounted = true;
+    setLoading(true);
+    void fetchExamAttemptDetailsAdminApi(attempt.id)
+      .then((items) => {
+        if (mounted) {
+          setDetails(items);
+        }
+      })
+      .catch(() => {
+        if (mounted) {
+          setDetails([]);
+        }
+      })
+      .finally(() => {
+        if (mounted) {
+          setLoading(false);
+        }
+      });
+    return () => {
+      mounted = false;
+    };
   }, [attempt.id]);
 
   return (
@@ -40,7 +64,11 @@ function AnswerModal({ attempt, onClose }) {
         <div className="exam-answer-modal-header">
           <div>
             <h2>{attempt.examTitle}</h2>
-            <p>{attempt.name}{attempt.employeeCode ? ` · ${attempt.employeeCode}` : ""} · คะแนน {Math.round(attempt.scorePercent)}% ({attempt.correctCount}/{attempt.totalQuestions})</p>
+            <p>
+              {attempt.name}
+              {attempt.employeeCode ? ` · ${attempt.employeeCode}` : ""}
+              {` · คะแนน ${Math.round(attempt.scorePercent)}% (${attempt.correctCount}/${attempt.totalQuestions})`}
+            </p>
           </div>
           <button type="button" className="exam-answer-close" onClick={onClose}>✕</button>
         </div>
@@ -84,9 +112,9 @@ function AnswerModal({ attempt, onClose }) {
                         );
                       })}
                     </div>
-                    {item.explanation && (
+                    {item.explanation ? (
                       <p className="exam-answer-explain"><strong>คำอธิบาย:</strong> {item.explanation}</p>
-                    )}
+                    ) : null}
                   </div>
                 );
               })}
@@ -98,8 +126,7 @@ function AnswerModal({ attempt, onClose }) {
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
-export default function ExamHistoryPage() {
+export default function ExamHistoryPage({ mode = "management" }) {
   const [attempts, setAttempts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -107,11 +134,66 @@ export default function ExamHistoryPage() {
   const [selectedAttempt, setSelectedAttempt] = useState(null);
 
   useEffect(() => {
-    fetchAllExamAttemptsAdminApi()
-      .then((data) => setAttempts(data))
-      .catch(() => setAttempts([]))
-      .finally(() => setLoading(false));
-  }, []);
+    let mounted = true;
+    setLoading(true);
+    setSelectedAttempt(null);
+
+    const loadAttempts = async () => {
+      if (mode === "management") {
+        const data = await fetchAllExamAttemptsAdminApi();
+        if (mounted) {
+          setAttempts(data);
+        }
+        return;
+      }
+
+      const exams = await fetchExamsApi();
+      const attemptsByExam = await Promise.all(
+        exams.map(async (exam) => {
+          try {
+            const items = await fetchExamAttemptsApi(exam.id);
+            return items.map((attempt) => ({
+              id: attempt.attemptId,
+              examTitle: exam.title,
+              employeeCode: "",
+              name: "ฉัน",
+              correctCount: attempt.correctCount,
+              totalQuestions: attempt.totalQuestions,
+              scorePercent: attempt.scorePercent,
+              startedAt: attempt.date,
+              finishedAt: attempt.date,
+            }));
+          } catch {
+            return [];
+          }
+        }),
+      );
+
+      if (mounted) {
+        setAttempts(
+          attemptsByExam
+            .flat()
+            .sort((a, b) => new Date(b.finishedAt ?? b.startedAt ?? 0) - new Date(a.finishedAt ?? a.startedAt ?? 0)),
+        );
+      }
+    };
+
+    void loadAttempts()
+      .catch(() => {
+        if (mounted) {
+          setAttempts([]);
+        }
+      })
+      .finally(() => {
+        if (mounted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [mode]);
 
   const examTitles = useMemo(() => {
     const titles = [...new Set(attempts.map((a) => a.examTitle).filter(Boolean))];
@@ -120,28 +202,35 @@ export default function ExamHistoryPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return attempts.filter((a) => {
-      if (filterExam && a.examTitle !== filterExam) return false;
-      if (q && !a.name?.toLowerCase().includes(q) && !a.employeeCode?.includes(q)) return false;
+    return attempts.filter((attempt) => {
+      if (filterExam && attempt.examTitle !== filterExam) {
+        return false;
+      }
+      if (mode === "management" && q) {
+        return attempt.name?.toLowerCase().includes(q) || attempt.employeeCode?.includes(q);
+      }
+      if (mode !== "management" && q) {
+        return attempt.examTitle?.toLowerCase().includes(q);
+      }
       return true;
     });
-  }, [attempts, search, filterExam]);
+  }, [attempts, filterExam, mode, search]);
 
-  const passCount = filtered.filter((a) => a.scorePercent >= PASS_THRESHOLD).length;
+  const passCount = filtered.filter((attempt) => attempt.scorePercent >= PASS_THRESHOLD).length;
   const avgScore = filtered.length
-    ? Math.round(filtered.reduce((s, a) => s + a.scorePercent, 0) / filtered.length)
+    ? Math.round(filtered.reduce((sum, attempt) => sum + attempt.scorePercent, 0) / filtered.length)
     : 0;
+  const totalColumns = mode === "management" ? 9 : 6;
 
   return (
     <section className="workspace-content">
       <header className="content-header">
         <div>
           <h1>ประวัติการสอบ</h1>
-          <p>รายการผลการสอบของผู้ใช้ทั้งหมด</p>
+          <p>{mode === "management" ? "รายการผลการสอบของผู้ใช้ทั้งหมด" : "รายการผลการสอบของคุณ"}</p>
         </div>
       </header>
 
-      {/* Summary strip */}
       <div className="metric-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
         <article className="metric-card"><h3>รายการทั้งหมด</h3><p>{filtered.length}</p></article>
         <article className="metric-card"><h3>ผ่านการสอบ</h3><p style={{ color: "#166534" }}>{passCount}</p></article>
@@ -149,12 +238,11 @@ export default function ExamHistoryPage() {
         <article className="metric-card"><h3>คะแนนเฉลี่ย</h3><p>{avgScore}%</p></article>
       </div>
 
-      {/* Filters */}
       <div className="exam-history-filters">
         <input
           type="text"
           className="exam-history-search"
-          placeholder="ค้นหาชื่อหรือรหัสพนักงาน…"
+          placeholder={mode === "management" ? "ค้นหาชื่อหรือรหัสพนักงาน…" : "ค้นหาชื่อข้อสอบ…"}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -164,39 +252,38 @@ export default function ExamHistoryPage() {
           onChange={(e) => setFilterExam(e.target.value)}
         >
           <option value="">ข้อสอบทั้งหมด</option>
-          {examTitles.map((t) => (
-            <option key={t} value={t}>{t}</option>
+          {examTitles.map((title) => (
+            <option key={title} value={title}>{title}</option>
           ))}
         </select>
       </div>
 
-      {/* Table */}
       <div className="leaderboard-card">
         <table>
           <thead>
             <tr>
               <th>#</th>
-              <th>รหัสพนักงาน</th>
-              <th>ชื่อ-นามสกุล</th>
+              {mode === "management" ? <th>รหัสพนักงาน</th> : null}
+              {mode === "management" ? <th>ชื่อ-นามสกุล</th> : null}
               <th>ชื่อข้อสอบ</th>
               <th style={{ textAlign: "center" }}>คะแนน</th>
               <th style={{ textAlign: "center" }}>ถูก / ทั้งหมด</th>
               <th>ผล</th>
               <th>วันที่ทำ</th>
-              <th></th>
+              {mode === "management" ? <th></th> : null}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} style={{ textAlign: "center", color: "#6b8ab8", padding: "24px" }}>กำลังโหลด…</td></tr>
+              <tr><td colSpan={totalColumns} style={{ textAlign: "center", color: "#6b8ab8", padding: "24px" }}>กำลังโหลด…</td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={9} style={{ textAlign: "center", color: "#6b8ab8", padding: "24px" }}>ไม่พบข้อมูล</td></tr>
+              <tr><td colSpan={totalColumns} style={{ textAlign: "center", color: "#6b8ab8", padding: "24px" }}>ไม่พบข้อมูล</td></tr>
             ) : (
-              filtered.map((row, i) => (
-                <tr key={row.id}>
-                  <td>{i + 1}</td>
-                  <td>{row.employeeCode || "—"}</td>
-                  <td>{row.name}</td>
+              filtered.map((row, index) => (
+                <tr key={`${row.id}-${index}`}>
+                  <td>{index + 1}</td>
+                  {mode === "management" ? <td>{row.employeeCode || "—"}</td> : null}
+                  {mode === "management" ? <td>{row.name}</td> : null}
                   <td>{row.examTitle}</td>
                   <td style={{ textAlign: "center" }}>
                     <strong style={{ color: row.scorePercent >= PASS_THRESHOLD ? "#166534" : "#b91c1c" }}>
@@ -206,15 +293,17 @@ export default function ExamHistoryPage() {
                   <td style={{ textAlign: "center" }}>{row.correctCount} / {row.totalQuestions}</td>
                   <td><ResultBadge score={row.scorePercent} /></td>
                   <td>{formatDate(row.finishedAt ?? row.startedAt)}</td>
-                  <td>
-                    <button
-                      type="button"
-                      className="view-answers-btn"
-                      onClick={() => setSelectedAttempt(row)}
-                    >
-                      ดูคำตอบ
-                    </button>
-                  </td>
+                  {mode === "management" ? (
+                    <td>
+                      <button
+                        type="button"
+                        className="view-answers-btn"
+                        onClick={() => setSelectedAttempt(row)}
+                      >
+                        ดูคำตอบ
+                      </button>
+                    </td>
+                  ) : null}
                 </tr>
               ))
             )}
@@ -222,9 +311,9 @@ export default function ExamHistoryPage() {
         </table>
       </div>
 
-      {selectedAttempt && (
+      {mode === "management" && selectedAttempt ? (
         <AnswerModal attempt={selectedAttempt} onClose={() => setSelectedAttempt(null)} />
-      )}
+      ) : null}
     </section>
   );
 }

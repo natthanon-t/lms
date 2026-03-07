@@ -11,19 +11,20 @@ export default function LobbyPage({
   onEnterExam,
   onUpdateContentStatus,
   currentUserKey = "",
-  isAdmin = false,
+  canManageContent = false,
+  canManageExams = false,
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [managingContentId, setManagingContentId] = useState("");
-  const canManageExample = (example) => isAdmin || isItemOwner(example, currentUserKey);
-  const canManageExam = (exam) => isAdmin || isItemOwner(exam, currentUserKey);
+  const canManageExample = (example) => canManageContent || isItemOwner(example, currentUserKey);
+  const canManageExam = (exam) => canManageExams || isItemOwner(exam, currentUserKey);
 
   const keyword = searchTerm.trim().toLowerCase();
   const baseExamples = examples.filter((example) =>
-    canViewItemByStatus({ item: example, currentUserKey, isAdmin }),
+    canViewItemByStatus({ item: example, currentUserKey, hasManageAccess: canManageContent }),
   );
   const baseExams = examBank.filter((exam) =>
-    canViewItemByStatus({ item: exam, currentUserKey, isAdmin }),
+    canViewItemByStatus({ item: exam, currentUserKey, hasManageAccess: canManageExams }),
   );
   const filteredExamples = baseExamples.filter((example) =>
     keyword ? example.title.toLowerCase().includes(keyword) : true,
