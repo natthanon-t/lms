@@ -44,12 +44,11 @@ func currentUserRole(c *fiber.Ctx) string {
 		return ""
 	}
 	role, _ := claims["role"].(string)
-	return strings.TrimSpace(role)
+	return role
 }
 
 func isAdminRole(role string) bool {
-	normalized := strings.ToLower(strings.TrimSpace(role))
-	return normalized == "admin" || role == "ผู้ดูแลระบบ"
+	return normalizeRole(role) == "admin"
 }
 
 func CurrentUsername(c *fiber.Ctx) (string, error) {

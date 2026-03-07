@@ -1,31 +1,58 @@
 package api
 
 import (
+	"backend/internal/auth"
 	"backend/internal/data"
 	"database/sql"
 	"errors"
-	"slices"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-var userRoleOptions = []string{"ผู้ใช้งาน", "ผู้สอน", "ผู้ดูแลระบบ", "user", "admin"}
 var userStatusOptions = []string{"active", "inactive"}
 
 func (h *Handler) RoleOptions(c *fiber.Ctx) error {
+	roles, err := data.ListRoles()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot load roles")
+	}
+	permissionCatalog, err := auth.PermissionCatalog()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot load permission catalog")
+	}
+	rolePermissions, err := auth.RolePermissionsMap()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot load role permissions")
+	}
 	return c.JSON(fiber.Map{
-		"roles":        userRoleOptions,
-		"default_role": "ผู้ใช้งาน",
+		"roles":             roles,
+		"default_role":      "user",
+		"permission_catalog": permissionCatalog,
+		"role_permissions":   rolePermissions,
 	})
 }
 
 func (h *Handler) UserOptions(c *fiber.Ctx) error {
+	roles, err := data.ListRoles()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot load roles")
+	}
+	permissionCatalog, err := auth.PermissionCatalog()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot load permission catalog")
+	}
+	rolePermissions, err := auth.RolePermissionsMap()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot load role permissions")
+	}
 	return c.JSON(fiber.Map{
-		"role_options":   userRoleOptions,
-		"status_options": userStatusOptions,
-		"default_role":   "ผู้ใช้งาน",
-		"default_status": "active",
+		"role_options":       roles,
+		"status_options":     userStatusOptions,
+		"default_role":       "user",
+		"default_status":     "active",
+		"permission_catalog": permissionCatalog,
+		"role_permissions":   rolePermissions,
 	})
 }
 
@@ -60,15 +87,19 @@ func (h *Handler) CreateUserByAdmin(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "password must be at least 8 characters")
 	}
 	if req.Role == "" {
-		req.Role = "ผู้ใช้งาน"
+		req.Role = "user"
 	}
-	if !slices.Contains(userRoleOptions, req.Role) {
+	roleExists, err := data.RoleExists(req.Role)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot validate role")
+	}
+	if !roleExists {
 		return fiber.NewError(fiber.StatusBadRequest, "role is invalid")
 	}
 	if req.Status == "" {
 		req.Status = "active"
 	}
-	if !slices.Contains(userStatusOptions, req.Status) {
+	if req.Status != "active" && req.Status != "inactive" {
 		return fiber.NewError(fiber.StatusBadRequest, "status is invalid")
 	}
 
@@ -79,9 +110,13 @@ func (h *Handler) CreateUserByAdmin(c *fiber.Ctx) error {
 		}
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot create user")
 	}
+	userPayload, err := toAuthUserPayload(user)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot load user permissions")
+	}
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"message": "create user success",
-		"user":    user,
+		"user":    userPayload,
 	})
 }
 
@@ -99,8 +134,14 @@ func (h *Handler) UpdateUserByAdmin(c *fiber.Ctx) error {
 	req.Status = strings.ToLower(strings.TrimSpace(req.Status))
 	req.Name = strings.TrimSpace(req.Name)
 	req.EmployeeCode = data.NormalizeEmployeeCode(req.EmployeeCode)
-	if req.Role != "" && !slices.Contains(userRoleOptions, req.Role) {
-		return fiber.NewError(fiber.StatusBadRequest, "role is invalid")
+	if req.Role != "" {
+		roleExists, err := data.RoleExists(req.Role)
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, "cannot validate role")
+		}
+		if !roleExists {
+			return fiber.NewError(fiber.StatusBadRequest, "role is invalid")
+		}
 	}
 	if req.EmployeeCode != "" && !data.IsValidEmployeeCode(req.EmployeeCode) {
 		return fiber.NewError(fiber.StatusBadRequest, "employee_code must be in format XXXX-XX-XXXX")
@@ -119,7 +160,13 @@ func (h *Handler) UpdateUserByAdmin(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message": "update user success",
-		"user":    user,
+		"user": func() fiber.Map {
+			payload, payloadErr := toUserPayload(user)
+			if payloadErr != nil {
+				return fiber.Map{}
+			}
+			return payload
+		}(),
 	})
 }
 

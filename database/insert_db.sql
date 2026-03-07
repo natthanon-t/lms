@@ -15,17 +15,59 @@ BEGIN;
 -- ต้องการ pgcrypto สำหรับ hash bcrypt
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- ==========================================================
--- USERS (demo)  password ทุก account: Demo@2026
--- ==========================================================
+  -- ==========================================================
+  -- ROLES
+  -- ==========================================================
 
-INSERT INTO users (name, username, employee_code, password_hash, role, status) VALUES
-  ('สมชาย ใจดี',      'somchai',  '2026-IT-0001', crypt('Demo@2026', gen_salt('bf', 10)), 'user',    'active'),
-  ('สมหญิง รักเรียน', 'somying',  '2026-HR-0002', crypt('Demo@2026', gen_salt('bf', 10)), 'user',    'active'),
-  ('วิชัย มุ่งมั่น',  'wichai',   '2026-FN-0003', crypt('Demo@2026', gen_salt('bf', 10)), 'user',    'active'),
-  ('นภา สดใส',        'napa',     '2026-OP-0004', crypt('Demo@2026', gen_salt('bf', 10)), 'user',    'active'),
-  ('อนันต์ พัฒนา',   'anant',    '2026-IT-0005', crypt('Demo@2026', gen_salt('bf', 10)), 'user',    'active'),
-  ('มนัส ขยันดี',     'manas',    '2026-HR-0006', crypt('Demo@2026', gen_salt('bf', 10)), 'user',    'inactive');
+  INSERT INTO roles (code, name, description) VALUES
+    ('user', 'ผู้ใช้งาน', 'ผู้ใช้งานทั่วไป'),
+    ('instructor', 'ผู้สอน', 'ผู้สอนและผู้ดูแลเนื้อหา/ข้อสอบ'),
+    ('admin', 'ผู้ดูแลระบบ', 'ผู้ดูแลระบบทั้งหมด');
+
+  -- ==========================================================
+  -- PERMISSIONS
+  -- ==========================================================
+
+  INSERT INTO permissions (code, module, action, description) VALUES
+    ('content.learn', 'content', 'learn', 'เรียนเนื้อหา'),
+    ('content.manage', 'content', 'manage', 'สร้าง / แก้ไขเนื้อหา'),
+    ('exam.take', 'exam', 'take', 'เข้าทำข้อสอบ'),
+    ('exam.manage', 'exam', 'manage', 'สร้าง / แก้ไขข้อสอบ'),
+    ('system.report.view', 'system', 'report.view', 'ดูรายงานสรุปผล'),
+    ('system.exam_history.view', 'system', 'exam_history.view', 'ดูประวัติการสอบของตัวเอง'),
+    ('management.users.manage', 'management', 'users.manage', 'จัดการผู้ใช้'),
+    ('management.exam_history.view', 'management', 'exam_history.view', 'ดูประวัติการสอบของทุกคน');
+
+  INSERT INTO role_permissions (role_code, permission_code) VALUES
+    ('user', 'content.learn'),
+    ('user', 'exam.take'),
+    ('user', 'system.exam_history.view'),
+    ('instructor', 'content.learn'),
+    ('instructor', 'content.manage'),
+    ('instructor', 'exam.take'),
+    ('instructor', 'exam.manage'),
+    ('instructor', 'system.report.view'),
+    ('instructor', 'system.exam_history.view'),
+    ('admin', 'content.learn'),
+    ('admin', 'content.manage'),
+    ('admin', 'exam.take'),
+    ('admin', 'exam.manage'),
+    ('admin', 'system.report.view'),
+    ('admin', 'system.exam_history.view'),
+    ('admin', 'management.users.manage'),
+    ('admin', 'management.exam_history.view');
+
+  -- ==========================================================
+  -- USERS (demo)  password ทุก account: Demo@2026
+  -- ==========================================================
+
+  INSERT INTO users (name, username, employee_code, password_hash, role_code, status) VALUES
+    ('สมชาย ใจดี',      'somchai',  '2026-IT-0001', crypt('Demo@2026', gen_salt('bf', 10)), 'user',    'active'),
+    ('สมหญิง รักเรียน', 'somying',  '2026-HR-0002', crypt('Demo@2026', gen_salt('bf', 10)), 'user',    'active'),
+    ('วิชัย มุ่งมั่น',  'wichai',   '2026-FN-0003', crypt('Demo@2026', gen_salt('bf', 10)), 'user',    'active'),
+    ('นภา สดใส',        'napa',     '2026-OP-0004', crypt('Demo@2026', gen_salt('bf', 10)), 'user',    'active'),
+    ('อนันต์ พัฒนา',   'anant',    '2026-IT-0005', crypt('Demo@2026', gen_salt('bf', 10)), 'user',    'active'),
+    ('มนัส ขยันดี',     'manas',    '2026-HR-0006', crypt('Demo@2026', gen_salt('bf', 10)), 'user',    'inactive');
 
 -- ==========================================================
 -- LOGIN LOGS

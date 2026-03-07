@@ -55,7 +55,8 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	authProtected := protected.Group("/auth")
 	authProtected.Get("/me", handler.Me)
 	authProtected.Get("/login-dates", handler.LoginDates)
-	protected.Get("/role", handler.RoleOptions)
+	authProtected.Get("/permissions", handler.MyPermissions)
+	protected.Get("/role", auth.RequirePermissions(auth.PermissionUserManage), handler.RoleOptions)
 
 	profile := protected.Group("/profile")
 	profile.Patch("", handler.UpdateProfileName)
@@ -63,38 +64,42 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	profile.Get("/avatar", handler.GetAvatar)
 	profile.Put("/avatar", handler.UpdateAvatar)
 
-	admin := protected.Group("/users", auth.AdminOnlyMiddleware)
+	admin := protected.Group("/users", auth.RequirePermissions(auth.PermissionUserManage))
 	admin.Get("/options", handler.UserOptions)
 	admin.Get("", handler.ListUsers)
 	admin.Post("", handler.CreateUserByAdmin)
 	admin.Patch("/:username", handler.UpdateUserByAdmin)
 	admin.Post("/:username/reset-password", handler.ResetUserPasswordByAdmin)
 
-	adminExams := protected.Group("/admin", auth.AdminOnlyMiddleware)
+	adminExams := protected.Group("/admin", auth.RequirePermissions(auth.PermissionManagementExamHistory))
 	adminExams.Get("/exam-attempts", handler.GetAllExamAttemptsAdmin)
 	adminExams.Get("/exam-attempts/:id", handler.GetExamAttemptDetailsAdmin)
 
-	courses := protected.Group("/courses")
+	courses := protected.Group("/courses", auth.RequirePermissions(auth.PermissionContentManage))
 	courses.Post("", handler.UpsertCourse)
 	courses.Patch("/:id/status", handler.UpdateCourseStatus)
 	courses.Delete("/:id", handler.DeleteCourse)
 	courses.Post("/:id/images", handler.SaveCourseImage)
 
 	// Exams — protected CRUD + attempts
-	exams := protected.Group("/exams")
-	exams.Post("", handler.UpsertExam)
-	exams.Patch("/:id/status", handler.UpdateExamStatus)
-	exams.Delete("/:id", handler.DeleteExam)
-	exams.Get("/:id/attempts", handler.GetExamAttempts)
-	exams.Post("/:id/attempts", handler.SaveExamAttempt)
+	examManagement := protected.Group("/exams", auth.RequirePermissions(auth.PermissionExamManage))
+	examManagement.Post("", handler.UpsertExam)
+	examManagement.Patch("/:id/status", handler.UpdateExamStatus)
+	examManagement.Delete("/:id", handler.DeleteExam)
+
+	examHistory := protected.Group("/exams", auth.RequirePermissions(auth.PermissionSystemExamHistory))
+	examHistory.Get("/:id/attempts", handler.GetExamAttempts)
+
+	examAttempts := protected.Group("/exams", auth.RequirePermissions(auth.PermissionExamTake))
+	examAttempts.Post("/:id/attempts", handler.SaveExamAttempt)
 
 	// Learning progress
-	learning := protected.Group("/learning")
+	learning := protected.Group("/learning", auth.RequirePermissions(auth.PermissionContentLearn))
 	learning.Get("/progress", handler.GetLearningProgress)
 	learning.Get("/scores", handler.GetUserScores)
-	learning.Get("/leaderboard", handler.GetLeaderboard)
 	learning.Post("/courses/:courseId/subtopics/:subtopicId/complete", handler.MarkSubtopicComplete)
 	learning.Post("/courses/:courseId/subtopics/:subtopicId/answer", handler.SubmitSubtopicAnswer)
 	learning.Post("/courses/:courseId/subtopics/:subtopicId/time", handler.RecordSubtopicTime)
 	learning.Post("/courses/:courseId/complete", handler.CompleteCourse)
+	protected.Get("/learning/leaderboard", handler.GetLeaderboard)
 }

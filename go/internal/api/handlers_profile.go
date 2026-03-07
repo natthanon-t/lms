@@ -28,9 +28,14 @@ func (h *Handler) UpdateProfileName(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot update profile")
 	}
 
+	userPayload, err := toUserPayload(user)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot load user permissions")
+	}
+
 	return c.JSON(fiber.Map{
 		"message": "profile updated",
-		"user":    toUserPayload(user),
+		"user":    userPayload,
 	})
 }
 

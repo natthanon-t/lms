@@ -13,12 +13,13 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-func GenerateAccessToken(user data.AuthUserRecord, jwtSecret string, accessTTLMinutes int) (string, error) {
+func GenerateAccessToken(user data.AuthUserRecord, jwtSecret string, accessTTLMinutes int, permissions []string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["sub"] = strconv.FormatInt(user.ID, 10)
 	claims["username"] = user.Username
 	claims["role"] = user.Role
+	claims["permissions"] = permissions
 	claims["exp"] = time.Now().Add(time.Duration(accessTTLMinutes) * time.Minute).Unix()
 
 	return token.SignedString([]byte(jwtSecret))

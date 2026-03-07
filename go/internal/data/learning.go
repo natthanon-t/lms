@@ -223,7 +223,7 @@ func GetLeaderboard() ([]LeaderboardEntry, error) {
 		SELECT
 			u.username,
 			u.name,
-			u.role,
+			u.role_code,
 			COALESCE(s.total, 0)   AS total_score,
 			COALESCE(ec.cnt, 0)    AS completed_courses,
 			COALESCE(aq.cnt, 0)    AS solved_questions,

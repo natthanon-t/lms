@@ -73,7 +73,12 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "invalid credentials")
 	}
 
-	accessToken, err := auth.GenerateAccessToken(user, h.cfg.JWTSecret, h.cfg.AccessTTL)
+	permissions, err := data.PermissionsForUser(user.ID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot load permissions")
+	}
+
+	accessToken, err := auth.GenerateAccessToken(user, h.cfg.JWTSecret, h.cfg.AccessTTL, permissions)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot generate token")
 	}
@@ -88,13 +93,18 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 
 	_ = data.RecordLoginLog(user.ID)
 
+	userPayload, err := toUserPayload(user)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot load user permissions")
+	}
+
 	return c.JSON(fiber.Map{
 		"message":       "login success",
 		"token":         accessToken,
 		"refresh_token": refreshToken,
 		"token_type":    "Bearer",
 		"expires_in":    h.cfg.AccessTTL * 60,
-		"user":          toUserPayload(user),
+		"user":          userPayload,
 	})
 }
 
@@ -138,9 +148,19 @@ func (h *Handler) Refresh(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot store refresh token")
 	}
 
-	accessToken, err := auth.GenerateAccessToken(user, h.cfg.JWTSecret, h.cfg.AccessTTL)
+	permissions, err := auth.PermissionsForRole(user.Role)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot load permissions")
+	}
+
+	accessToken, err := auth.GenerateAccessToken(user, h.cfg.JWTSecret, h.cfg.AccessTTL, permissions)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot generate token")
+	}
+
+	userPayload, err := toUserPayload(user)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot load user permissions")
 	}
 
 	return c.JSON(fiber.Map{
@@ -149,7 +169,7 @@ func (h *Handler) Refresh(c *fiber.Ctx) error {
 		"refresh_token": nextRefreshToken,
 		"token_type":    "Bearer",
 		"expires_in":    h.cfg.AccessTTL * 60,
-		"user":          toUserPayload(user),
+		"user":          userPayload,
 	})
 }
 
@@ -192,7 +212,11 @@ func (h *Handler) Me(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
 	}
-	return c.JSON(toUserPayload(user))
+	userPayload, err := toUserPayload(user)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot load user permissions")
+	}
+	return c.JSON(userPayload)
 }
 
 func (h *Handler) GetAvatar(c *fiber.Ctx) error {

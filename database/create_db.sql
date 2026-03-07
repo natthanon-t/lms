@@ -26,11 +26,21 @@ DROP TABLE IF EXISTS user_skill_scores CASCADE;
 DROP TABLE IF EXISTS user_scores CASCADE;
 DROP TABLE IF EXISTS user_login_logs CASCADE;
 DROP TABLE IF EXISTS refresh_tokens CASCADE;
+DROP TABLE IF EXISTS role_permissions CASCADE;
+DROP TABLE IF EXISTS roles CASCADE;
+DROP TABLE IF EXISTS permissions CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
 -- ==========================================================
 -- USERS & AUTH
 -- ==========================================================
+
+CREATE TABLE roles (
+  code         TEXT         PRIMARY KEY,
+  name         TEXT         NOT NULL,
+  description  TEXT         NOT NULL DEFAULT '',
+  created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
 
 CREATE TABLE users (
   id            BIGSERIAL    PRIMARY KEY,
@@ -38,9 +48,11 @@ CREATE TABLE users (
   username      TEXT         NOT NULL UNIQUE,
   employee_code TEXT         NOT NULL DEFAULT '',
   password_hash TEXT         NOT NULL,
-  role          TEXT         NOT NULL DEFAULT 'user',
+  role_code     TEXT         NOT NULL DEFAULT 'user',
   status        TEXT         NOT NULL DEFAULT 'active',
-  created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+  created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  CONSTRAINT fk_users_role
+    FOREIGN KEY (role_code) REFERENCES roles(code)
 );
 
 CREATE TABLE refresh_tokens (
@@ -54,6 +66,25 @@ CREATE TABLE refresh_tokens (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE permissions (
+  code         TEXT         PRIMARY KEY,
+  module       TEXT         NOT NULL,
+  action       TEXT         NOT NULL,
+  description  TEXT         NOT NULL DEFAULT '',
+  created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE role_permissions (
+  role_code        TEXT         NOT NULL,
+  permission_code  TEXT         NOT NULL,
+  created_at       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (role_code, permission_code),
+  CONSTRAINT fk_role_permissions_role
+    FOREIGN KEY (role_code) REFERENCES roles(code) ON DELETE CASCADE,
+  CONSTRAINT fk_role_permissions_permission
+    FOREIGN KEY (permission_code) REFERENCES permissions(code) ON DELETE CASCADE
+);
+
 -- ประวัติการ login ของผู้ใช้
 CREATE TABLE user_login_logs (
   id          BIGSERIAL    PRIMARY KEY,
@@ -64,6 +95,9 @@ CREATE TABLE user_login_logs (
 );
 
 CREATE INDEX ix_refresh_tokens_user ON refresh_tokens(user_id);
+CREATE INDEX ix_users_role_code ON users(role_code);
+CREATE INDEX ix_role_permissions_permission ON role_permissions(permission_code);
+CREATE INDEX ix_role_permissions_role_code ON role_permissions(role_code);
 
 CREATE INDEX ix_login_logs_user ON user_login_logs(user_id);
 CREATE INDEX ix_login_logs_time ON user_login_logs(logged_in_at);
