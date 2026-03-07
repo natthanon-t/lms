@@ -18,7 +18,7 @@ const DEFAULT_MATRIX = {};
 
 // admin = greyed out, cannot edit permissions or rename
 const LOCKED_ROLES = new Set(["admin"]);
-const BUILT_IN_ROLES = new Set(["admin", "user", "instructor"]);
+const BUILT_IN_ROLES = new Set(["admin", "user"]);
 // user = show "(Default)" label, but permissions ARE editable
 const DEFAULT_LABEL_ROLES = new Set(["user"]);
 

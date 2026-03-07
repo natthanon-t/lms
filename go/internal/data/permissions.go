@@ -104,12 +104,7 @@ func IsDefaultRole(code string) bool {
 
 func IsBuiltInRole(code string) bool {
 	normalized := NormalizeRoleName(code)
-	for _, role := range defaultRoles {
-		if role.Code == normalized {
-			return true
-		}
-	}
-	return false
+	return normalized == "admin" || normalized == "user"
 }
 
 func GetPermissionsByRole(role string) ([]string, error) {
@@ -248,30 +243,6 @@ func DeleteRole(code string) error {
 
 func EnsurePermissionCatalog() error {
 	if err := EnsureDefaultRoles(); err != nil {
-		return err
-	}
-	if _, err := db.Exec(`UPDATE users SET role_code = 'instructor' WHERE role_code = 'teacher'`); err != nil {
-		return err
-	}
-	if _, err := db.Exec(
-		`INSERT INTO role_permissions (role_code, permission_code)
-		 SELECT 'instructor', permission_code
-		 FROM role_permissions
-		 WHERE role_code = 'teacher'
-		 ON CONFLICT (role_code, permission_code) DO NOTHING`,
-	); err != nil {
-		return err
-	}
-	if _, err := db.Exec(`DELETE FROM role_permissions WHERE role_code = 'teacher'`); err != nil {
-		return err
-	}
-	if _, err := db.Exec(`DELETE FROM roles WHERE code = 'teacher'`); err != nil {
-		return err
-	}
-	if _, err := db.Exec(`DELETE FROM role_permissions WHERE permission_code = 'system.leaderboard.view'`); err != nil {
-		return err
-	}
-	if _, err := db.Exec(`DELETE FROM permissions WHERE code = 'system.leaderboard.view'`); err != nil {
 		return err
 	}
 	for _, permission := range defaultPermissions {
