@@ -77,8 +77,10 @@ import { fetchAvatarApi } from "./services/mediaApiService";
 import {
   changeProfilePassword,
   createUserAdmin,
+  fetchDefaultResetPasswordAdmin,
   listUsersAdmin,
   resetUserPasswordAdmin,
+  updateDefaultResetPasswordAdmin,
   updateProfileName,
   updateUserAdmin,
 } from "./services/userApiService";
@@ -347,15 +349,20 @@ export default function App() {
 
   useEffect(() => {
     if (!currentUserKey || !canManageUsers) {
+      setDefaultUserPassword("");
       return;
     }
     void (async () => {
       try {
-        const apiUsers = await listUsersAdmin();
+        const [apiUsers, defaultPassword] = await Promise.all([
+          listUsersAdmin(),
+          fetchDefaultResetPasswordAdmin(),
+        ]);
         setUsers((prevUsers) => ({
           ...prevUsers,
           ...toUserMap(apiUsers),
         }));
+        setDefaultUserPassword(defaultPassword);
       } catch {
         // noop
       }
@@ -783,7 +790,9 @@ export default function App() {
 
   const handleResetUserPassword = async (username) => {
     try {
-      await resetUserPasswordAdmin(username, defaultUserPassword);
+      const resolvedPassword = String(defaultUserPassword ?? "").trim() || (await fetchDefaultResetPasswordAdmin());
+      await resetUserPasswordAdmin(username, resolvedPassword);
+      setDefaultUserPassword(resolvedPassword);
       await refreshUsersForAdmin();
       return { success: true, message: `รีเซ็ตรหัสผ่านของ ${username} สำเร็จ` };
     } catch (error) {
@@ -791,18 +800,26 @@ export default function App() {
     }
   };
 
-  const handleUpdateDefaultPassword = (nextPassword) => {
+  const handleUpdateDefaultPassword = async (nextPassword) => {
     const trimmed = String(nextPassword ?? "").trim();
     if (!trimmed) {
-      return false;
+      return { success: false, message: "กรุณากรอก default password" };
     }
-    setDefaultUserPassword(trimmed);
-    return true;
+    try {
+      const payload = await updateDefaultResetPasswordAdmin(trimmed);
+      setDefaultUserPassword(String(payload?.default_password ?? trimmed));
+      return { success: true, message: "บันทึก default password เรียบร้อย" };
+    } catch (error) {
+      return { success: false, message: error?.message ?? "ไม่สามารถบันทึก default password ได้" };
+    }
   };
 
   const handleCreateUser = async ({ name, username, employeeCode, role, status, password }) => {
     try {
-      const resolvedPassword = String(password ?? "").trim() || defaultUserPassword;
+      const resolvedPassword =
+        String(password ?? "").trim() ||
+        String(defaultUserPassword ?? "").trim() ||
+        (await fetchDefaultResetPasswordAdmin());
       const payload = await createUserAdmin({
         name,
         username,
@@ -811,6 +828,7 @@ export default function App() {
         status,
         password: resolvedPassword,
       });
+      setDefaultUserPassword((prev) => prev || resolvedPassword);
       const user = payload?.user ?? {};
       const normalizedUsername = String(user?.username ?? username).trim().toLowerCase();
       if (normalizedUsername) {

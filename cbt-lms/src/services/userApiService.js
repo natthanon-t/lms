@@ -45,6 +45,17 @@ export const resetUserPasswordAdmin = async (username, newPassword) =>
     body: JSON.stringify({ new_password: newPassword }),
   });
 
+export const fetchDefaultResetPasswordAdmin = async () => {
+  const payload = await authRequest("/api/users/default-password", { method: "GET" });
+  return String(payload?.default_password ?? "");
+};
+
+export const updateDefaultResetPasswordAdmin = async (defaultPassword) =>
+  authRequest("/api/users/default-password", {
+    method: "PUT",
+    body: JSON.stringify({ default_password: defaultPassword }),
+  });
+
 export const updateProfileName = async (name) =>
   authRequest("/api/profile", {
     method: "PATCH",

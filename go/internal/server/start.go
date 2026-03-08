@@ -22,6 +22,10 @@ func Start() error {
 		return fmt.Errorf("ensure default admin failed: %w", err)
 	}
 
+	if err := data.EnsureAppSettings(cfg.DefaultResetPassword); err != nil {
+		return fmt.Errorf("ensure app settings failed: %w", err)
+	}
+
 	if err := data.EnsureExamSchema(); err != nil {
 		return fmt.Errorf("ensure exam schema failed: %w", err)
 	}

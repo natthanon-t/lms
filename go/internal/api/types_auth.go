@@ -49,6 +49,10 @@ type adminResetPasswordRequest struct {
 	NewPassword string `json:"new_password"`
 }
 
+type adminDefaultResetPasswordRequest struct {
+	DefaultPassword string `json:"default_password"`
+}
+
 type createRoleRequest struct {
 	Code string `json:"code"`
 	Name string `json:"name"`

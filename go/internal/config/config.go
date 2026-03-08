@@ -17,16 +17,17 @@ func LoadConfig() AppConfig {
 	}
 
 	return AppConfig{
-		Port:        port,
-		DatabaseURL: os.Getenv("DATABASE_URL"),
-		JWTSecret:   os.Getenv("JWT_SECRET"),
-		CORSOrigins: corsOrigins,
-		AccessTTL:   getIntEnv("ACCESS_TOKEN_MINUTES", 15),
-		RefreshTTL:  getIntEnv("REFRESH_TOKEN_HOURS", 168),
-		AdminName:   getStringEnv("APP_ADMIN_NAME", "System Admin"),
-		AdminUser:   getStringEnv("APP_ADMIN_USERNAME", getStringEnv("APP_ADMIN_EMAIL", "admin")),
-		AdminPass:   getStringEnv("APP_ADMIN_PASSWORD", "admin12345"),
-		ExamSeedDir: getStringEnv("EXAM_SEED_DIR", "../cbt-lms/public/exam"),
+		Port:                 port,
+		DatabaseURL:          os.Getenv("DATABASE_URL"),
+		JWTSecret:            os.Getenv("JWT_SECRET"),
+		CORSOrigins:          corsOrigins,
+		AccessTTL:            getIntEnv("ACCESS_TOKEN_MINUTES", 15),
+		RefreshTTL:           getIntEnv("REFRESH_TOKEN_HOURS", 168),
+		AdminName:            getStringEnv("APP_ADMIN_NAME", "System Admin"),
+		AdminUser:            getStringEnv("APP_ADMIN_USERNAME", getStringEnv("APP_ADMIN_EMAIL", "admin")),
+		AdminPass:            getStringEnv("APP_ADMIN_PASSWORD", "admin12345"),
+		DefaultResetPassword: getStringEnv("APP_DEFAULT_RESET_PASSWORD", "Demo@2026"),
+		ExamSeedDir:          getStringEnv("EXAM_SEED_DIR", "../cbt-lms/public/exam"),
 	}
 }
 

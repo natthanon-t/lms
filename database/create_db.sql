@@ -6,6 +6,7 @@
 BEGIN;
 
 -- ---------- DROP (order-safe) ----------
+DROP TABLE IF EXISTS app_settings CASCADE;
 DROP TABLE IF EXISTS exam_attempt_answers CASCADE;
 DROP TABLE IF EXISTS exam_attempts CASCADE;
 DROP TABLE IF EXISTS exam_domain_percentages CASCADE;
@@ -100,6 +101,12 @@ CREATE INDEX ix_role_permissions_role_code ON role_permissions(role_code);
 
 CREATE INDEX ix_login_logs_user ON user_login_logs(user_id);
 CREATE INDEX ix_login_logs_time ON user_login_logs(logged_in_at);
+
+CREATE TABLE app_settings (
+  key        TEXT        PRIMARY KEY,
+  value      TEXT        NOT NULL DEFAULT '',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
 -- รูป avatar ของผู้ใช้
 CREATE TABLE user_avatars (

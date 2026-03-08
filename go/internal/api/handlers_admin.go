@@ -26,8 +26,8 @@ func (h *Handler) RoleOptions(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot load role permissions")
 	}
 	return c.JSON(fiber.Map{
-		"roles":             roles,
-		"default_role":      "user",
+		"roles":              roles,
+		"default_role":       "user",
 		"permission_catalog": permissionCatalog,
 		"role_permissions":   rolePermissions,
 	})
@@ -37,6 +37,10 @@ func (h *Handler) UserOptions(c *fiber.Ctx) error {
 	roles, err := data.ListRoles()
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot load roles")
+	}
+	defaultResetPassword, err := data.GetDefaultResetPassword(h.cfg.DefaultResetPassword)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot load default reset password")
 	}
 	permissionCatalog, err := auth.PermissionCatalog()
 	if err != nil {
@@ -51,8 +55,37 @@ func (h *Handler) UserOptions(c *fiber.Ctx) error {
 		"status_options":     userStatusOptions,
 		"default_role":       "user",
 		"default_status":     "active",
+		"default_password":   defaultResetPassword,
 		"permission_catalog": permissionCatalog,
 		"role_permissions":   rolePermissions,
+	})
+}
+
+func (h *Handler) GetDefaultResetPassword(c *fiber.Ctx) error {
+	defaultResetPassword, err := data.GetDefaultResetPassword(h.cfg.DefaultResetPassword)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot load default reset password")
+	}
+	return c.JSON(fiber.Map{
+		"default_password": defaultResetPassword,
+	})
+}
+
+func (h *Handler) UpdateDefaultResetPassword(c *fiber.Ctx) error {
+	var req adminDefaultResetPasswordRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	req.DefaultPassword = strings.TrimSpace(req.DefaultPassword)
+	if len(req.DefaultPassword) < 8 {
+		return fiber.NewError(fiber.StatusBadRequest, "default_password must be at least 8 characters")
+	}
+	if err := data.SetDefaultResetPassword(req.DefaultPassword); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot update default reset password")
+	}
+	return c.JSON(fiber.Map{
+		"message":          "default reset password updated",
+		"default_password": req.DefaultPassword,
 	})
 }
 

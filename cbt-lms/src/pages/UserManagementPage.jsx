@@ -97,9 +97,9 @@ export default function UserManagementPage({
     [allRows, keyword, roleFilter, statusFilter],
   );
 
-  const handleSaveDefaultPassword = () => {
-    const success = onUpdateDefaultPassword?.(defaultPasswordInput);
-    setMessage(success ? "บันทึก default password เรียบร้อย" : "ไม่สามารถบันทึก default password ได้");
+  const handleSaveDefaultPassword = async () => {
+    const result = await onUpdateDefaultPassword?.(defaultPasswordInput);
+    setMessage(result?.message ?? (result?.success ? "บันทึก default password เรียบร้อย" : "ไม่สามารถบันทึก default password ได้"));
   };
 
   const handleCreateUser = async () => {

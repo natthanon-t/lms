@@ -70,6 +70,8 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 
 	admin := protected.Group("/users", auth.RequirePermissions(auth.PermissionUserManage))
 	admin.Get("/options", handler.UserOptions)
+	admin.Get("/default-password", handler.GetDefaultResetPassword)
+	admin.Put("/default-password", handler.UpdateDefaultResetPassword)
 	admin.Get("", handler.ListUsers)
 	admin.Post("", handler.CreateUserByAdmin)
 	admin.Patch("/:username", handler.UpdateUserByAdmin)
