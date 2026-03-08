@@ -16,7 +16,7 @@ import {
 } from "../components/markdown/headingUtils";
 import { ensureCoverImage, fileToDataUrl } from "../services/imageService";
 import { getStoredImages, storeImage } from "../services/contentImagesStore";
-import { saveCourseImageApi } from "../services/mediaApiService";
+import { fetchCourseImagesApi, saveCourseImageApi } from "../services/mediaApiService";
 
 const getSkillRewards = (draft) => {
   if (Array.isArray(draft.skillRewards) && draft.skillRewards.length > 0) {
@@ -31,14 +31,24 @@ const getSkillRewards = (draft) => {
   }));
 };
 
-export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, onDeleteContent, isAdmin = false }) {
+export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, onDeleteContent, canPublish = false }) {
   const editorViewRef = useRef(null);
   const [activeSubtopicId, setActiveSubtopicId] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   const [contentImages, setContentImages] = useState(() => getStoredImages(draft.sourceId));
 
   useEffect(() => {
-    setContentImages(getStoredImages(draft.sourceId));
+    const courseId = draft.sourceId;
+    setContentImages(getStoredImages(courseId));
+    if (courseId) {
+      fetchCourseImagesApi(courseId)
+        .then((apiImages) => {
+          if (Object.keys(apiImages).length > 0) {
+            setContentImages((prev) => ({ ...prev, ...apiImages }));
+          }
+        })
+        .catch(() => {});
+    }
   }, [draft.sourceId]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showQuestionModal, setShowQuestionModal] = useState(false);
@@ -233,8 +243,9 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
     if (nextImage !== draft.image) {
       onChangeDraft("image", nextImage);
     }
-    const success = onSaveDraft?.();
-    setSaveMessage(success ? "บันทึกเนื้อหาเรียบร้อยแล้ว" : "บันทึกไม่สำเร็จ");
+    Promise.resolve(onSaveDraft?.()).then((result) => {
+      setSaveMessage(result?.message ?? (result?.success ? "บันทึกเนื้อหาเรียบร้อยแล้ว" : "บันทึกไม่สำเร็จ"));
+    });
   };
 
   const handleDeleteContent = async () => {
@@ -400,7 +411,7 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
             onChange={(event) => onChangeDraft("status", event.target.value)}
           >
             <option value="inprogress">inprogress</option>
-            {isAdmin && <option value="active">active</option>}
+            {canPublish && <option value="active">active</option>}
             <option value="inactive">inactive</option>
           </select>
         </div>

@@ -8,10 +8,6 @@ import {
   CONTENT_STATUS_OPTIONS,
   EXAM_STATUS_OPTIONS,
   EMPTY_EXAM_DRAFT,
-  EXAMPLES_SEED_VERSION,
-  EXAMPLES_SEED_VERSION_KEY,
-  EXAMPLES_STORAGE_KEY,
-  LEARNING_PROGRESS_STORAGE_KEY,
 } from "./constants/appConfig";
 import ContentPage from "./pages/ContentPage";
 import ContentDetailPage from "./pages/ContentDetailPage";
@@ -37,12 +33,6 @@ import { buildNewExamRecord, normalizeExamRecord, toExamTakingDraft } from "./se
 import { ensureCoverImage } from "./services/imageService";
 import { withCompletedSubtopic, withSubmittedSubtopicAnswer } from "./services/progressService";
 import { getSubtopicPages } from "./components/markdown/headingUtils";
-import {
-  readStoredObject,
-  writeStoredJson,
-  writeStoredValue,
-} from "./services/storageService";
-import { recordLoginDate } from "./services/loginActivityStore";
 import {
   deleteExamApi,
   fetchExamApi,
@@ -186,11 +176,6 @@ export default function App() {
     setStudyDraft(toCourseDraft(course));
   }, []);
 
-  const persistExamples = useCallback((nextExamples) => {
-    writeStoredJson(EXAMPLES_STORAGE_KEY, nextExamples);
-    writeStoredValue(EXAMPLES_SEED_VERSION_KEY, EXAMPLES_SEED_VERSION);
-  }, []);
-
   const loadExamples = useCallback(async () => {
     if (examples.length > 0) {
       return;
@@ -295,17 +280,6 @@ export default function App() {
   }, [activeTab, currentUserKey, loadUserScoresFromApi]);
 
   useEffect(() => {
-    const storedProgress = readStoredObject(LEARNING_PROGRESS_STORAGE_KEY);
-    if (storedProgress) {
-      setLearningProgress(storedProgress);
-    }
-  }, []);
-
-  useEffect(() => {
-    writeStoredJson(LEARNING_PROGRESS_STORAGE_KEY, learningProgress);
-  }, [learningProgress]);
-
-  useEffect(() => {
     let mounted = true;
     const bootstrapAuth = async () => {
       try {
@@ -327,7 +301,6 @@ export default function App() {
         }));
         setCurrentPermissions(Array.isArray(profile?.permissions) ? profile.permissions : []);
         setCurrentUserKey(username);
-        recordLoginDate(username);
         void loadLearningProgressFromApi(username);
         void loadUserScoresFromApi();
         void fetchAvatarApi().then((dataUrl) => {
@@ -582,58 +555,54 @@ export default function App() {
     try {
       const payload = await upsertCourseApi(newContent);
       const saved = normalizeExampleRecord(payload?.course ?? newContent);
-      setExamples((prevExamples) => {
-        const nextExamples = [saved, ...prevExamples];
-        persistExamples(nextExamples);
-        return nextExamples;
-      });
+      setExamples((prevExamples) => [saved, ...prevExamples]);
       setEditorDraft(toCourseDraft(saved));
       setStudyDraft(toCourseDraft(saved));
       setSelectedContent(saved);
-    } catch {
-      // API failed — create locally
-      setExamples((prevExamples) => {
-        const nextExamples = [newContent, ...prevExamples];
-        persistExamples(nextExamples);
-        return nextExamples;
+    } catch (error) {
+      setAppAlert({
+        title: "ไม่สามารถสร้างเนื้อหาได้",
+        message: error?.message ?? "เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง",
       });
-      setEditorDraft(toCourseDraft(newContent));
-      setStudyDraft(toCourseDraft(newContent));
-      setSelectedContent(newContent);
+      return;
     }
 
     setActiveTab("home");
     setHomeView("editor");
   };
 
-  const updateContentStatus = (contentId, nextStatus) => {
+  const updateContentStatus = async (contentId, nextStatus) => {
     const normalizedStatus = String(nextStatus ?? "").toLowerCase();
     if (!CONTENT_STATUS_OPTIONS.includes(normalizedStatus)) {
       return;
     }
     const targetContent = examples.find((example) => example.id === contentId);
-    if (!canManageItem(targetContent)) {
+    if (!canManageContentItem(targetContent)) {
       return;
     }
 
-    setExamples((prevExamples) => {
-      const nextExamples = prevExamples.map((example) =>
-        example.id === contentId ? { ...example, status: normalizedStatus } : example,
+    try {
+      await updateCourseStatusApi(contentId, normalizedStatus);
+      setExamples((prevExamples) =>
+        prevExamples.map((example) =>
+          example.id === contentId ? { ...example, status: normalizedStatus } : example,
+        ),
       );
-      persistExamples(nextExamples);
-      return nextExamples;
-    });
-    setEditorDraft((prevDraft) =>
-      prevDraft.sourceId === contentId ? { ...prevDraft, status: normalizedStatus } : prevDraft,
-    );
-    setStudyDraft((prevDraft) =>
-      prevDraft.sourceId === contentId ? { ...prevDraft, status: normalizedStatus } : prevDraft,
-    );
-    setSelectedContent((prevContent) =>
-      prevContent?.id === contentId ? { ...prevContent, status: normalizedStatus } : prevContent,
-    );
-
-    void updateCourseStatusApi(contentId, normalizedStatus).catch(() => { });
+      setEditorDraft((prevDraft) =>
+        prevDraft.sourceId === contentId ? { ...prevDraft, status: normalizedStatus } : prevDraft,
+      );
+      setStudyDraft((prevDraft) =>
+        prevDraft.sourceId === contentId ? { ...prevDraft, status: normalizedStatus } : prevDraft,
+      );
+      setSelectedContent((prevContent) =>
+        prevContent?.id === contentId ? { ...prevContent, status: normalizedStatus } : prevContent,
+      );
+    } catch (error) {
+      setAppAlert({
+        title: "ไม่สามารถอัปเดตสถานะเนื้อหาได้",
+        message: error?.message ?? "เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง",
+      });
+    }
   };
 
   const updateExamStatus = (examId, nextStatus) => {
@@ -642,7 +611,7 @@ export default function App() {
       return;
     }
     const targetExam = examBank.find((exam) => exam.id === examId);
-    if (!canManageItem(targetExam)) {
+    if (!canManageExamItem(targetExam)) {
       return;
     }
 
@@ -665,21 +634,17 @@ export default function App() {
       return { success: false, message: "ไม่พบเนื้อหาที่ต้องการลบ" };
     }
     const targetContent = examples.find((example) => example.id === targetId);
-    if (!canManageItem(targetContent)) {
+    if (!canManageContentItem(targetContent)) {
       return { success: false, message: "ไม่มีสิทธิ์ลบเนื้อหานี้" };
     }
 
     try {
       await deleteCourseApi(targetId);
-    } catch {
-      // Delete API failed — continue with local removal anyway
+    } catch (error) {
+      return { success: false, message: error?.message ?? "ไม่สามารถลบเนื้อหาได้" };
     }
 
-    setExamples((prevExamples) => {
-      const nextExamples = prevExamples.filter((example) => example.id !== targetId);
-      persistExamples(nextExamples);
-      return nextExamples;
-    });
+    setExamples((prevExamples) => prevExamples.filter((example) => example.id !== targetId));
     setSelectedContent((prev) => (prev?.id === targetId ? null : prev));
     setHomeView("lobby");
     return { success: true, message: "ลบเนื้อหาเรียบร้อย" };
@@ -691,7 +656,7 @@ export default function App() {
       return { success: false, message: "ไม่พบข้อสอบที่ต้องการลบ" };
     }
     const targetExam = examBank.find((exam) => exam.id === targetId);
-    if (!canManageItem(targetExam)) {
+    if (!canManageExamItem(targetExam)) {
       return { success: false, message: "ไม่มีสิทธิ์ลบข้อสอบนี้" };
     }
 
@@ -897,17 +862,23 @@ export default function App() {
   };
 
   const saveEditorDraft = useCallback(async () => {
-    writeStoredJson(EXAMPLES_STORAGE_KEY, examples);
-    writeStoredValue(EXAMPLES_SEED_VERSION_KEY, EXAMPLES_SEED_VERSION);
-
     try {
-      await upsertCourseApi(editorDraft);
-    } catch {
-      // API unavailable — already persisted to localStorage above
+      const payload = await upsertCourseApi(editorDraft);
+      const saved = normalizeExampleRecord(payload?.course ?? editorDraft);
+      setExamples((prevExamples) => {
+        const existingIndex = prevExamples.findIndex((example) => example.id === saved.id);
+        if (existingIndex === -1) {
+          return [saved, ...prevExamples];
+        }
+        return prevExamples.map((example) => (example.id === saved.id ? saved : example));
+      });
+      syncPrimaryCourseDrafts(saved);
+      setSelectedContent((prev) => (prev?.id === saved.id ? saved : prev));
+      return { success: true, message: "บันทึกเนื้อหาเรียบร้อยแล้ว" };
+    } catch (error) {
+      return { success: false, message: error?.message ?? "บันทึกไม่สำเร็จ" };
     }
-
-    return true;
-  }, [examples, editorDraft]);
+  }, [editorDraft, syncPrimaryCourseDrafts]);
 
   const handleSubmitSubtopicAnswer = (courseId, subtopicId, answerResult) => {
     if (!currentUserKey) {
@@ -1004,7 +975,6 @@ export default function App() {
       setCurrentUserKey(normalizedUsername);
       setAccessMessage("");
       setShowLogin(false);
-      recordLoginDate(normalizedUsername);
       void loadLearningProgressFromApi(normalizedUsername);
       void loadUserScoresFromApi();
       void fetchAvatarApi().then((dataUrl) => {

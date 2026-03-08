@@ -41,11 +41,12 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	authGroup.Post("/refresh", handler.Refresh)
 	authGroup.Post("/logout", handler.Logout)
 
-	// Courses & Exams — GET is public (register before JWT middleware)
+	// Courses, Exams & Leaderboard — GET is public (register before JWT middleware)
 	api.Get("/courses", handler.ListCourses)
 	api.Get("/courses/:id/images", handler.GetCourseImages)
 	api.Get("/exams", handler.ListExams)
 	api.Get("/exams/:id", handler.GetExam)
+	api.Get("/learning/leaderboard", handler.GetLeaderboard)
 
 	protected := api.Group("")
 	protected.Use(jwtware.New(jwtware.Config{
@@ -107,5 +108,4 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	learning.Post("/courses/:courseId/subtopics/:subtopicId/answer", handler.SubmitSubtopicAnswer)
 	learning.Post("/courses/:courseId/subtopics/:subtopicId/time", handler.RecordSubtopicTime)
 	learning.Post("/courses/:courseId/complete", handler.CompleteCourse)
-	protected.Get("/learning/leaderboard", handler.GetLeaderboard)
 }
