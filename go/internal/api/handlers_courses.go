@@ -263,6 +263,8 @@ func (h *Handler) GetCourseImages(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"images": images})
 }
 
+const maxCourseImageBytes = 5 * 1024 * 1024 // 5 MB (base64-encoded)
+
 func (h *Handler) SaveCourseImage(c *fiber.Ctx) error {
 	id := strings.TrimSpace(c.Params("id"))
 	if id == "" {
@@ -275,10 +277,17 @@ func (h *Handler) SaveCourseImage(c *fiber.Ctx) error {
 	if strings.TrimSpace(req.Filename) == "" || req.DataURL == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "filename and data_url are required")
 	}
-	if err := data.SaveCourseImage(id, req.Filename, req.DataURL); err != nil {
+	if len(req.DataURL) > maxCourseImageBytes {
+		return fiber.NewError(fiber.StatusRequestEntityTooLarge, "image must not exceed 5 MB")
+	}
+	url, err := saveDataURLToFile("uploads/courses/"+id, req.Filename, req.DataURL)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot save image file")
+	}
+	if err := data.SaveCourseImage(id, req.Filename, url); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot save course image")
 	}
-	return c.JSON(fiber.Map{"message": "image saved"})
+	return c.JSON(fiber.Map{"url": url})
 }
 
 func (h *Handler) GetUserScores(c *fiber.Ctx) error {

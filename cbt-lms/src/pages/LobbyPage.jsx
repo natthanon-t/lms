@@ -1,22 +1,17 @@
 import { useState } from "react";
-import { STATUS_OPTIONS, isItemOwner, canViewItemByStatus } from "../services/accessControlService";
-import StatusSelect from "../components/StatusSelect";
+import { isItemOwner, canViewItemByStatus } from "../services/accessControlService";
 
 export default function LobbyPage({
   examples,
   examBank,
-  onOpenEditor,
   onOpenExamEditor,
   onEnterClass,
   onEnterExam,
-  onUpdateContentStatus,
   currentUserKey = "",
   canManageContent = false,
   canManageExams = false,
 }) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [managingContentId, setManagingContentId] = useState("");
-  const canManageExample = (example) => canManageContent || isItemOwner(example, currentUserKey);
   const canManageExam = (exam) => canManageExams || isItemOwner(exam, currentUserKey);
 
   const keyword = searchTerm.trim().toLowerCase();
@@ -26,12 +21,12 @@ export default function LobbyPage({
   const baseExams = examBank.filter((exam) =>
     canViewItemByStatus({ item: exam, currentUserKey, hasManageAccess: canManageExams }),
   );
-  const filteredExamples = baseExamples.filter((example) =>
-    keyword ? example.title.toLowerCase().includes(keyword) : true,
-  );
-  const filteredExams = baseExams.filter((exam) =>
-    keyword ? exam.title.toLowerCase().includes(keyword) : true,
-  );
+  const filteredExamples = baseExamples
+    .filter((example) => (keyword ? example.title.toLowerCase().includes(keyword) : true))
+    .sort((a, b) => (b.learnerCount ?? 0) - (a.learnerCount ?? 0));
+  const filteredExams = baseExams
+    .filter((exam) => (keyword ? exam.title.toLowerCase().includes(keyword) : true))
+    .sort((a, b) => (b.attemptCount ?? 0) - (a.attemptCount ?? 0));
   const limitedExamples = filteredExamples.slice(0, 4);
   const limitedExams = filteredExams.slice(0, 4);
 
@@ -60,45 +55,7 @@ export default function LobbyPage({
             <img src={example.image} alt={example.title} className="card-image" />
             <div className="example-head">
               <h3 className="example-title">{example.title}</h3>
-              <div className="example-action-box">
-                {canManageExample(example) ? (
-                  <span className={`content-status-badge ${example.status ?? "active"}`}>
-                    {example.status ?? "active"}
-                  </span>
-                ) : null}
-                {canManageExample(example) ? (
-                  <button
-                    type="button"
-                    className="gear-button"
-                    aria-label={`จัดการ ${example.title}`}
-                    onClick={() =>
-                      setManagingContentId((prevId) => (prevId === example.id ? "" : example.id))
-                    }
-                  >
-                    ⚙
-                  </button>
-                ) : null}
-              </div>
             </div>
-            {canManageExample(example) && managingContentId === example.id ? (
-              <div className="content-manage-menu">
-                <button
-                  type="button"
-                  className="manage-button"
-                  onClick={() => {
-                    onOpenEditor(example);
-                    setManagingContentId("");
-                  }}
-                >
-                  แก้ไขเนื้อหา
-                </button>
-                <StatusSelect
-                  value={example.status ?? "active"}
-                  options={STATUS_OPTIONS}
-                  onChange={(status) => onUpdateContentStatus?.(example.id, status)}
-                />
-              </div>
-            ) : null}
             {example.skills?.length ? (
               <div className="skill-tags">
                 {example.skills.map((skill) => (

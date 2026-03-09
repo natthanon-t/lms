@@ -62,11 +62,14 @@ func ListExams(limit, offset int) ([]Exam, int, error) {
 	}
 
 	rows, err := db.Query(`
-		SELECT id, title, creator, COALESCE(owner_username, ''), status,
-		       description, instructions, image,
-		       number_of_questions, default_time, max_attempts, created_at
-		FROM exams
-		ORDER BY created_at DESC
+		SELECT ex.id, ex.title, ex.creator, COALESCE(ex.owner_username, ''), ex.status,
+		       ex.description, ex.instructions, ex.image,
+		       ex.number_of_questions, ex.default_time, ex.max_attempts, ex.created_at,
+		       COUNT(DISTINCT ea.username) AS attempt_count
+		FROM exams ex
+		LEFT JOIN exam_attempts ea ON ea.exam_id = ex.id
+		GROUP BY ex.id
+		ORDER BY attempt_count DESC, ex.created_at DESC
 		LIMIT $1 OFFSET $2`, limit, offset)
 	if err != nil {
 		return nil, 0, err
@@ -81,6 +84,7 @@ func ListExams(limit, offset int) ([]Exam, int, error) {
 			&e.ID, &e.Title, &e.Creator, &e.OwnerUsername, &e.Status,
 			&e.Description, &e.Instructions, &e.Image,
 			&e.NumberOfQuestions, &e.DefaultTime, &e.MaxAttempts, &e.CreatedAt,
+			&e.AttemptCount,
 		); err != nil {
 			return nil, 0, err
 		}

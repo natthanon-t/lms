@@ -14,7 +14,7 @@ import {
   swapSubSections,
   updateSubtopicBodyMarkdown,
 } from "../components/markdown/headingUtils";
-import { ensureCoverImage, fileToDataUrl } from "../services/imageService";
+import { ensureCoverImage } from "../services/imageService";
 import { getStoredImages, storeImage } from "../services/contentImagesStore";
 import { fetchCourseImagesApi, saveCourseImageApi } from "../services/mediaApiService";
 
@@ -258,34 +258,21 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
     setShowDeleteConfirm(false);
   };
 
-  const handleUploadCoverImage = async (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) {
-      return;
-    }
-    try {
-      const dataUrl = await fileToDataUrl(file);
-      onChangeDraft("image", dataUrl);
-      setSaveMessage("");
-    } catch {
-      setSaveMessage("อัปโหลดรูปไม่สำเร็จ");
-    }
-  };
-
-
   const handleUploadEditorImage = async (event) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
     try {
       const dataUrl = await fileToDataUrl(file);
-      const newImages = storeImage(draft.sourceId, file.name, dataUrl);
+      if (!draft.sourceId) {
+        setSaveMessage("บันทึกคอร์สก่อนอัพโหลดรูป");
+        return;
+      }
+      const url = await saveCourseImageApi(draft.sourceId, file.name, dataUrl);
+      const resolved = url || dataUrl;
+      const newImages = storeImage(draft.sourceId, file.name, resolved);
       setContentImages(newImages);
       insertAtCursor(`\n![${file.name}](${encodeURIComponent(file.name)})\n`);
-      if (draft.sourceId) {
-        void saveCourseImageApi(draft.sourceId, file.name, dataUrl).catch(() => {});
-      }
     } catch {
       setSaveMessage("อัพโหลดรูปไม่สำเร็จ");
     }
@@ -432,16 +419,6 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
             onChange={(event) => onChangeDraft("image", event.target.value)}
             placeholder="https://..."
           />
-          <div className="default-password-row">
-            <input id="editor-image-upload" type="file" accept="image/*" onChange={handleUploadCoverImage} />
-            <button
-              type="button"
-              className="manage-button"
-              onClick={() => onChangeDraft("image", "")}
-            >
-              ล้างรูป (ใช้รูปสุ่ม)
-            </button>
-          </div>
         </div>
       </div>
 

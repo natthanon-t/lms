@@ -21,6 +21,7 @@ type Course struct {
 	CourseCompletionScore   int           `json:"courseCompletionScore"`
 	CreatedAt               time.Time     `json:"createdAt"`
 	SkillRewards            []SkillReward `json:"skillRewards"`
+	LearnerCount            int           `json:"learnerCount"`
 }
 
 type Exam struct {
@@ -38,6 +39,7 @@ type Exam struct {
 	CreatedAt         time.Time      `json:"createdAt"`
 	DomainPercentages map[string]int `json:"domainPercentages"`
 	Questions         []ExamQuestion `json:"questions"`
+	AttemptCount      int            `json:"attemptCount"`
 }
 
 type ExamQuestion struct {

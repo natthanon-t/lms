@@ -245,8 +245,13 @@ func (h *Handler) UpdateAvatar(c *fiber.Ctx) error {
 	if len(req.DataURL) > maxAvatarBytes {
 		return fiber.NewError(fiber.StatusRequestEntityTooLarge, "avatar must not exceed 2 MB")
 	}
-	if err := data.SaveAvatar(username, req.DataURL); err != nil {
+	filename := username + extFromDataURL(req.DataURL)
+	url, err := saveDataURLToFile("uploads/avatars", filename, req.DataURL)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot save avatar file")
+	}
+	if err := data.SaveAvatar(username, url); err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot save avatar")
 	}
-	return c.JSON(fiber.Map{"message": "avatar updated"})
+	return c.JSON(fiber.Map{"data_url": url})
 }

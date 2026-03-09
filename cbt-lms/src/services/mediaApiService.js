@@ -1,4 +1,6 @@
-import { authHeaders, request } from "./apiClient";
+import { API_BASE_URL, authHeaders, request } from "./apiClient";
+
+const toAbsoluteUrl = (path) => (path ? `${API_BASE_URL}${path}` : "");
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
 
@@ -6,7 +8,8 @@ export const fetchAvatarApi = async () => {
   const payload = await request("/api/profile/avatar", {
     headers: authHeaders(),
   });
-  return payload?.data_url ?? "";
+  const raw = payload?.data_url ?? "";
+  return raw.startsWith("/uploads/") ? toAbsoluteUrl(raw) : raw;
 };
 
 export const updateAvatarApi = async (dataUrl) =>
@@ -20,12 +23,17 @@ export const updateAvatarApi = async (dataUrl) =>
 
 export const fetchCourseImagesApi = async (courseId) => {
   const payload = await request(`/api/courses/${encodeURIComponent(courseId)}/images`);
-  return payload?.images ?? {};
+  const images = payload?.images ?? {};
+  return Object.fromEntries(
+    Object.entries(images).map(([filename, url]) => [filename, toAbsoluteUrl(url)])
+  );
 };
 
-export const saveCourseImageApi = async (courseId, filename, dataUrl) =>
-  request(`/api/courses/${encodeURIComponent(courseId)}/images`, {
+export const saveCourseImageApi = async (courseId, filename, dataUrl) => {
+  const payload = await request(`/api/courses/${encodeURIComponent(courseId)}/images`, {
     method: "POST",
     headers: authHeaders(),
     body: JSON.stringify({ filename, data_url: dataUrl }),
   });
+  return toAbsoluteUrl(String(payload?.url ?? ""));
+};

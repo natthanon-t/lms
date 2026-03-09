@@ -6,21 +6,21 @@ import (
 )
 
 func GetAvatar(username string) (string, error) {
-	var dataURL string
-	err := db.QueryRow(`SELECT data_url FROM user_avatars WHERE username = $1`, username).Scan(&dataURL)
+	var url string
+	err := db.QueryRow(`SELECT data_url FROM user_avatars WHERE username = $1`, username).Scan(&url)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", nil
 	}
-	return dataURL, err
+	return url, err
 }
 
-func SaveAvatar(username, dataURL string) error {
+func SaveAvatar(username, url string) error {
 	_, err := db.Exec(`
 		INSERT INTO user_avatars (username, data_url, updated_at)
 		VALUES ($1, $2, NOW())
 		ON CONFLICT (username) DO UPDATE
 			SET data_url = EXCLUDED.data_url, updated_at = NOW()`,
-		username, dataURL)
+		username, url)
 	return err
 }
 
@@ -32,21 +32,21 @@ func GetCourseImages(courseID string) (map[string]string, error) {
 	defer rows.Close()
 	images := make(map[string]string)
 	for rows.Next() {
-		var filename, dataURL string
-		if err := rows.Scan(&filename, &dataURL); err != nil {
+		var filename, url string
+		if err := rows.Scan(&filename, &url); err != nil {
 			return nil, err
 		}
-		images[filename] = dataURL
+		images[filename] = url
 	}
 	return images, rows.Err()
 }
 
-func SaveCourseImage(courseID, filename, dataURL string) error {
+func SaveCourseImage(courseID, filename, url string) error {
 	_, err := db.Exec(`
 		INSERT INTO course_content_images (course_id, filename, data_url)
 		VALUES ($1, $2, $3)
 		ON CONFLICT (course_id, filename) DO UPDATE
 			SET data_url = EXCLUDED.data_url`,
-		courseID, filename, dataURL)
+		courseID, filename, url)
 	return err
 }

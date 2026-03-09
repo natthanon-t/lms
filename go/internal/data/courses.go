@@ -12,10 +12,13 @@ func ListCourses(limit, offset int) ([]Course, int, error) {
 	}
 
 	rows, err := db.Query(`
-		SELECT id, title, creator, COALESCE(owner_username, ''), status, description, image, content,
-		       skill_points, subtopic_completion_score, course_completion_score, created_at
-		FROM courses
-		ORDER BY created_at DESC
+		SELECT c.id, c.title, c.creator, COALESCE(c.owner_username, ''), c.status, c.description, c.image, c.content,
+		       c.skill_points, c.subtopic_completion_score, c.course_completion_score, c.created_at,
+		       COUNT(DISTINCT e.username) AS learner_count
+		FROM courses c
+		LEFT JOIN user_course_enrollments e ON e.course_id = c.id
+		GROUP BY c.id
+		ORDER BY learner_count DESC, c.created_at DESC
 		LIMIT $1 OFFSET $2`, limit, offset)
 	if err != nil {
 		return nil, 0, err
@@ -30,6 +33,7 @@ func ListCourses(limit, offset int) ([]Course, int, error) {
 			&c.ID, &c.Title, &c.Creator, &c.OwnerUsername, &c.Status,
 			&c.Description, &c.Image, &c.Content,
 			&c.SkillPoints, &c.SubtopicCompletionScore, &c.CourseCompletionScore, &c.CreatedAt,
+			&c.LearnerCount,
 		); err != nil {
 			return nil, 0, err
 		}
