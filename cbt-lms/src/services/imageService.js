@@ -1,4 +1,4 @@
-export const buildRandomCoverUrl = (seed) =>
+const buildRandomCoverUrl = (seed) =>
   `https://picsum.photos/seed/${encodeURIComponent(String(seed))}/640/360`;
 
 export const ensureCoverImage = (value, fallbackSeed) => {

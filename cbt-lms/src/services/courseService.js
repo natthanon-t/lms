@@ -1,6 +1,5 @@
 import { CONTENT_STATUS_OPTIONS } from "../constants/appConfig";
 import { ensureCoverImage } from "./imageService";
-import { getCourseSkillRewards } from "./skillRewardsService";
 
 export const normalizeSkillRewardList = (item) => {
   if (Array.isArray(item.skillRewards)) {
@@ -88,6 +87,3 @@ export const buildNewCourseRecord = ({ now, courseIndex, creator, ownerUsername 
 ใส่รายละเอียดหัวข้อย่อย
 - [SCORE] 20`,
   });
-
-export const getCourseSkillTotalPoints = (course) =>
-  getCourseSkillRewards(course).reduce((sum, reward) => sum + reward.points, 0);

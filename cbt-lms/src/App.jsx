@@ -526,19 +526,6 @@ export default function App() {
       }
       return { ...prevDraft, [field]: nextValue };
     });
-
-    setExamBank((prevExams) =>
-      prevExams.map((exam) =>
-        exam.id === editorDraft.sourceId ? { ...exam, [field]: nextValue } : exam,
-      ),
-    );
-
-    setExamDraft((prevDraft) => {
-      if (prevDraft.sourceId !== editorDraft.sourceId) {
-        return prevDraft;
-      }
-      return { ...prevDraft, [field]: nextValue };
-    });
   };
 
   const createContent = async () => {

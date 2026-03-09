@@ -289,15 +289,13 @@ func (h *Handler) UpdateUserByAdmin(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot update user")
 	}
 
+	userPayload, err := toUserPayload(user)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot load user permissions")
+	}
 	return c.JSON(fiber.Map{
 		"message": "update user success",
-		"user": func() fiber.Map {
-			payload, payloadErr := toUserPayload(user)
-			if payloadErr != nil {
-				return fiber.Map{}
-			}
-			return payload
-		}(),
+		"user":    userPayload,
 	})
 }
 
