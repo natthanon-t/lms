@@ -126,6 +126,17 @@ type LeaderboardEntry struct {
 	AvatarURL        string `json:"avatar_url"`
 }
 
+type PublicUserProfile struct {
+	Username         string         `json:"username"`
+	Name             string         `json:"name"`
+	Role             string         `json:"role"`
+	AvatarURL        string         `json:"avatarUrl"`
+	TotalScore       int            `json:"totalScore"`
+	CompletedCourses int            `json:"completedCourses"`
+	SolvedQuestions  int            `json:"solvedQuestions"`
+	SkillScores      map[string]int `json:"skillScores"`
+}
+
 type AuthUser struct {
 	ID           int64     `json:"id"`
 	Name         string    `json:"name"`

@@ -7,6 +7,7 @@ import { fetchLoginDates } from "../services/authService";
 import { fetchAvatarApi, updateAvatarApi } from "../services/mediaApiService";
 
 import { getAvatarColor, getInitials } from "../utils/avatar";
+import { getLevel, getLevelProgress, pointsToNext } from "../utils/level";
 
 const avatarKey = (username) => `profile_avatar_${username}`;
 
@@ -120,6 +121,7 @@ export default function ProfilePage({
   examples,
   currentUserProgress,
   skillScores,
+  totalScore = 0,
 }) {
   const [name, setName] = useState(currentUser.name);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -448,6 +450,19 @@ export default function ProfilePage({
                 <span className="profile-info-label">ตำแหน่ง</span>
                 <span className="profile-info-value">{currentUser.role}</span>
               </div>
+              <div className="profile-info-row">
+                <span className="profile-info-label">เลเวล</span>
+                <span className="profile-info-value">
+                  {(() => {
+                    const lv = getLevel(totalScore);
+                    return (
+                      <span className="level-badge level-badge-sm" style={{ color: lv.color, background: lv.bg }}>
+                        Lv.{lv.num} {lv.label}
+                      </span>
+                    );
+                  })()}
+                </span>
+              </div>
             </div>
             <div className="profile-action-row">
               <button type="submit" className="enter-button">บันทึก</button>
@@ -474,6 +489,19 @@ export default function ProfilePage({
               <div className="profile-info-row">
                 <span className="profile-info-label">ตำแหน่ง</span>
                 <span className="profile-info-value">{currentUser.role}</span>
+              </div>
+              <div className="profile-info-row">
+                <span className="profile-info-label">เลเวล</span>
+                <span className="profile-info-value">
+                  {(() => {
+                    const lv = getLevel(totalScore);
+                    return (
+                      <span className="level-badge level-badge-sm" style={{ color: lv.color, background: lv.bg }}>
+                        Lv.{lv.num} {lv.label}
+                      </span>
+                    );
+                  })()}
+                </span>
               </div>
             </div>
             <div className="profile-action-row" style={{ marginTop: 12 }}>
@@ -560,6 +588,25 @@ export default function ProfilePage({
       <section className="profile-dashboard-grid">
         <article className="info-card profile-projects-panel">
           <h3>COURSES</h3>
+          {(() => {
+            const lv = getLevel(totalScore);
+            const progress = getLevelProgress(totalScore);
+            const toNext = pointsToNext(totalScore);
+            return (
+              <div className="level-bar-wrap" style={{ marginBottom: 16 }}>
+                <div className="level-bar-row">
+                  <span className="level-bar-label" style={{ color: lv.color }}>Lv.{lv.num} {lv.label}</span>
+                  {toNext !== null
+                    ? <span className="level-bar-next">อีก {toNext} แต้ม → Lv.{lv.num + 1}</span>
+                    : <span className="level-bar-next">เลเวลสูงสุด</span>
+                  }
+                </div>
+                <div className="level-bar-track">
+                  <div className="level-bar-fill" style={{ width: `${Math.round(progress * 100)}%`, background: lv.color }} />
+                </div>
+              </div>
+            );
+          })()}
           <div className="project-metrics">
             <div className="project-metric-chip">
               <span>คอร์สที่มี activity</span>

@@ -109,6 +109,244 @@
   line-height: 1;
 }
 
+/* Clickable name button */
+.leaderboard-name-btn {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+  font: inherit;
+  color: #2454b8;
+  text-align: left;
+  border-radius: 6px;
+  transition: background 0.12s, color 0.12s;
+}
+.leaderboard-name-btn:hover {
+  background: #eef3ff;
+  color: #1a2f57;
+}
+.leaderboard-name-btn:hover .leaderboard-name-cell {
+  text-decoration: underline;
+}
+
+/* ── Profile modal ─────────────────────────────────────────────────────────── */
+.profile-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 20, 50, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.profile-modal {
+  background: #fff;
+  border-radius: 18px;
+  padding: 32px 28px 28px;
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(10, 30, 80, 0.18);
+}
+
+.profile-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: #64748b;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background 0.12s;
+}
+.profile-modal-close:hover {
+  background: #f1f5f9;
+}
+
+.profile-modal-loading {
+  text-align: center;
+  color: #6b8ab8;
+  padding: 24px 0;
+}
+
+.profile-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.profile-modal-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.profile-modal-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-modal-avatar-initials {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+
+.profile-modal-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1a2f57;
+  margin: 0 0 2px;
+}
+
+.profile-modal-username {
+  font-size: 0.85rem;
+  color: #6b8ab8;
+  margin: 0 0 4px;
+}
+
+.profile-modal-role {
+  font-size: 0.82rem;
+  color: #2f66da;
+  font-weight: 600;
+  margin: 0;
+}
+
+.profile-modal-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.profile-stat-card {
+  background: #f0f5ff;
+  border-radius: 12px;
+  padding: 14px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.profile-stat-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #1a2f57;
+}
+
+.profile-stat-label {
+  font-size: 0.72rem;
+  color: #6b8ab8;
+  text-align: center;
+}
+
+.profile-modal-skills {
+  border-top: 1px solid #e8eef8;
+  padding-top: 16px;
+}
+
+.profile-skills-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #45608f;
+  margin: 0 0 10px;
+}
+
+.profile-skills-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profile-skill-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #eef3ff;
+  border-radius: 20px;
+  padding: 4px 12px;
+}
+
+.profile-skill-name {
+  font-size: 0.82rem;
+  color: #1a2f57;
+  font-weight: 600;
+}
+
+.profile-skill-pts {
+  font-size: 0.78rem;
+  color: #2f66da;
+  font-weight: 700;
+}
+
+/* ── Level badge ───────────────────────────────────────────────────────────── */
+.level-badge {
+  display: inline-block;
+  border-radius: 20px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.level-badge-sm {
+  font-size: 0.78rem;
+  padding: 3px 10px;
+}
+
+.level-badge-lg {
+  font-size: 0.92rem;
+  padding: 5px 14px;
+}
+
+/* ── Level progress bar (in profile modal) ─────────────────────────────────── */
+.level-bar-wrap {
+  margin: 0 0 18px;
+}
+
+.level-bar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.level-bar-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.level-bar-next {
+  font-size: 0.76rem;
+  color: #94a3b8;
+}
+
+.level-bar-track {
+  height: 8px;
+  background: #e8eef8;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.level-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
 .exam-top-actions {
   display: flex;
   align-items: center;
@@ -464,6 +702,94 @@
 .badge-fail {
   background: #fee2e2;
   color: #991b1b;
+}
+
+/* ── Learner table controls (search + page size + pagination) ─────────────── */
+.learner-table-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0 10px;
+  flex-wrap: wrap;
+}
+
+.learner-search-input {
+  flex: 1;
+  min-width: 200px;
+  border: 1px solid #b8c4e0;
+  border-radius: 10px;
+  padding: 7px 12px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: #f8faff;
+  color: #1a2f57;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.learner-search-input:focus {
+  border-color: #3f8cff;
+}
+
+.learner-pagesize-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  color: #45608f;
+  white-space: nowrap;
+}
+
+.learner-pagesize-select {
+  border: 1px solid #b8c4e0;
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  background: #f8faff;
+  color: #1a2f57;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.learner-pagesize-select:focus {
+  border-color: #3f8cff;
+}
+
+.learner-pagination {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.page-btn {
+  background: none;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #45608f;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.page-btn:hover {
+  background: #e8eef8;
+  color: #1a2f57;
+}
+
+.page-btn-active {
+  background: #2f66da;
+  color: #fff;
+}
+
+.page-btn-active:hover {
+  background: #2454b8;
+  color: #fff;
 }
 
 /* ── Exam history filters ────────────────────────────────────────────────────── */

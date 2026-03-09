@@ -49,6 +49,7 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	api.Get("/exams", handler.ListExams)
 	api.Get("/exams/:id", handler.GetExam)
 	api.Get("/learning/leaderboard", handler.GetLeaderboard)
+	api.Get("/users/:username/profile", handler.GetUserPublicProfile)
 
 	protected := api.Group("")
 	protected.Use(jwtware.New(jwtware.Config{
@@ -83,6 +84,10 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	adminExams := protected.Group("/admin", auth.RequirePermissions(auth.PermissionManagementExamHistory))
 	adminExams.Get("/exam-attempts", handler.GetAllExamAttemptsAdmin)
 	adminExams.Get("/exam-attempts/:id", handler.GetExamAttemptDetailsAdmin)
+
+	analytics := protected.Group("/admin/analytics", auth.RequirePermissions(auth.PermissionSystemReport))
+	analytics.Get("", handler.GetAnalytics)
+	analytics.Get("/courses/:courseId/learners", handler.GetCourseLearners)
 
 	courses := protected.Group("/courses", auth.RequirePermissions(auth.PermissionContentManage))
 	courses.Post("", handler.UpsertCourse)

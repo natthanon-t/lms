@@ -218,6 +218,37 @@ func GetLearningProgress(username string) (map[string]CourseProgress, error) {
 	return result, nil
 }
 
+func GetPublicUserProfile(username string) (*PublicUserProfile, error) {
+	var p PublicUserProfile
+	err := db.QueryRow(`
+		SELECT u.username, u.name, u.role_code,
+		       COALESCE(s.total, 0),
+		       COALESCE(ec.cnt, 0),
+		       COALESCE(aq.cnt, 0),
+		       COALESCE(av.data_url, '')
+		FROM users u
+		LEFT JOIN user_scores s ON s.username = u.username
+		LEFT JOIN (
+			SELECT username, COUNT(*) AS cnt
+			FROM user_course_enrollments WHERE completed_at IS NOT NULL
+			GROUP BY username
+		) ec ON ec.username = u.username
+		LEFT JOIN (
+			SELECT username, COUNT(*) AS cnt
+			FROM learning_subtopic_answers WHERE is_correct = true
+			GROUP BY username
+		) aq ON aq.username = u.username
+		LEFT JOIN user_avatars av ON av.username = u.username
+		WHERE u.username = $1 AND u.status = 'active'`,
+		username,
+	).Scan(&p.Username, &p.Name, &p.Role, &p.TotalScore, &p.CompletedCourses, &p.SolvedQuestions, &p.AvatarURL)
+	if err != nil {
+		return nil, err
+	}
+	_, p.SkillScores, err = GetUserScores(username)
+	return &p, err
+}
+
 func GetLeaderboard() ([]LeaderboardEntry, error) {
 	rows, err := db.Query(`
 		SELECT

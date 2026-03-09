@@ -251,6 +251,15 @@ func (h *Handler) GetLeaderboard(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"leaderboard": entries})
 }
 
+func (h *Handler) GetUserPublicProfile(c *fiber.Ctx) error {
+	username := c.Params("username")
+	profile, err := data.GetPublicUserProfile(username)
+	if err != nil {
+		return fiber.NewError(fiber.StatusNotFound, "user not found")
+	}
+	return c.JSON(profile)
+}
+
 func (h *Handler) GetCourseImages(c *fiber.Ctx) error {
 	id := strings.TrimSpace(c.Params("id"))
 	if id == "" {

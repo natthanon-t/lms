@@ -87,6 +87,9 @@ export const fetchLeaderboardApi = async () => {
   return Array.isArray(payload?.leaderboard) ? payload.leaderboard : [];
 };
 
+export const fetchUserPublicProfileApi = async (username) =>
+  request(`/api/users/${encodeURIComponent(username)}/profile`);
+
 export const fetchUserScoresApi = async () => {
   const payload = await request("/api/learning/scores", {
     headers: authHeaders(),

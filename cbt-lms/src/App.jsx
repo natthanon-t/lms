@@ -1059,6 +1059,7 @@ export default function App() {
             examples={examples}
             currentUserProgress={learningProgress[currentUserKey] ?? {}}
             skillScores={userSkillScores}
+            totalScore={userTotalScore}
           />
         ) : activeTab === "user-management" && !currentUser ? (
           <section className="workspace-content">
