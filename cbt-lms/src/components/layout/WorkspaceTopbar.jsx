@@ -19,7 +19,7 @@ export default function WorkspaceTopbar({ currentUser, username, totalScore = 0,
 
   const avatarColor = getAvatarColor(username);
   const initials = getInitials(currentUser?.name, username);
-  const level = getLevel(totalScore);
+  const level = useMemo(() => getLevel(totalScore), [totalScore]);
 
   return (
     <header className="workspace-topbar">

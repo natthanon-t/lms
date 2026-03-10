@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { fetchLeaderboardApi, fetchUserPublicProfileApi } from "../services/courseApiService";
 import { getAvatarColor, getInitials } from "../utils/avatar";
 import { getLevel, getLevelProgress, pointsToNext } from "../utils/level";
@@ -160,7 +160,10 @@ export default function LeaderboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const displayed = limit === 0 ? ranking : ranking.slice(0, limit);
+  const displayed = useMemo(
+    () => (limit === 0 ? ranking : ranking.slice(0, limit)),
+    [ranking, limit],
+  );
 
   return (
     <section className="workspace-content">
@@ -206,15 +209,7 @@ export default function LeaderboardPage() {
               {displayed.map((item, index) => (
                 <tr
                   key={item.username}
-                  className={
-                    index === 0
-                      ? "leaderboard-rank-1"
-                      : index === 1
-                        ? "leaderboard-rank-2"
-                        : index === 2
-                          ? "leaderboard-rank-3"
-                          : ""
-                  }
+                  className={["leaderboard-rank-1", "leaderboard-rank-2", "leaderboard-rank-3"][index] ?? ""}
                 >
                   <td>
                     <span className="leaderboard-rank-badge">{index + 1}</span>

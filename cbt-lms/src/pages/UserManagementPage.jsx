@@ -1,15 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useEscapeKey } from "../hooks/useEscapeKey";
+import { getInitials } from "../utils/avatar";
 
 const statusOptions = ["active", "inactive"];
 const employeeCodePattern = /^2026-[A-Z0-9]{2}-\d{4}$/;
-
-function getInitials(name) {
-  if (!name) return "?";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return name.slice(0, 2).toUpperCase();
-}
 
 function getRoleKey(role) {
   const r = String(role ?? "").toLowerCase().trim();
@@ -84,7 +78,11 @@ export default function UserManagementPage({
     [roleOptions],
   );
 
-  const keyword = searchTerm.trim().toLowerCase();
+  const keyword = useMemo(() => searchTerm.trim().toLowerCase(), [searchTerm]);
+  const nonAdminRoles = useMemo(
+    () => roleOptions.filter((r) => r.code !== "admin"),
+    [roleOptions],
+  );
   const rows = useMemo(
     () =>
       allRows
@@ -140,6 +138,8 @@ export default function UserManagementPage({
     setNewPassword(defaultPassword ?? "");
     setShowCreateUserModal(false);
   };
+
+  const isSelfEdit = editingUsername === currentUserKey;
 
   const closeCreateUserModal = () => setShowCreateUserModal(false);
   const closeEditUserModal = () => setShowEditUserModal(false);
@@ -338,7 +338,7 @@ export default function UserManagementPage({
                           if (result?.success === false) setMessage(result.message ?? "ไม่สามารถอัปเดตตำแหน่งได้");
                         }}
                       >
-                        {roleOptions.filter((r) => r.code !== "admin").map((r) => (
+                        {nonAdminRoles.map((r) => (
                           <option key={r.code} value={r.code}>
                             {r.name}
                           </option>
@@ -452,7 +452,7 @@ export default function UserManagementPage({
                 <div className="um-field">
                   <label htmlFor="new-user-role">ตำแหน่ง</label>
                   <select id="new-user-role" value={newRole} onChange={(e) => setNewRole(e.target.value)}>
-                    {roleOptions.filter((r) => r.code !== "admin").map((r) => (
+                    {nonAdminRoles.map((r) => (
                       <option key={r.code} value={r.code}>
                         {r.name}
                       </option>
@@ -494,72 +494,69 @@ export default function UserManagementPage({
       )}
 
       {/* Edit User Modal */}
-      {showEditUserModal && (() => {
-        const isSelfEdit = editingUsername === currentUserKey;
-        return (
-          <div className="modal-backdrop" onClick={closeEditUserModal}>
-            <article
-              className="um-modal"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="edit-user-modal-title"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="um-modal-header">
-                <h3 id="edit-user-modal-title">{isSelfEdit ? "แก้ไขชื่อของคุณ" : "แก้ไขข้อมูลผู้ใช้"}</h3>
-                <button type="button" className="um-modal-close" aria-label="ปิด" onClick={closeEditUserModal}>
-                  ✕
-                </button>
-              </div>
-              <div className="um-modal-body">
-                {isSelfEdit && (
-                  <p className="um-modal-note">Admin สามารถแก้ไขได้เฉพาะชื่อที่แสดงของตัวเองเท่านั้น</p>
-                )}
-                <div className="um-form-grid">
-                  <div className={`um-field ${isSelfEdit ? "um-field-full" : ""}`}>
-                    <label htmlFor="edit-user-name">ชื่อที่แสดง</label>
-                    <input
-                      id="edit-user-name"
-                      type="text"
-                      value={editingName}
-                      onChange={(e) => setEditingName(e.target.value)}
-                      placeholder="ชื่อ นามสกุล"
-                      autoFocus
-                    />
-                  </div>
-                  {!isSelfEdit && (
-                    <>
-                      <div className="um-field">
-                        <label htmlFor="edit-user-employee-code">รหัสพนักงาน</label>
-                        <input
-                          id="edit-user-employee-code"
-                          type="text"
-                          value={editingEmployeeCode}
-                          onChange={(e) => setEditingEmployeeCode(e.target.value.toUpperCase())}
-                          placeholder="2026-XX-XXXX"
-                          maxLength={13}
-                        />
-                      </div>
-                      <div className="um-field">
-                        <label htmlFor="edit-username-readonly">Username (แก้ไขไม่ได้)</label>
-                        <input id="edit-username-readonly" type="text" value={editingUsername} readOnly className="um-input-readonly" />
-                      </div>
-                    </>
-                  )}
+      {showEditUserModal && (
+        <div className="modal-backdrop" onClick={closeEditUserModal}>
+          <article
+            className="um-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-user-modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="um-modal-header">
+              <h3 id="edit-user-modal-title">{isSelfEdit ? "แก้ไขชื่อของคุณ" : "แก้ไขข้อมูลผู้ใช้"}</h3>
+              <button type="button" className="um-modal-close" aria-label="ปิด" onClick={closeEditUserModal}>
+                ✕
+              </button>
+            </div>
+            <div className="um-modal-body">
+              {isSelfEdit && (
+                <p className="um-modal-note">Admin สามารถแก้ไขได้เฉพาะชื่อที่แสดงของตัวเองเท่านั้น</p>
+              )}
+              <div className="um-form-grid">
+                <div className={`um-field ${isSelfEdit ? "um-field-full" : ""}`}>
+                  <label htmlFor="edit-user-name">ชื่อที่แสดง</label>
+                  <input
+                    id="edit-user-name"
+                    type="text"
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    placeholder="ชื่อ นามสกุล"
+                    autoFocus
+                  />
                 </div>
+                {!isSelfEdit && (
+                  <>
+                    <div className="um-field">
+                      <label htmlFor="edit-user-employee-code">รหัสพนักงาน</label>
+                      <input
+                        id="edit-user-employee-code"
+                        type="text"
+                        value={editingEmployeeCode}
+                        onChange={(e) => setEditingEmployeeCode(e.target.value.toUpperCase())}
+                        placeholder="2026-XX-XXXX"
+                        maxLength={13}
+                      />
+                    </div>
+                    <div className="um-field">
+                      <label htmlFor="edit-username-readonly">Username (แก้ไขไม่ได้)</label>
+                      <input id="edit-username-readonly" type="text" value={editingUsername} readOnly className="um-input-readonly" />
+                    </div>
+                  </>
+                )}
               </div>
-              <div className="um-modal-footer">
-                <button type="button" className="um-btn-secondary" onClick={closeEditUserModal}>
-                  ยกเลิก
-                </button>
-                <button type="button" className="um-btn-primary" onClick={handleSaveEditedUser}>
-                  บันทึกข้อมูล
-                </button>
-              </div>
-            </article>
-          </div>
-        );
-      })()}
+            </div>
+            <div className="um-modal-footer">
+              <button type="button" className="um-btn-secondary" onClick={closeEditUserModal}>
+                ยกเลิก
+              </button>
+              <button type="button" className="um-btn-primary" onClick={handleSaveEditedUser}>
+                บันทึกข้อมูล
+              </button>
+            </div>
+          </article>
+        </div>
+      )}
 
       {message && (
         <div className="um-toast" onClick={() => setMessage("")}>
