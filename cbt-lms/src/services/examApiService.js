@@ -44,6 +44,13 @@ export const fetchExamApi = async (id) => {
   return payload?.exam ?? null;
 };
 
+export const fetchExamFullApi = async (id) => {
+  const payload = await request(`/api/exams/${encodeURIComponent(id)}/full`, {
+    headers: authHeaders(),
+  });
+  return payload?.exam ?? null;
+};
+
 export const upsertExamApi = async (exam) =>
   request("/api/exams", {
     method: "POST",

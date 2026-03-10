@@ -28,6 +28,21 @@ func (h *Handler) GetExam(c *fiber.Ctx) error {
 	if id == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "exam id is required")
 	}
+	exam, err := data.GetExamPublic(id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fiber.NewError(fiber.StatusNotFound, "exam not found")
+		}
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot get exam")
+	}
+	return c.JSON(fiber.Map{"exam": exam})
+}
+
+func (h *Handler) GetExamAdmin(c *fiber.Ctx) error {
+	id := strings.TrimSpace(c.Params("id"))
+	if id == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "exam id is required")
+	}
 	exam, err := data.GetExam(id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

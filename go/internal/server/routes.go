@@ -108,6 +108,7 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 
 	// Exams — protected CRUD + attempts
 	examManagement := protected.Group("/exams", auth.RequirePermissions(auth.PermissionExamManage))
+	examManagement.Get("/:id/full", handler.GetExamAdmin)
 	examManagement.Post("", handler.UpsertExam)
 	examManagement.Patch("/:id/status", handler.UpdateExamStatus)
 	examManagement.Delete("/:id", handler.DeleteExam)

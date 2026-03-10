@@ -80,11 +80,8 @@ export default function LoginScreen({ onLogin, onRegister, onCancel }) {
         setError("username ใช้ได้เฉพาะ a-z, A-Z, 0-9, . _ -");
         return;
       }
-      if (!employeeCode.trim()) {
-        setError("กรุณากรอกรหัสพนักงาน");
-        return;
-      }
-      if (!/^[A-Z0-9]{4}-[A-Z0-9]{2}-[A-Z0-9]{4}$/i.test(employeeCode.trim())) {
+      const codeToSubmit = employeeCode.trim() || "XXXX-XX-XXXX";
+      if (employeeCode.trim() && !/^[A-Z0-9]{4}-[A-Z0-9]{2}-[A-Z0-9]{4}$/i.test(employeeCode.trim())) {
         setError("รหัสพนักงานต้องอยู่ในรูปแบบ XXXX-XX-XXXX");
         return;
       }
@@ -93,7 +90,7 @@ export default function LoginScreen({ onLogin, onRegister, onCancel }) {
         return;
       }
 
-      onRegister?.({ name: name.trim(), username: user.trim(), employeeCode: employeeCode.trim().toUpperCase(), password })
+      onRegister?.({ name: name.trim(), username: user.trim(), employeeCode: codeToSubmit.toUpperCase(), password })
         .then((result) => {
           if (!result?.success) {
             setError(getFriendlyRegisterError(result?.message));
@@ -141,7 +138,7 @@ export default function LoginScreen({ onLogin, onRegister, onCancel }) {
                   placeholder="กรอก name"
                 />
 
-                <label htmlFor="employee-code">รหัสพนักงาน</label>
+                <label htmlFor="employee-code">รหัสพนักงาน <span style={{ fontWeight: "normal", opacity: 0.6 }}>(ไม่บังคับ)</span></label>
                 <input
                   id="employee-code"
                   name="employee_code"
@@ -149,7 +146,7 @@ export default function LoginScreen({ onLogin, onRegister, onCancel }) {
                   autoComplete="off"
                   value={employeeCode}
                   onChange={handleEmployeeCodeChange}
-                  placeholder="XXXX-XX-XXXX"
+                  placeholder="XXXX-XX-XXXX (ถ้าไม่มีสามารถเว้นว่างได้)"
                   style={{ letterSpacing: "0.06em" }}
                 />
               </>
@@ -212,7 +209,7 @@ export default function LoginScreen({ onLogin, onRegister, onCancel }) {
             <h3>เกณฑ์การสมัครสมาชิก</h3>
             <p>1. `username` อย่างน้อย 4 ตัวอักษร</p>
             <p>2. `username` ใช้ได้เฉพาะ a-z, A-Z, 0-9, . _ -</p>
-            <p>3. `รหัสพนักงาน` รูปแบบ XXXX-XX-XXXX</p>
+            <p>3. `รหัสพนักงาน` รูปแบบ XXXX-XX-XXXX (ไม่บังคับ)</p>
             <p>4. `password` อย่างน้อย 8 ตัวอักษร</p>
           </aside>
         ) : null}

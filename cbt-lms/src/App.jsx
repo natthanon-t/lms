@@ -36,6 +36,7 @@ import { getSubtopicPages } from "./components/markdown/headingUtils";
 import {
   deleteExamApi,
   fetchExamApi,
+  fetchExamFullApi,
   fetchExamAttemptsApi,
   fetchExamsApi,
   saveExamAttemptApi,
@@ -357,7 +358,7 @@ export default function App() {
       return;
     }
     try {
-      const fullExam = await fetchExamApi(item.id ?? item.sourceId);
+      const fullExam = await fetchExamFullApi(item.id ?? item.sourceId);
       const nextItem = normalizeExamRecord(fullExam ?? item);
       setExamEditorDraft({ sourceId: nextItem.id ?? item?.id ?? "", ...nextItem });
     } catch {

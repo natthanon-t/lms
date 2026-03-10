@@ -176,6 +176,59 @@ func GetExam(id string) (*Exam, error) {
 	return &e, nil
 }
 
+func GetExamPublic(id string) (*PublicExam, error) {
+	var e PublicExam
+	err := db.QueryRow(`
+		SELECT id, title, creator, status,
+		       description, instructions, image,
+		       number_of_questions, default_time, max_attempts, created_at
+		FROM exams WHERE id = $1`, id,
+	).Scan(
+		&e.ID, &e.Title, &e.Creator, &e.Status,
+		&e.Description, &e.Instructions, &e.Image,
+		&e.NumberOfQuestions, &e.DefaultTime, &e.MaxAttempts, &e.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	e.DomainPercentages = map[string]int{}
+	dpRows, err := db.Query(`SELECT domain, percentage FROM exam_domain_percentages WHERE exam_id = $1`, id)
+	if err == nil {
+		defer dpRows.Close()
+		for dpRows.Next() {
+			var domain string
+			var pct int
+			if err := dpRows.Scan(&domain, &pct); err == nil {
+				e.DomainPercentages[domain] = pct
+			}
+		}
+	}
+
+	e.Questions = []PublicExamQuestion{}
+	qRows, err := db.Query(`
+		SELECT id, exam_id, domain, COALESCE(question_type, 'multiple_choice'), question,
+		       choice_a, choice_b, choice_c, choice_d
+		FROM exam_questions WHERE exam_id = $1 ORDER BY id`, id)
+	if err == nil {
+		defer qRows.Close()
+		for qRows.Next() {
+			var q PublicExamQuestion
+			var choiceA, choiceB, choiceC, choiceD string
+			if err := qRows.Scan(
+				&q.ID, &q.ExamID, &q.Domain, &q.QuestionType, &q.Question,
+				&choiceA, &choiceB, &choiceC, &choiceD,
+			); err != nil {
+				continue
+			}
+			q.Choices = []string{choiceA, choiceB, choiceC, choiceD}
+			e.Questions = append(e.Questions, q)
+		}
+	}
+
+	return &e, nil
+}
+
 // ── Write ─────────────────────────────────────────────────────────────────────
 
 func UpsertExam(exam Exam, callerUsername string, isAdmin bool) (Exam, error) {
