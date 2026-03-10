@@ -5,6 +5,7 @@ import (
 	"backend/internal/data"
 	"database/sql"
 	"errors"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -279,6 +280,10 @@ func (h *Handler) SaveCourseImage(c *fiber.Ctx) error {
 	if id == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "course id is required")
 	}
+	safeID := filepath.Base(filepath.Clean(id))
+	if safeID == "" || safeID == "." || safeID == "/" {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid course id")
+	}
 	var req courseImageRequest
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
@@ -289,7 +294,7 @@ func (h *Handler) SaveCourseImage(c *fiber.Ctx) error {
 	if len(req.DataURL) > maxCourseImageBytes {
 		return fiber.NewError(fiber.StatusRequestEntityTooLarge, "image must not exceed 5 MB")
 	}
-	url, err := saveDataURLToFile("uploads/courses/"+id, req.Filename, req.DataURL)
+	url, err := saveDataURLToFile("uploads/courses/"+safeID, req.Filename, req.DataURL)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot save image file")
 	}

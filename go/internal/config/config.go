@@ -12,9 +12,6 @@ func LoadConfig() AppConfig {
 	}
 
 	corsOrigins := os.Getenv("CORS_ORIGINS")
-	if corsOrigins == "" {
-		corsOrigins = "*"
-	}
 
 	return AppConfig{
 		Port:                 port,

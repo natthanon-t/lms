@@ -43,13 +43,24 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	authGroup.Post("/refresh", handler.Refresh)
 	authGroup.Post("/logout", handler.Logout)
 
+	publicLimiter := limiter.New(limiter.Config{
+		Max:        60,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return fiber.NewError(fiber.StatusTooManyRequests, "too many requests, please try again later")
+		},
+	})
+
 	// Courses, Exams & Leaderboard — GET is public (register before JWT middleware)
-	api.Get("/courses", handler.ListCourses)
-	api.Get("/courses/:id/images", handler.GetCourseImages)
-	api.Get("/exams", handler.ListExams)
-	api.Get("/exams/:id", handler.GetExam)
-	api.Get("/learning/leaderboard", handler.GetLeaderboard)
-	api.Get("/users/:username/profile", handler.GetUserPublicProfile)
+	api.Get("/courses", publicLimiter, handler.ListCourses)
+	api.Get("/courses/:id/images", publicLimiter, handler.GetCourseImages)
+	api.Get("/exams", publicLimiter, handler.ListExams)
+	api.Get("/exams/:id", publicLimiter, handler.GetExam)
+	api.Get("/learning/leaderboard", publicLimiter, handler.GetLeaderboard)
+	api.Get("/users/:username/profile", publicLimiter, handler.GetUserPublicProfile)
 
 	protected := api.Group("")
 	protected.Use(jwtware.New(jwtware.Config{
