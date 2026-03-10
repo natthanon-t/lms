@@ -15,7 +15,8 @@ const RESTRICTED_TABS = new Set(["user-management", "exam-history", "role-permis
 const tabGroups = [
   ["home", "content", "exam"],
   ["profile", "leaderboard"],
-  ["user-management", "exam-history", "role-permission", "summary"],
+  ["user-management", "exam-history", "role-permission"],
+  ["summary"],
 ];
 
 export default function WorkspaceSidebar({

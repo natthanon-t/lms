@@ -1025,6 +1025,10 @@ export default function App() {
         totalScore={userTotalScore}
         onGoHome={() => handleSelectTab("home")}
         onGoProfile={() => handleSelectTab("profile")}
+        examples={examples}
+        examBank={examBank}
+        onEnterClass={openContentDetail}
+        onEnterExam={openExam}
       />
       <main className="workspace-shell">
         <div className="sidebar-hover-trigger" aria-hidden="true" />

@@ -133,6 +133,10 @@ export default function ProfilePage({
   });
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editModalName, setEditModalName] = useState(currentUser.name);
+  const [editModalEmployeeCode, setEditModalEmployeeCode] = useState(currentUser.employeeCode ?? "");
+  const [editModalMessage, setEditModalMessage] = useState("");
   const [avatar, setAvatar] = useState(() => {
     try { return localStorage.getItem(avatarKey(username)) ?? ""; } catch { return ""; }
   });
@@ -304,7 +308,9 @@ export default function ProfilePage({
     });
     setShowPasswordForm(false);
     setPasswordMessage("");
-  }, [currentUser.name]);
+    setEditModalName(currentUser.name);
+    setEditModalEmployeeCode(currentUser.employeeCode ?? "");
+  }, [currentUser.name, currentUser.employeeCode]);
 
   useEffect(() => {
     fetchAvatarApi()
@@ -392,7 +398,29 @@ export default function ProfilePage({
     setPasswordMessage("");
   };
 
+  const handleEditModalSave = async () => {
+    const trimmedName = editModalName.trim();
+    if (!trimmedName) {
+      setEditModalMessage("กรุณากรอกชื่อ");
+      return;
+    }
+
+    const result = await onSaveName?.(trimmedName);
+    setEditModalMessage(result?.message ?? "บันทึกข้อมูลเรียบร้อย");
+    if (result?.success !== false) {
+      setShowEditModal(false);
+    }
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditModalName(currentUser.name);
+    setEditModalEmployeeCode(currentUser.employeeCode ?? "");
+    setEditModalMessage("");
+  };
+
   useEscapeKey(showPasswordForm, closePasswordModal);
+  useEscapeKey(showEditModal, closeEditModal);
 
   return (
     <section className="workspace-content">
@@ -505,7 +533,7 @@ export default function ProfilePage({
               </div>
             </div>
             <div className="profile-action-row" style={{ marginTop: 12 }}>
-              <button type="button" className="enter-button" onClick={() => { setName(currentUser.name); setIsEditingProfile(true); }}>แก้ไขข้อมูล</button>
+              <button type="button" className="enter-button" onClick={() => setShowEditModal(true)}>แก้ไขข้อมูล</button>
               <button type="button" className="back-button" onClick={() => setShowPasswordForm(true)}>เปลี่ยนรหัสผ่าน</button>
             </div>
           </div>
@@ -529,6 +557,51 @@ export default function ProfilePage({
           </div>
         </div>
       </article>
+
+      {showEditModal && (
+        <div className="modal-backdrop" onClick={closeEditModal}>
+          <article
+            className="info-card profile-password-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="modal-close-button"
+              aria-label="ปิดกล่องแก้ไข"
+              onClick={closeEditModal}
+            >
+              ×
+            </button>
+            <h3 id="edit-modal-title">แก้ไขข้อมูล</h3>
+            <form className="profile-form" onSubmit={(e) => { e.preventDefault(); handleEditModalSave(); }}>
+              <label htmlFor="edit-modal-name">ชื่อ</label>
+              <input
+                id="edit-modal-name"
+                type="text"
+                value={editModalName}
+                onChange={(e) => setEditModalName(e.target.value)}
+                placeholder="ชื่อ นามสกุล"
+                autoFocus
+              />
+              <label htmlFor="edit-modal-employee-code">รหัสพนักงาน</label>
+              <input
+                id="edit-modal-employee-code"
+                type="text"
+                value={editModalEmployeeCode}
+                readOnly
+                className="um-input-readonly"
+              />
+              <button type="submit" className="enter-button">
+                บันทึก
+              </button>
+            </form>
+            {editModalMessage ? <p className="profile-message">{editModalMessage}</p> : null}
+          </article>
+        </div>
+      )}
 
       {showPasswordForm ? (
         <div className="modal-backdrop" onClick={closePasswordModal}>

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { isItemOwner, canViewItemByStatus } from "../services/accessControlService";
 
 export default function LobbyPage({
@@ -11,10 +10,8 @@ export default function LobbyPage({
   canManageContent = false,
   canManageExams = false,
 }) {
-  const [searchTerm, setSearchTerm] = useState("");
   const canManageExam = (exam) => canManageExams || isItemOwner(exam, currentUserKey);
 
-  const keyword = searchTerm.trim().toLowerCase();
   const baseExamples = examples.filter((example) =>
     canViewItemByStatus({ item: example, currentUserKey, hasManageAccess: canManageContent }),
   );
@@ -22,10 +19,8 @@ export default function LobbyPage({
     canViewItemByStatus({ item: exam, currentUserKey, hasManageAccess: canManageExams }),
   );
   const filteredExamples = baseExamples
-    .filter((example) => (keyword ? example.title.toLowerCase().includes(keyword) : true))
     .sort((a, b) => (b.learnerCount ?? 0) - (a.learnerCount ?? 0));
   const filteredExams = baseExams
-    .filter((exam) => (keyword ? exam.title.toLowerCase().includes(keyword) : true))
     .sort((a, b) => (b.attemptCount ?? 0) - (a.attemptCount ?? 0));
   const limitedExamples = filteredExamples.slice(0, 4);
   const limitedExams = filteredExams.slice(0, 4);
@@ -36,17 +31,6 @@ export default function LobbyPage({
         <h1>Lobby - บทเรียน</h1>
         <p>หน้าหลักแสดงบทเรียนและข้อสอบแยกส่วนในหน้าเดียว</p>
       </header>
-
-      <div className="search-box">
-        <label htmlFor="example-search">หาตัวอย่าง</label>
-        <input
-          id="example-search"
-          type="text"
-          placeholder="พิมพ์ชื่อหัวข้อ"
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-        />
-      </div>
 
       <p className="section-label">ตัวอย่างเนื้อหา</p>
       <div className="example-grid">
