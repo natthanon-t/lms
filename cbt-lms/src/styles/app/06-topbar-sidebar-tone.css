@@ -125,16 +125,40 @@
   font-size: 0.94rem;
 }
 
-.workspace-topbar-user > div {
+.topbar-user-info {
   text-align: right;
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  color: inherit;
+  font-size: inherit;
+  font-family: inherit;
 }
 
-.workspace-topbar-user p {
+.topbar-user-info:hover {
+  background: rgba(37, 99, 235, 0.07);
+}
+
+.topbar-user-info p {
   margin: 0;
 }
 
-.workspace-topbar-user p + p {
-  margin-top: 4px;
+.topbar-user-info p + p {
+  margin-top: 3px;
+}
+
+.topbar-user-line1 {
+  font-size: 0.82rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.topbar-user-line2 {
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .topbar-avatar-circle {

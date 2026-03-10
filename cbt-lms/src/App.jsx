@@ -69,6 +69,7 @@ import {
   changeProfilePassword,
   createUserAdmin,
   fetchDefaultResetPasswordAdmin,
+  fetchRoleOptionsAdmin,
   listUsersAdmin,
   resetUserPasswordAdmin,
   updateDefaultResetPasswordAdmin,
@@ -87,7 +88,7 @@ export default function App() {
       acc[username] = {
         name: user?.name ?? username,
         employeeCode: user?.employee_code ?? "",
-        role: user?.role ?? "ผู้ใช้งาน",
+        role: user?.role ?? "user",
         status: user?.status ?? "active",
       };
       return acc;
@@ -110,6 +111,7 @@ export default function App() {
   const [examView, setExamView] = useState("list");
   const [examOrderMode, setExamOrderMode] = useState("sequential");
   const [users, setUsers] = useState({});
+  const [adminRoles, setAdminRoles] = useState([]);
   const [defaultUserPassword, setDefaultUserPassword] = useState("");
   const [currentPermissions, setCurrentPermissions] = useState([]);
   const [sidebarItems, setSidebarItems] = useState([]);
@@ -328,15 +330,17 @@ export default function App() {
     }
     void (async () => {
       try {
-        const [apiUsers, defaultPassword] = await Promise.all([
+        const [apiUsers, defaultPassword, roleResult] = await Promise.all([
           listUsersAdmin(),
           fetchDefaultResetPasswordAdmin(),
+          fetchRoleOptionsAdmin(),
         ]);
         setUsers((prevUsers) => ({
           ...prevUsers,
           ...toUserMap(apiUsers),
         }));
         setDefaultUserPassword(defaultPassword);
+        setAdminRoles(Array.isArray(roleResult?.roles) ? roleResult.roles : []);
       } catch {
         // noop
       }
@@ -1018,7 +1022,9 @@ export default function App() {
       <WorkspaceTopbar
         currentUser={currentUser}
         username={currentUserKey}
+        totalScore={userTotalScore}
         onGoHome={() => handleSelectTab("home")}
+        onGoProfile={() => handleSelectTab("profile")}
       />
       <main className="workspace-shell">
         <div className="sidebar-hover-trigger" aria-hidden="true" />
@@ -1066,6 +1072,8 @@ export default function App() {
         ) : activeTab === "user-management" ? (
           <UserManagementPage
             users={users}
+            roleOptions={adminRoles}
+            currentUserKey={currentUserKey}
             onUpdateUserRole={handleUpdateUserRole}
             onUpdateUserStatus={handleUpdateUserStatus}
             onUpdateUserProfile={handleUpdateUserProfileByAdmin}

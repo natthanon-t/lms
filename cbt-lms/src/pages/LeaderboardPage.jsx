@@ -145,10 +145,13 @@ function ProfileModal({ username, onClose }) {
   );
 }
 
+const LIMIT_OPTIONS = [5, 10, 20, 50];
+
 export default function LeaderboardPage() {
   const [ranking, setRanking] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedUsername, setSelectedUsername] = useState(null);
+  const [limit, setLimit] = useState(10);
 
   useEffect(() => {
     fetchLeaderboardApi()
@@ -157,11 +160,29 @@ export default function LeaderboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const displayed = limit === 0 ? ranking : ranking.slice(0, limit);
+
   return (
     <section className="workspace-content">
       <header className="content-header">
-        <h1>ลีดเดอร์บอร์ด</h1>
-        <p>คะแนนรวมจากการตอบคำถามและการเรียนจบเนื้อหา</p>
+        <div>
+          <h1>ลีดเดอร์บอร์ด</h1>
+          <p>คะแนนรวมจากการตอบคำถามและการเรียนจบเนื้อหา</p>
+        </div>
+        <div className="leaderboard-limit-control">
+          <label htmlFor="lb-limit">แสดง</label>
+          <select
+            id="lb-limit"
+            value={limit}
+            onChange={(e) => setLimit(Number(e.target.value))}
+          >
+            {LIMIT_OPTIONS.map((n) => (
+              <option key={n} value={n}>Top {n}</option>
+            ))}
+            <option value={0}>ทั้งหมด ({ranking.length})</option>
+          </select>
+          <span>คน</span>
+        </div>
       </header>
 
       <div className="leaderboard-card">
@@ -182,7 +203,7 @@ export default function LeaderboardPage() {
               </tr>
             </thead>
             <tbody>
-              {ranking.map((item, index) => (
+              {displayed.map((item, index) => (
                 <tr
                   key={item.username}
                   className={

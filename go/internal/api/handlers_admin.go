@@ -220,6 +220,10 @@ func (h *Handler) CreateUserByAdmin(c *fiber.Ctx) error {
 	if req.Role == "" {
 		req.Role = "user"
 	}
+	// Prevent creating users with admin role
+	if strings.ToLower(req.Role) == "admin" {
+		return fiber.NewError(fiber.StatusForbidden, "cannot create user with admin role")
+	}
 	roleExists, err := data.RoleExists(req.Role)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot validate role")
@@ -257,6 +261,27 @@ func (h *Handler) UpdateUserByAdmin(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "username is required")
 	}
 
+	callerUsername, err := auth.CurrentUsername(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "cannot identify caller")
+	}
+
+	targetUser, err := data.FindUserByUsername(username)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fiber.NewError(fiber.StatusNotFound, "user not found")
+		}
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot find user")
+	}
+
+	isSelf := callerUsername == username
+	targetIsAdmin := strings.ToLower(strings.TrimSpace(targetUser.Role)) == "admin"
+
+	// Cannot modify other admin accounts
+	if targetIsAdmin && !isSelf {
+		return fiber.NewError(fiber.StatusForbidden, "cannot modify other admin accounts")
+	}
+
 	var req adminUpdateUserRequest
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
@@ -265,6 +290,19 @@ func (h *Handler) UpdateUserByAdmin(c *fiber.Ctx) error {
 	req.Status = strings.ToLower(strings.TrimSpace(req.Status))
 	req.Name = strings.TrimSpace(req.Name)
 	req.EmployeeCode = data.NormalizeEmployeeCode(req.EmployeeCode)
+
+	// Self-edit: only name is allowed
+	if isSelf {
+		req.Role = ""
+		req.Status = ""
+		req.EmployeeCode = ""
+	}
+
+	// Prevent assigning admin role to anyone
+	if strings.ToLower(req.Role) == "admin" {
+		return fiber.NewError(fiber.StatusForbidden, "cannot assign admin role")
+	}
+
 	if req.Role != "" {
 		roleExists, err := data.RoleExists(req.Role)
 		if err != nil {

@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import logoMark from "../../assets/logo.png";
 import { getAvatarColor, getInitials } from "../../utils/avatar";
+import { getLevel } from "../../utils/level";
 
-export default function WorkspaceTopbar({ currentUser, username, onGoHome, onGoProfile }) {
+export default function WorkspaceTopbar({ currentUser, username, totalScore = 0, onGoHome, onGoProfile }) {
   const handleLogoError = (event) => {
     if (event.currentTarget.dataset.fallbackApplied === "true") {
       return;
@@ -18,6 +19,7 @@ export default function WorkspaceTopbar({ currentUser, username, onGoHome, onGoP
 
   const avatarColor = getAvatarColor(username);
   const initials = getInitials(currentUser?.name, username);
+  const level = getLevel(totalScore);
 
   return (
     <header className="workspace-topbar">
@@ -43,14 +45,14 @@ export default function WorkspaceTopbar({ currentUser, username, onGoHome, onGoP
             <span className="topbar-avatar-initials">{initials}</span>
           )}
         </button>
-        <div>
-          <p>
-            <strong>ผู้ใช้:</strong> {currentUser?.name ?? "Guest"}
-          </p>
-          <p>
-            <strong>ตำแหน่ง:</strong> {currentUser?.role ?? "ผู้เยี่ยมชม"}
-          </p>
-        </div>
+        <button type="button" className="topbar-user-info" onClick={onGoProfile}>
+          <p className="topbar-user-line1">{currentUser?.name ?? username} / {currentUser?.role ?? "ผู้เยี่ยมชม"}</p>
+          {currentUser && (
+            <p className="topbar-user-line2" style={{ color: level.color }}>
+              Lv.{level.num} {level.label}
+            </p>
+          )}
+        </button>
       </div>
     </header>
   );

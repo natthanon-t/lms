@@ -1,12 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
 import { useEscapeKey } from "../hooks/useEscapeKey";
 
-const roleOptions = ["ผู้ใช้งาน", "ผู้สอน", "ผู้ดูแลระบบ", "user", "admin"];
 const statusOptions = ["active", "inactive"];
 const employeeCodePattern = /^2026-[A-Z0-9]{2}-\d{4}$/;
 
+function getInitials(name) {
+  if (!name) return "?";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+function getRoleKey(role) {
+  const r = String(role ?? "").toLowerCase().trim();
+  if (r === "admin") return "admin";
+  if (r === "instructor") return "instructor";
+  return "user";
+}
+
 export default function UserManagementPage({
   users,
+  roleOptions = [],
+  currentUserKey = "",
   onUpdateUserRole,
   onUpdateUserStatus,
   onUpdateUserProfile,
@@ -22,7 +37,7 @@ export default function UserManagementPage({
   const [newUserName, setNewUserName] = useState("");
   const [newUsername, setNewUsername] = useState("");
   const [newEmployeeCode, setNewEmployeeCode] = useState("");
-  const [newRole, setNewRole] = useState(roleOptions[0]);
+  const [newRole, setNewRole] = useState("user");
   const [newStatus, setNewStatus] = useState(statusOptions[0]);
   const [newPassword, setNewPassword] = useState(defaultPassword ?? "");
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
@@ -45,40 +60,36 @@ export default function UserManagementPage({
         username,
         name: profile?.name ?? username,
         employeeCode: profile?.employeeCode ?? "",
-        role: profile?.role ?? "ผู้ใช้งาน",
+        role: String(profile?.role ?? "user").trim().toLowerCase(),
         status: profile?.status ?? "active",
       })),
     [users],
   );
 
   const userSummary = useMemo(() => {
-    const totals = allRows.reduce(
+    return allRows.reduce(
       (acc, row) => {
-        const normalizedRole = String(row.role ?? "").trim().toLowerCase();
-        const normalizedStatus = String(row.status ?? "active").trim().toLowerCase();
-
+        const s = String(row.status ?? "active").trim().toLowerCase();
         acc.total += 1;
-        if (normalizedStatus === "active") acc.active += 1;
-        if (normalizedStatus === "inactive") acc.inactive += 1;
-        if (normalizedRole === "admin" || normalizedRole === "ผู้ดูแลระบบ") acc.admin += 1;
-        if (normalizedRole === "ผู้สอน") acc.instructor += 1;
+        if (s === "active") acc.active += 1;
+        if (s === "inactive") acc.inactive += 1;
         return acc;
       },
-      { total: 0, active: 0, inactive: 0, admin: 0, instructor: 0 },
+      { total: 0, active: 0, inactive: 0 },
     );
-
-    return {
-      ...totals,
-      learner: Math.max(0, totals.total - totals.admin - totals.instructor),
-    };
   }, [allRows]);
+
+  const roleNameMap = useMemo(
+    () => Object.fromEntries(roleOptions.map((r) => [r.code, r.name])),
+    [roleOptions],
+  );
 
   const keyword = searchTerm.trim().toLowerCase();
   const rows = useMemo(
     () =>
       allRows
         .filter((row) => {
-          const rolePass = roleFilter === "all" || row.role === roleFilter;
+          const rolePass = roleFilter === "all" || getRoleKey(row.role) === roleFilter;
           const statusPass = statusFilter === "all" || row.status === statusFilter;
           const searchPass =
             !keyword ||
@@ -89,9 +100,9 @@ export default function UserManagementPage({
           return rolePass && statusPass && searchPass;
         })
         .sort((a, b) => {
-          const statusWeight = (status) => (String(status).toLowerCase() === "active" ? 0 : 1);
-          const statusDiff = statusWeight(a.status) - statusWeight(b.status);
-          if (statusDiff !== 0) return statusDiff;
+          const w = (s) => (String(s).toLowerCase() === "active" ? 0 : 1);
+          const diff = w(a.status) - w(b.status);
+          if (diff !== 0) return diff;
           return a.name.localeCompare(b.name, "th");
         }),
     [allRows, keyword, roleFilter, statusFilter],
@@ -108,7 +119,6 @@ export default function UserManagementPage({
       setMessage("รหัสพนักงานต้องเป็นรูปแบบ 2026-XX-XXXX");
       return;
     }
-
     const result = await onCreateUser?.({
       name: newUserName,
       username: newUsername,
@@ -121,12 +131,11 @@ export default function UserManagementPage({
       setMessage(result?.message ?? "ไม่สามารถเพิ่มผู้ใช้ได้");
       return;
     }
-
     setMessage(result.message);
     setNewUserName("");
     setNewUsername("");
     setNewEmployeeCode("");
-    setNewRole(roleOptions[0]);
+    setNewRole("user");
     setNewStatus(statusOptions[0]);
     setNewPassword(defaultPassword ?? "");
     setShowCreateUserModal(false);
@@ -147,20 +156,24 @@ export default function UserManagementPage({
 
   const handleSaveEditedUser = async () => {
     const normalizedName = String(editingName ?? "").trim();
-    const normalizedEmployeeCode = String(editingEmployeeCode ?? "").trim().toUpperCase();
     if (!normalizedName) {
       setMessage("กรุณากรอกชื่อผู้ใช้");
       return;
     }
-    if (!employeeCodePattern.test(normalizedEmployeeCode)) {
-      setMessage("รหัสพนักงานต้องเป็นรูปแบบ 2026-XX-XXXX");
-      return;
+
+    const isSelfEdit = editingUsername === currentUserKey;
+    const payload = { name: normalizedName };
+
+    if (!isSelfEdit) {
+      const normalizedEmployeeCode = String(editingEmployeeCode ?? "").trim().toUpperCase();
+      if (!employeeCodePattern.test(normalizedEmployeeCode)) {
+        setMessage("รหัสพนักงานต้องเป็นรูปแบบ 2026-XX-XXXX");
+        return;
+      }
+      payload.employee_code = normalizedEmployeeCode;
     }
 
-    const result = await onUpdateUserProfile?.(editingUsername, {
-      name: normalizedName,
-      employee_code: normalizedEmployeeCode,
-    });
+    const result = await onUpdateUserProfile?.(editingUsername, payload);
     if (!result?.success) {
       setMessage(result?.message ?? "ไม่สามารถอัปเดตข้อมูลผู้ใช้ได้");
       return;
@@ -173,192 +186,213 @@ export default function UserManagementPage({
     <section className="workspace-content">
       <header className="content-header user-management-header">
         <div>
-          <h1>จัดการ user</h1>
-          <p>ค้นหา user และเปลี่ยนตำแหน่ง/สถานะผู้ใช้งานในระบบ</p>
+          <h1>จัดการ User</h1>
+          <p>ค้นหาและจัดการตำแหน่ง / สถานะของผู้ใช้งานในระบบ</p>
         </div>
-        <button type="button" className="enter-button user-create-open-button" onClick={() => setShowCreateUserModal(true)}>
+        <button type="button" className="um-add-btn" onClick={() => setShowCreateUserModal(true)}>
           + เพิ่มผู้ใช้งาน
         </button>
       </header>
 
-      <div className="metric-grid user-management-metrics">
-        <article className="metric-card">
-          <h3>ผู้ใช้ทั้งหมด</h3>
-          <p>{userSummary.total}</p>
-        </article>
-        <article className="metric-card">
-          <h3>Active</h3>
-          <p>{userSummary.active}</p>
-        </article>
-        <article className="metric-card">
-          <h3>Inactive</h3>
-          <p>{userSummary.inactive}</p>
-        </article>
-        <article className="metric-card">
-          <h3>Admin / Instructor</h3>
-          <p>
-            {userSummary.admin} / {userSummary.instructor}
-          </p>
-        </article>
+      {/* Metric Strip */}
+      <div className="um-metrics">
+        <div className="um-metric-card um-metric-total">
+          <span className="um-metric-icon">●</span>
+          <div className="um-metric-body">
+            <strong className="um-metric-value">{userSummary.total}</strong>
+            <span className="um-metric-label">ผู้ใช้ทั้งหมด</span>
+          </div>
+        </div>
+        <div className="um-metric-card um-metric-active">
+          <span className="um-metric-icon">✓</span>
+          <div className="um-metric-body">
+            <strong className="um-metric-value">{userSummary.active}</strong>
+            <span className="um-metric-label">Active</span>
+          </div>
+        </div>
+        <div className="um-metric-card um-metric-inactive">
+          <span className="um-metric-icon">○</span>
+          <div className="um-metric-body">
+            <strong className="um-metric-value">{userSummary.inactive}</strong>
+            <span className="um-metric-label">Inactive</span>
+          </div>
+        </div>
       </div>
 
-      <div className="info-card">
-        <div className="user-management-toolbar">
-          <div className="editor-title-box">
-            <label htmlFor="user-search">ค้นหา user</label>
-            <input
-              id="user-search"
-              type="text"
-              placeholder="พิมพ์ชื่อ, username, employee code หรือ role"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-            />
-          </div>
-          <div className="editor-title-box">
-            <label htmlFor="user-role-filter">Filter ตำแหน่ง</label>
-            <select
-              id="user-role-filter"
-              className="role-select"
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-            >
+      {/* Controls Row */}
+      <div className="um-controls-row">
+        <div className="info-card um-filter-card">
+          <div className="um-toolbar">
+            <div className="um-search-wrap">
+              <span className="um-search-icon">⌕</span>
+              <input
+                id="user-search"
+                type="text"
+                className="um-search-input"
+                placeholder="ค้นหาชื่อ, username, employee code..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <select className="um-filter-select" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
               <option value="all">ทุกตำแหน่ง</option>
-              {roleOptions.map((role) => (
-                <option key={`role-filter-${role}`} value={role}>
-                  {role}
+              {roleOptions.map((r) => (
+                <option key={r.code} value={r.code}>
+                  {r.name}
                 </option>
               ))}
             </select>
-          </div>
-          <div className="editor-title-box">
-            <label htmlFor="user-status-filter">Filter สถานะ</label>
-            <select
-              id="user-status-filter"
-              className="role-select"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
+            <select className="um-filter-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="all">ทุกสถานะ</option>
-              {statusOptions.map((status) => (
-                <option key={`status-filter-${status}`} value={status}>
-                  {status}
+              {statusOptions.map((s) => (
+                <option key={s} value={s}>
+                  {s}
                 </option>
               ))}
             </select>
+            <button
+              type="button"
+              className="um-clear-btn"
+              onClick={() => {
+                setSearchTerm("");
+                setRoleFilter("all");
+                setStatusFilter("all");
+              }}
+            >
+              ล้าง
+            </button>
           </div>
-          <button
-            type="button"
-            className="manage-button"
-            onClick={() => {
-              setSearchTerm("");
-              setRoleFilter("all");
-              setStatusFilter("all");
-            }}
-          >
-            ล้างเงื่อนไข
-          </button>
+          <p className="um-result-count">
+            พบ <strong>{rows.length}</strong> จาก {allRows.length} รายการ
+          </p>
         </div>
-        <p className="summary-note">พบผู้ใช้ {rows.length} จาก {allRows.length} รายการ</p>
+
+        <div className="info-card um-pw-card">
+          <p className="um-pw-label">Default Password</p>
+          <div className="um-pw-row">
+            <input
+              type="text"
+              className="um-pw-input"
+              value={defaultPasswordInput}
+              onChange={(e) => setDefaultPasswordInput(e.target.value)}
+              placeholder="กำหนด default password"
+            />
+            <button type="button" className="um-save-btn" onClick={handleSaveDefaultPassword}>
+              บันทึก
+            </button>
+          </div>
+          <p className="um-pw-current">
+            ปัจจุบัน: <code>{defaultPassword}</code>
+          </p>
+        </div>
       </div>
 
-      <div className="info-card">
-        <h3>ตั้งค่า Default Password</h3>
-        <div className="default-password-row">
-          <input
-            type="text"
-            value={defaultPasswordInput}
-            onChange={(event) => setDefaultPasswordInput(event.target.value)}
-            placeholder="กำหนด default password สำหรับ reset"
-          />
-          <button type="button" className="enter-button" onClick={handleSaveDefaultPassword}>
-            บันทึก
-          </button>
-        </div>
-        <p className="summary-note">ค่าใช้งานปัจจุบัน: {defaultPassword}</p>
-      </div>
-
-      <div className="leaderboard-card">
-        <table className="user-management-table">
+      {/* User Table */}
+      <div className="leaderboard-card um-table-card">
+        <table className="user-management-table um-table">
           <thead>
             <tr>
+              <th>ผู้ใช้งาน</th>
               <th>รหัสพนักงาน</th>
-              <th>ชื่อ</th>
               <th>Username</th>
               <th>ตำแหน่ง</th>
-              <th>Status</th>
-              <th>Password</th>
+              <th>สถานะ</th>
+              <th>การจัดการ</th>
             </tr>
           </thead>
           <tbody>
             {rows.length ? (
-              rows.map((row) => (
-                <tr key={row.username}>
-                  <td>{row.employeeCode || "-"}</td>
-                  <td>{row.name}</td>
-                  <td>{row.username}</td>
-                  <td>
-                    <select
-                      className="role-select"
-                      value={row.role}
-                      onChange={async (event) => {
-                        const result = await onUpdateUserRole?.(row.username, event.target.value);
-                        if (result?.success === false) {
-                          setMessage(result.message ?? "ไม่สามารถอัปเดตตำแหน่งได้");
-                        }
-                      }}
-                    >
-                      {roleOptions.map((role) => (
-                        <option key={role} value={role}>
-                          {role}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>
-                    <select
-                      className="role-select"
-                      value={row.status}
-                      onChange={async (event) => {
-                        const result = await onUpdateUserStatus?.(row.username, event.target.value);
-                        if (result?.success === false) {
-                          setMessage(result.message ?? "ไม่สามารถอัปเดตสถานะได้");
-                        }
-                      }}
-                    >
-                      {statusOptions.map((status) => (
-                        <option key={status} value={status}>
-                          {status}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>
-                    <div className="user-row-actions">
-                      <button
-                        type="button"
-                        className="manage-button"
-                        onClick={async () => {
-                          const result = await onResetUserPassword?.(row.username);
-                          setMessage(result?.message ?? `รีเซ็ตรหัสผ่านของ ${row.username} เป็นค่า default แล้ว`);
+              rows.map((row) => {
+                const isAdmin = getRoleKey(row.role) === "admin";
+                const isSelf = row.username === currentUserKey;
+                const isOtherAdmin = isAdmin && !isSelf;
+                return (
+                  <tr key={row.username} className={row.status === "inactive" ? "um-row-inactive" : ""}>
+                    <td>
+                      <div className="um-user-cell">
+                        <div className={`um-avatar um-avatar-${getRoleKey(row.role)}`}>{getInitials(row.name)}</div>
+                        <div className="um-user-info">
+                          <span className="um-user-name">{row.name}</span>
+                          {(isSelf || isOtherAdmin) && (
+                            <span className="um-protected-badge" title={isSelf ? "บัญชีของคุณ" : "Admin ไม่สามารถแก้ไขได้"}>
+                              {isSelf ? "ตัวเอง" : "🔒"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <code className="um-emp-code">{row.employeeCode || "—"}</code>
+                    </td>
+                    <td>
+                      <span className="um-at-username">@{row.username}</span>
+                    </td>
+                    <td>
+                      <select
+                        className="um-select-role"
+                        data-role={getRoleKey(row.role)}
+                        value={row.role}
+                        disabled={isOtherAdmin || isSelf}
+                        onChange={async (e) => {
+                          const result = await onUpdateUserRole?.(row.username, e.target.value);
+                          if (result?.success === false) setMessage(result.message ?? "ไม่สามารถอัปเดตตำแหน่งได้");
                         }}
                       >
-                        Reset Password
-                      </button>
-                      <button
-                        type="button"
-                        className="manage-button"
-                        onClick={() => handleOpenEditUserModal(row)}
+                        {roleOptions.filter((r) => r.code !== "admin").map((r) => (
+                          <option key={r.code} value={r.code}>
+                            {r.name}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <select
+                        className="um-select-status"
+                        data-status={row.status}
+                        value={row.status}
+                        disabled={isOtherAdmin || isSelf}
+                        onChange={async (e) => {
+                          const result = await onUpdateUserStatus?.(row.username, e.target.value);
+                          if (result?.success === false) setMessage(result.message ?? "ไม่สามารถอัปเดตสถานะได้");
+                        }}
                       >
-                        แก้ไขข้อมูล
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                        {statusOptions.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <div className="um-actions">
+                        <button
+                          type="button"
+                          className="um-action-btn um-action-reset"
+                          disabled={isOtherAdmin || isSelf}
+                          onClick={async () => {
+                            const result = await onResetUserPassword?.(row.username);
+                            setMessage(result?.message ?? `รีเซ็ตรหัสผ่านของ ${row.username} แล้ว`);
+                          }}
+                        >
+                          🔑 Reset
+                        </button>
+                        <button
+                          type="button"
+                          className="um-action-btn um-action-edit"
+                          disabled={isOtherAdmin}
+                          onClick={() => handleOpenEditUserModal(row)}
+                        >
+                          ✏ แก้ไข
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
                 <td colSpan={6}>
-                  <p className="user-management-empty">ไม่พบผู้ใช้ตามเงื่อนไขที่เลือก</p>
+                  <div className="um-empty">ไม่พบผู้ใช้ตามเงื่อนไขที่เลือก</div>
                 </td>
               </tr>
             )}
@@ -366,161 +400,173 @@ export default function UserManagementPage({
         </table>
       </div>
 
-      {showCreateUserModal ? (
+      {/* Create User Modal */}
+      {showCreateUserModal && (
         <div className="modal-backdrop" onClick={closeCreateUserModal}>
           <article
-            className="info-card user-create-modal"
+            className="um-modal"
             role="dialog"
             aria-modal="true"
             aria-labelledby="create-user-modal-title"
-            onClick={(event) => event.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
-            <button
-              type="button"
-              className="modal-close-button"
-              aria-label="ปิดกล่องเพิ่มผู้ใช้"
-              onClick={closeCreateUserModal}
-            >
-              ×
-            </button>
-            <h3 id="create-user-modal-title">เพิ่มผู้ใช้ใหม่</h3>
-            <div className="editor-course-meta">
-              <div className="editor-title-box">
-                <label htmlFor="new-user-name">ชื่อ</label>
-                <input
-                  id="new-user-name"
-                  type="text"
-                  value={newUserName}
-                  onChange={(event) => setNewUserName(event.target.value)}
-                  placeholder="ชื่อที่จะแสดง"
-                />
-              </div>
-              <div className="editor-title-box">
-                <label htmlFor="new-username">Username</label>
-                <input
-                  id="new-username"
-                  type="text"
-                  value={newUsername}
-                  onChange={(event) => setNewUsername(event.target.value)}
-                  placeholder="username สำหรับ login"
-                />
-              </div>
-              <div className="editor-title-box">
-                <label htmlFor="new-user-employee-code">รหัสพนักงาน</label>
-                <input
-                  id="new-user-employee-code"
-                  type="text"
-                  value={newEmployeeCode}
-                  onChange={(event) => setNewEmployeeCode(event.target.value.toUpperCase())}
-                  placeholder="2026-XX-XXXX"
-                  maxLength={13}
-                />
-              </div>
-              <div className="editor-title-box">
-                <label htmlFor="new-user-role">ตำแหน่ง</label>
-                <select
-                  id="new-user-role"
-                  className="role-select"
-                  value={newRole}
-                  onChange={(event) => setNewRole(event.target.value)}
-                >
-                  {roleOptions.map((role) => (
-                    <option key={`new-role-${role}`} value={role}>
-                      {role}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="editor-title-box">
-                <label htmlFor="new-user-status">สถานะ</label>
-                <select
-                  id="new-user-status"
-                  className="role-select"
-                  value={newStatus}
-                  onChange={(event) => setNewStatus(event.target.value)}
-                >
-                  {statusOptions.map((status) => (
-                    <option key={`new-status-${status}`} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="editor-title-box editor-meta-full">
-                <label htmlFor="new-user-password">Password</label>
-                <input
-                  id="new-user-password"
-                  type="text"
-                  value={newPassword}
-                  onChange={(event) => setNewPassword(event.target.value)}
-                  placeholder={`ว่างไว้เพื่อใช้ default (${defaultPassword})`}
-                />
+            <div className="um-modal-header">
+              <h3 id="create-user-modal-title">เพิ่มผู้ใช้ใหม่</h3>
+              <button type="button" className="um-modal-close" aria-label="ปิด" onClick={closeCreateUserModal}>
+                ✕
+              </button>
+            </div>
+            <div className="um-modal-body">
+              <div className="um-form-grid">
+                <div className="um-field">
+                  <label htmlFor="new-user-name">ชื่อที่แสดง</label>
+                  <input
+                    id="new-user-name"
+                    type="text"
+                    value={newUserName}
+                    onChange={(e) => setNewUserName(e.target.value)}
+                    placeholder="ชื่อ นามสกุล"
+                  />
+                </div>
+                <div className="um-field">
+                  <label htmlFor="new-username">Username</label>
+                  <input
+                    id="new-username"
+                    type="text"
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value)}
+                    placeholder="สำหรับ login"
+                  />
+                </div>
+                <div className="um-field">
+                  <label htmlFor="new-user-employee-code">รหัสพนักงาน</label>
+                  <input
+                    id="new-user-employee-code"
+                    type="text"
+                    value={newEmployeeCode}
+                    onChange={(e) => setNewEmployeeCode(e.target.value.toUpperCase())}
+                    placeholder="2026-XX-XXXX"
+                    maxLength={13}
+                  />
+                </div>
+                <div className="um-field">
+                  <label htmlFor="new-user-role">ตำแหน่ง</label>
+                  <select id="new-user-role" value={newRole} onChange={(e) => setNewRole(e.target.value)}>
+                    {roleOptions.filter((r) => r.code !== "admin").map((r) => (
+                      <option key={r.code} value={r.code}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="um-field">
+                  <label htmlFor="new-user-status">สถานะ</label>
+                  <select id="new-user-status" value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
+                    {statusOptions.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="um-field um-field-full">
+                  <label htmlFor="new-user-password">Password</label>
+                  <input
+                    id="new-user-password"
+                    type="text"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder={`ว่างไว้เพื่อใช้ default: ${defaultPassword}`}
+                  />
+                </div>
               </div>
             </div>
-            <div className="user-modal-actions">
-              <button type="button" className="enter-button" onClick={handleCreateUser}>
-                + เพิ่ม user
+            <div className="um-modal-footer">
+              <button type="button" className="um-btn-secondary" onClick={closeCreateUserModal}>
+                ยกเลิก
+              </button>
+              <button type="button" className="um-btn-primary" onClick={handleCreateUser}>
+                + เพิ่มผู้ใช้
               </button>
             </div>
           </article>
         </div>
-      ) : null}
+      )}
 
-      {showEditUserModal ? (
-        <div className="modal-backdrop" onClick={closeEditUserModal}>
-          <article
-            className="info-card user-create-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="edit-user-modal-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <button
-              type="button"
-              className="modal-close-button"
-              aria-label="ปิดกล่องแก้ไขข้อมูลผู้ใช้"
-              onClick={closeEditUserModal}
+      {/* Edit User Modal */}
+      {showEditUserModal && (() => {
+        const isSelfEdit = editingUsername === currentUserKey;
+        return (
+          <div className="modal-backdrop" onClick={closeEditUserModal}>
+            <article
+              className="um-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="edit-user-modal-title"
+              onClick={(e) => e.stopPropagation()}
             >
-              ×
-            </button>
-            <h3 id="edit-user-modal-title">แก้ไขข้อมูลผู้ใช้</h3>
-            <div className="editor-course-meta">
-              <div className="editor-title-box">
-                <label htmlFor="edit-user-name">ชื่อ</label>
-                <input
-                  id="edit-user-name"
-                  type="text"
-                  value={editingName}
-                  onChange={(event) => setEditingName(event.target.value)}
-                  placeholder="ชื่อที่จะแสดง"
-                />
+              <div className="um-modal-header">
+                <h3 id="edit-user-modal-title">{isSelfEdit ? "แก้ไขชื่อของคุณ" : "แก้ไขข้อมูลผู้ใช้"}</h3>
+                <button type="button" className="um-modal-close" aria-label="ปิด" onClick={closeEditUserModal}>
+                  ✕
+                </button>
               </div>
-              <div className="editor-title-box">
-                <label htmlFor="edit-user-employee-code">รหัสพนักงาน</label>
-                <input
-                  id="edit-user-employee-code"
-                  type="text"
-                  value={editingEmployeeCode}
-                  onChange={(event) => setEditingEmployeeCode(event.target.value.toUpperCase())}
-                  placeholder="2026-XX-XXXX"
-                  maxLength={13}
-                />
+              <div className="um-modal-body">
+                {isSelfEdit && (
+                  <p className="um-modal-note">Admin สามารถแก้ไขได้เฉพาะชื่อที่แสดงของตัวเองเท่านั้น</p>
+                )}
+                <div className="um-form-grid">
+                  <div className={`um-field ${isSelfEdit ? "um-field-full" : ""}`}>
+                    <label htmlFor="edit-user-name">ชื่อที่แสดง</label>
+                    <input
+                      id="edit-user-name"
+                      type="text"
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      placeholder="ชื่อ นามสกุล"
+                      autoFocus
+                    />
+                  </div>
+                  {!isSelfEdit && (
+                    <>
+                      <div className="um-field">
+                        <label htmlFor="edit-user-employee-code">รหัสพนักงาน</label>
+                        <input
+                          id="edit-user-employee-code"
+                          type="text"
+                          value={editingEmployeeCode}
+                          onChange={(e) => setEditingEmployeeCode(e.target.value.toUpperCase())}
+                          placeholder="2026-XX-XXXX"
+                          maxLength={13}
+                        />
+                      </div>
+                      <div className="um-field">
+                        <label htmlFor="edit-username-readonly">Username (แก้ไขไม่ได้)</label>
+                        <input id="edit-username-readonly" type="text" value={editingUsername} readOnly className="um-input-readonly" />
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
-              <div className="editor-title-box">
-                <label htmlFor="edit-username-readonly">Username</label>
-                <input id="edit-username-readonly" type="text" value={editingUsername} readOnly />
+              <div className="um-modal-footer">
+                <button type="button" className="um-btn-secondary" onClick={closeEditUserModal}>
+                  ยกเลิก
+                </button>
+                <button type="button" className="um-btn-primary" onClick={handleSaveEditedUser}>
+                  บันทึกข้อมูล
+                </button>
               </div>
-            </div>
-            <div className="user-modal-actions">
-              <button type="button" className="enter-button" onClick={handleSaveEditedUser}>
-                บันทึกข้อมูล
-              </button>
-            </div>
-          </article>
-        </div>
-      ) : null}
+            </article>
+          </div>
+        );
+      })()}
 
-      {message ? <p className="profile-message">{message}</p> : null}
+      {message && (
+        <div className="um-toast" onClick={() => setMessage("")}>
+          <span>{message}</span>
+          <span className="um-toast-close">✕</span>
+        </div>
+      )}
     </section>
   );
 }
