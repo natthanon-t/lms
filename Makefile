@@ -3,7 +3,7 @@
 up:
 	docker compose up -d --build
 	@echo "Waiting for containers to start..."
-	@sleep 3
+	@sleep 10
 	@$(MAKE) --no-print-directory ports
 
 help:
@@ -26,7 +26,7 @@ down:
 reset:
 	docker compose down -v && docker compose up -d --build
 	@echo "Waiting for containers to start..."
-	@sleep 3
+	@sleep 10
 	@$(MAKE) --no-print-directory ports
 
 restart: down up
@@ -79,7 +79,7 @@ front:
 	echo ">> Stop docker frontend container (if running) to avoid port conflict..."; \
 	docker compose stop react-app >/dev/null 2>&1 || true; \
 	echo ">> Waiting for backend services to start..."; \
-	sleep 3; \
+	sleep 10; \
 	$(MAKE) --no-print-directory ports; \
 	echo ">> Run frontend locally on http://localhost:$$FRONTEND_PORT"; \
 	cd cbt-lms && VITE_API_BASE_URL="$$VITE_API_BASE_URL" npm run dev -- --host 0.0.0.0 --port $$FRONTEND_PORT
