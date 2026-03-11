@@ -1,27 +1,35 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import logoMark from "../../assets/logo.png";
-import { getAvatarColor, getInitials } from "../../utils/avatar";
+import { avatarStorageKey, getAvatarColor, getInitials } from "../../utils/avatar";
 import { getLevel } from "../../utils/level";
 import { getCourseSkillRewards } from "../../services/skillRewardsService";
+import { useAuth } from "../../contexts/AuthContext";
+import { useAppData } from "../../contexts/AppDataContext";
 
-export default function WorkspaceTopbar({ currentUser, username, totalScore = 0, onGoHome, onGoProfile, examples = [], examBank = [], onEnterClass, onEnterExam }) {
+export default function WorkspaceTopbar() {
+  const navigate = useNavigate();
+  const { currentUser, currentUserKey } = useAuth();
+  const { examples, examBank, openContentDetail, openExam, userTotalScore } = useAppData();
+
+  const totalScore = userTotalScore ?? 0;
+
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
   const handleLogoError = (event) => {
-    if (event.currentTarget.dataset.fallbackApplied === "true") {
-      return;
-    }
+    if (event.currentTarget.dataset.fallbackApplied === "true") return;
     event.currentTarget.dataset.fallbackApplied = "true";
     event.currentTarget.src = "/logo.png";
   };
 
   const avatar = useMemo(() => {
-    if (!username) return "";
-    try { return localStorage.getItem(`profile_avatar_${username}`) ?? ""; } catch { return ""; }
-  }, [username]);
+    if (!currentUserKey) return "";
+    try { return localStorage.getItem(avatarStorageKey(currentUserKey)) ?? ""; } catch { return ""; }
+  }, [currentUserKey]);
 
-  const avatarColor = getAvatarColor(username);
-  const initials = getInitials(currentUser?.name, username);
+  const avatarColor = getAvatarColor(currentUserKey);
+  const initials = getInitials(currentUser?.name, currentUserKey);
   const level = useMemo(() => getLevel(totalScore), [totalScore]);
 
   const keyword = useMemo(() => searchQuery.trim().toLowerCase(), [searchQuery]);
@@ -34,9 +42,24 @@ export default function WorkspaceTopbar({ currentUser, username, totalScore = 0,
     [examBank, keyword],
   );
 
+  const handleEnterClass = async (example) => {
+    const result = openContentDetail(example);
+    if (result?.blocked) return;
+    navigate(`/content/${example.id}`);
+    setShowSearchModal(false);
+  };
+
+  const handleEnterExam = async (exam) => {
+    const result = await openExam(exam);
+    if (result?.success) {
+      navigate(`/exam/${exam.id}`);
+    }
+    setShowSearchModal(false);
+  };
+
   return (
     <header className="workspace-topbar">
-      <button type="button" className="workspace-topbar-brand" onClick={onGoHome}>
+      <button type="button" className="workspace-topbar-brand" onClick={() => navigate("/")}>
         <img src={logoMark} alt="LMS logo" className="workspace-topbar-logo" onError={handleLogoError} />
         <div>
           <h1>LMS Panel</h1>
@@ -58,7 +81,7 @@ export default function WorkspaceTopbar({ currentUser, username, totalScore = 0,
           type="button"
           className="topbar-avatar-circle"
           style={{ background: avatar ? "transparent" : avatarColor }}
-          onClick={onGoProfile}
+          onClick={() => navigate("/profile")}
           title="ไปหน้าโปรไฟล์"
         >
           {avatar ? (
@@ -67,7 +90,7 @@ export default function WorkspaceTopbar({ currentUser, username, totalScore = 0,
             <span className="topbar-avatar-initials">{initials}</span>
           )}
         </button>
-        <button type="button" className="topbar-user-info" onClick={onGoProfile}>
+        <button type="button" className="topbar-user-info" onClick={() => navigate("/profile")}>
           <p className="topbar-user-line1">{currentUser?.name ?? "Guest"} / {currentUser?.role ?? "ผู้เยี่ยมชม"}</p>
           {currentUser && (
             <p className="topbar-user-line2" style={{ color: level.color }}>
@@ -109,10 +132,7 @@ export default function WorkspaceTopbar({ currentUser, username, totalScore = 0,
                               key={example.id}
                               type="button"
                               className="search-result-item"
-                              onClick={() => {
-                                onEnterClass?.(example);
-                                setShowSearchModal(false);
-                              }}
+                              onClick={() => handleEnterClass(example)}
                             >
                               <div className="search-result-title">{example.title}</div>
                               {example.description && (
@@ -143,10 +163,7 @@ export default function WorkspaceTopbar({ currentUser, username, totalScore = 0,
                             key={exam.id}
                             type="button"
                             className="search-result-item"
-                            onClick={() => {
-                              onEnterExam?.(exam);
-                              setShowSearchModal(false);
-                            }}
+                            onClick={() => handleEnterExam(exam)}
                           >
                             <div className="search-result-title">{exam.title}</div>
                             {exam.description && (

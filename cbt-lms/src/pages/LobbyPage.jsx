@@ -1,29 +1,42 @@
-import { isItemOwner, canViewItemByStatus } from "../services/accessControlService";
+import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { canViewItemByStatus } from "../services/accessControlService";
+import { useAuth } from "../contexts/AuthContext";
+import { useAppData } from "../contexts/AppDataContext";
 
-export default function LobbyPage({
-  examples,
-  examBank,
-  onOpenExamEditor,
-  onEnterClass,
-  onEnterExam,
-  currentUserKey = "",
-  canManageContent = false,
-  canManageExams = false,
-}) {
-  const canManageExam = (exam) => canManageExams || isItemOwner(exam, currentUserKey);
+export default function LobbyPage() {
+  const navigate = useNavigate();
+  const { currentUserKey, canManageContent, canManageExams } = useAuth();
+  const { examples, examBank, openContentDetail, openExam, canManageExamItem } = useAppData();
 
-  const baseExamples = examples.filter((example) =>
-    canViewItemByStatus({ item: example, currentUserKey, hasManageAccess: canManageContent }),
-  );
-  const baseExams = examBank.filter((exam) =>
-    canViewItemByStatus({ item: exam, currentUserKey, hasManageAccess: canManageExams }),
-  );
-  const filteredExamples = baseExamples
-    .sort((a, b) => (b.learnerCount ?? 0) - (a.learnerCount ?? 0));
-  const filteredExams = baseExams
-    .sort((a, b) => (b.attemptCount ?? 0) - (a.attemptCount ?? 0));
-  const limitedExamples = filteredExamples.slice(0, 4);
-  const limitedExams = filteredExams.slice(0, 4);
+  const limitedExamples = useMemo(() => {
+    return examples
+      .filter((example) => canViewItemByStatus({ item: example, currentUserKey, hasManageAccess: canManageContent }))
+      .sort((a, b) => (b.learnerCount ?? 0) - (a.learnerCount ?? 0))
+      .slice(0, 4);
+  }, [examples, currentUserKey, canManageContent]);
+
+  const limitedExams = useMemo(() => {
+    return examBank
+      .filter((exam) => canViewItemByStatus({ item: exam, currentUserKey, hasManageAccess: canManageExams }))
+      .sort((a, b) => (b.attemptCount ?? 0) - (a.attemptCount ?? 0))
+      .slice(0, 4);
+  }, [examBank, currentUserKey, canManageExams]);
+
+  const handleEnterClass = (example) => {
+    const result = openContentDetail(example);
+    if (result?.blocked) return;
+    navigate(`/content/${example.id}`);
+  };
+
+  const handleEnterExam = async (exam) => {
+    const result = await openExam(exam);
+    if (result?.success) navigate(`/exam/${exam.id}`);
+  };
+
+  const handleOpenExamEditor = async (exam) => {
+    navigate(`/exam/${exam.id}/edit`);
+  };
 
   return (
     <section className="workspace-content">
@@ -49,7 +62,7 @@ export default function LobbyPage({
                 ))}
               </div>
             ) : null}
-            <button type="button" className="enter-button" onClick={() => onEnterClass(example)}>
+            <button type="button" className="enter-button" onClick={() => handleEnterClass(example)}>
               ดูรายละเอียด
             </button>
           </article>
@@ -63,19 +76,19 @@ export default function LobbyPage({
             <img src={exam.image} alt={exam.title} className="card-image" />
             <div className="example-head">
               <h3>{exam.title}</h3>
-              {canManageExam(exam) ? (
+              {canManageExamItem(exam) ? (
                 <button
                   type="button"
                   className="gear-button"
                   aria-label={`แก้ไข ${exam.title}`}
-                  onClick={() => onOpenExamEditor(exam)}
+                  onClick={() => handleOpenExamEditor(exam)}
                 >
                   ⚙
                 </button>
               ) : null}
             </div>
             <p>{exam.description}</p>
-            <button type="button" className="enter-button" onClick={() => onEnterExam(exam)}>
+            <button type="button" className="enter-button" onClick={() => handleEnterExam(exam)}>
               ดูรายละเอียดข้อสอบ
             </button>
           </article>

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import ConfirmModal from "../components/ui/ConfirmModal";
+import { useAppData } from "../contexts/AppDataContext";
 
 const shuffleArray = (items) => {
   const result = [...items];
@@ -101,7 +103,17 @@ const pickQuestionsByDomainPercentage = (questions, totalQuestions, domainPercen
   return selected;
 };
 
-export default function ExamTakingPage({ draft, onEndExam, orderMode, durationSeconds, onSaveAttempt }) {
+export default function ExamTakingPage() {
+  const { examId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { examDraft, handleSaveAttempt } = useAppData();
+
+  const draft = examDraft;
+  const orderMode = location.state?.orderMode ?? "sequential";
+  const durationSeconds = (draft?.defaultTime ?? 0) * 60;
+  const onEndExam = () => navigate(`/exam/${examId}`);
+  const onSaveAttempt = handleSaveAttempt;
   const selectedQuestions = useMemo(() => {
     return pickQuestionsByDomainPercentage(draft.questions, draft.numberOfQuestions, draft.domainPercentages);
   }, [draft.questions, draft.numberOfQuestions, draft.domainPercentages]);
@@ -174,7 +186,7 @@ export default function ExamTakingPage({ draft, onEndExam, orderMode, durationSe
       domainStats,
     };
     setSubmittedResult(result);
-    onSaveAttempt?.(result);
+    onSaveAttempt(result);
   }, [answers, orderedQuestions, totalQuestions, onSaveAttempt]);
 
   useEffect(() => {

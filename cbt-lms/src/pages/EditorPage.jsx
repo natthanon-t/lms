@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import CodeMirror from "@uiw/react-codemirror";
 import { markdown as mdLang } from "@codemirror/lang-markdown";
 import MarkdownContent from "../components/markdown/MarkdownContent";
@@ -14,9 +15,12 @@ import {
   swapSubSections,
   updateSubtopicBodyMarkdown,
 } from "../components/markdown/headingUtils";
-import { ensureCoverImage } from "../services/imageService";
+import { ensureCoverImage, fileToDataUrl } from "../services/imageService";
 import { getStoredImages, storeImage } from "../services/contentImagesStore";
 import { fetchCourseImagesApi, saveCourseImageApi } from "../services/mediaApiService";
+import { normalizeExampleRecord, toCourseDraft } from "../services/courseService";
+import { useAuth } from "../contexts/AuthContext";
+import { useAppData } from "../contexts/AppDataContext";
 
 const getSkillRewards = (draft) => {
   if (Array.isArray(draft.skillRewards) && draft.skillRewards.length > 0) {
@@ -31,11 +35,59 @@ const getSkillRewards = (draft) => {
   }));
 };
 
-export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, onDeleteContent, canPublish = false }) {
+export default function EditorPage() {
+  const { courseId } = useParams();
+  const navigate = useNavigate();
+  const { canManageContent } = useAuth();
+  const { examples, editorDraft: contextEditorDraft, updateEditorDraft, saveEditorDraft, handleDeleteContent: deleteContentFn } = useAppData();
+  const canPublish = canManageContent;
+
+  // Initialize local draft from context/examples
+  const [draft, setDraft] = useState(() => {
+    const found = examples.find((e) => e.id === courseId);
+    return found ? toCourseDraft(normalizeExampleRecord(found)) : contextEditorDraft;
+  });
+
+  // Sync draft when examples change (e.g., after saving)
+  useEffect(() => {
+    const found = examples.find((e) => e.id === courseId);
+    if (found) {
+      const normalized = toCourseDraft(normalizeExampleRecord(found));
+      setDraft((prev) => {
+        // Only sync if sourceId matches to avoid overwriting edits
+        if (prev.sourceId !== normalized.sourceId) return normalized;
+        return prev;
+      });
+    }
+  }, [courseId, examples]);
+
+  const onChangeDraft = useCallback((field, value) => {
+    setDraft((prev) => {
+      const nextValue =
+        field === "image"
+          ? ensureCoverImage(value, prev.sourceId || prev.id || `course-${Date.now()}`)
+          : value;
+      const nextDraft = { ...prev, [field]: nextValue };
+      // Keep context in sync for other pages to use
+      updateEditorDraft(field, nextValue);
+      return nextDraft;
+    });
+  }, [updateEditorDraft]);
+
+  const onSaveDraft = useCallback(async () => {
+    return saveEditorDraft();
+  }, [saveEditorDraft]);
+
+  const onDeleteContent = useCallback(async (contentId) => {
+    const result = await deleteContentFn(contentId);
+    if (result?.success) navigate("/content");
+    return result;
+  }, [deleteContentFn, navigate]);
+
   const editorViewRef = useRef(null);
   const [activeSubtopicId, setActiveSubtopicId] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
-  const [contentImages, setContentImages] = useState(() => getStoredImages(draft.sourceId));
+  const [contentImages, setContentImages] = useState(() => getStoredImages(draft?.sourceId ?? ""));
 
   useEffect(() => {
     const courseId = draft.sourceId;
@@ -243,13 +295,13 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
     if (nextImage !== draft.image) {
       onChangeDraft("image", nextImage);
     }
-    Promise.resolve(onSaveDraft?.()).then((result) => {
+    Promise.resolve(onSaveDraft()).then((result) => {
       setSaveMessage(result?.message ?? (result?.success ? "บันทึกเนื้อหาเรียบร้อยแล้ว" : "บันทึกไม่สำเร็จ"));
     });
   };
 
   const handleDeleteContent = async () => {
-    const result = await onDeleteContent?.(draft.sourceId || draft.id);
+    const result = await onDeleteContent(draft.sourceId || draft.id);
     if (!result?.success) {
       setSaveMessage(result?.message ?? "ลบเนื้อหาไม่สำเร็จ");
       setShowDeleteConfirm(false);
@@ -364,7 +416,7 @@ export default function EditorPage({ draft, onBack, onChangeDraft, onSaveDraft, 
           <button type="button" className="back-button danger-button" onClick={() => setShowDeleteConfirm(true)}>
             ลบเนื้อหา
           </button>
-          <button type="button" className="back-button" onClick={onBack}>
+          <button type="button" className="back-button" onClick={() => navigate("/content")}>
             กลับหน้า Lobby
           </button>
         </div>

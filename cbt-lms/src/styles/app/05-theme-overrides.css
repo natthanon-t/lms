@@ -82,6 +82,7 @@
 }
 
 .sidebar-nav button,
+.sidebar-nav a,
 .logout-button,
 .manage-button,
 .editor-toolbar button,
@@ -101,6 +102,7 @@
 }
 
 .sidebar-nav button:hover,
+.sidebar-nav a:hover,
 .manage-button:hover,
 .editor-toolbar button:hover,
 .editor-toolbar label:hover,
@@ -128,6 +130,7 @@
 }
 
 .sidebar-nav button.active,
+.sidebar-nav a.active,
 .create-content-button,
 .enter-button,
 .back-button,
@@ -150,7 +153,8 @@
 .end-exam-button:hover,
 .login-form button:hover,
 .submit-exam-button:hover,
-.sidebar-nav button.active:hover {
+.sidebar-nav button.active:hover,
+.sidebar-nav a.active:hover {
   background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
   border-color: var(--primary-dark);
   transform: translateY(-1px);
@@ -198,6 +202,7 @@
 }
 
 .sidebar-nav button:focus-visible,
+.sidebar-nav a:focus-visible,
 .logout-button:focus-visible,
 .manage-button:focus-visible,
 .editor-toolbar button:focus-visible,

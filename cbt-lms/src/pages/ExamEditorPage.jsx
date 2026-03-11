@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { ensureCoverImage, fileToDataUrl } from "../services/imageService";
 import { parseExamUploadJson } from "../services/examService";
+import { useAppData } from "../contexts/AppDataContext";
 
 const toDomainRows = (domainPercentages) => {
   const entries = Object.entries(domainPercentages ?? {});
@@ -38,7 +40,12 @@ const toQuestions = (questions) => {
   }));
 };
 
-export default function ExamEditorPage({ draft, onBack, onSaveDraft, onDeleteExam }) {
+export default function ExamEditorPage() {
+  useParams(); // examId available but navigation uses context
+  const navigate = useNavigate();
+  const { examEditorDraft, saveExamEditorDraft, handleDeleteExam } = useAppData();
+
+  const draft = examEditorDraft;
   const [exam, setExam] = useState(draft);
   const [domainRows, setDomainRows] = useState(() => toDomainRows(draft.domainPercentages));
   const [questions, setQuestions] = useState(() => toQuestions(draft.questions));
@@ -150,7 +157,7 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft, onDeleteExa
       explanation: String(question.explanation ?? "").trim(),
     }));
 
-    onSaveDraft?.({
+    void saveExamEditorDraft({
       ...exam,
       image: ensureCoverImage(exam.image, exam.id ?? exam.sourceId ?? `exam-${Date.now()}`),
       domainPercentages,
@@ -205,14 +212,15 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft, onDeleteExa
     }
   };
 
-  const handleDeleteExam = async () => {
-    const result = await onDeleteExam?.(exam.id || exam.sourceId);
+  const handleDeleteExamConfirmed = async () => {
+    const result = await handleDeleteExam(exam.id || exam.sourceId);
     if (!result?.success) {
       setImportStatus({ type: "error", message: result?.message ?? "ลบข้อสอบไม่สำเร็จ" });
       setShowDeleteConfirm(false);
       return;
     }
     setShowDeleteConfirm(false);
+    navigate("/exam");
   };
 
   return (
@@ -229,7 +237,7 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft, onDeleteExa
           <button type="button" className="back-button danger-button" onClick={() => setShowDeleteConfirm(true)}>
             ลบข้อสอบ
           </button>
-          <button type="button" className="back-button" onClick={onBack}>
+          <button type="button" className="back-button" onClick={() => navigate("/exam")}>
             กลับหน้าข้อสอบ
           </button>
         </div>
@@ -650,7 +658,7 @@ export default function ExamEditorPage({ draft, onBack, onSaveDraft, onDeleteExa
             <h3 id="delete-exam-modal-title">ยืนยันการลบข้อสอบ</h3>
             <p>ต้องการลบข้อสอบ "{exam.title}" ใช่หรือไม่</p>
             <div className="profile-action-row">
-              <button type="button" className="end-exam-button" onClick={handleDeleteExam}>
+              <button type="button" className="end-exam-button" onClick={handleDeleteExamConfirmed}>
                 ยืนยันลบ
               </button>
               <button type="button" className="back-button" onClick={() => setShowDeleteConfirm(false)}>

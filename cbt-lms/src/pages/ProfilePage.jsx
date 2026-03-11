@@ -5,11 +5,13 @@ import { getCourseSkillRewards } from "../services/skillRewardsService";
 import { fileToDataUrl } from "../services/imageService";
 import { fetchLoginDates } from "../services/authService";
 import { fetchAvatarApi, updateAvatarApi } from "../services/mediaApiService";
+import { useAuth } from "../contexts/AuthContext";
+import { useAppData } from "../contexts/AppDataContext";
 
-import { getAvatarColor, getInitials } from "../utils/avatar";
+import { avatarStorageKey, getAvatarColor, getInitials } from "../utils/avatar";
 import { getLevel, getLevelProgress, pointsToNext } from "../utils/level";
 
-const avatarKey = (username) => `profile_avatar_${username}`;
+const avatarKey = avatarStorageKey;
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
@@ -113,17 +115,14 @@ const toRadarLabel = (value) => {
   return `${text.slice(0, 16)}...`;
 };
 
-export default function ProfilePage({
-  currentUser,
-  username,
-  onSaveName,
-  onSaveProfile,
-  onChangePassword,
-  examples,
-  currentUserProgress,
-  skillScores,
-  totalScore = 0,
-}) {
+export default function ProfilePage() {
+  const { currentUser, currentUserKey: username } = useAuth();
+  const { examples, learningProgress, userSkillScores: skillScores, userTotalScore: totalScore, handleSaveName: onSaveName, handleSaveProfile: onSaveProfile, handleChangePassword: onChangePassword, loadUserScoresFromApi } = useAppData();
+  const currentUserProgress = (learningProgress[username] ?? {});
+
+  useEffect(() => {
+    if (username) void loadUserScoresFromApi();
+  }, [username, loadUserScoresFromApi]);
   const [name, setName] = useState(currentUser.name);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [message, setMessage] = useState("");
@@ -500,7 +499,7 @@ export default function ProfilePage({
             </div>
           </form>
         ) : (
-          <div>
+          <>
             <div className="profile-info-rows">
               <div className="profile-info-row">
                 <span className="profile-info-label">รหัสพนักงาน</span>
@@ -537,7 +536,7 @@ export default function ProfilePage({
               <button type="button" className="enter-button" onClick={() => setShowEditModal(true)}>แก้ไขข้อมูล</button>
               <button type="button" className="back-button" onClick={() => setShowPasswordForm(true)}>เปลี่ยนรหัสผ่าน</button>
             </div>
-          </div>
+          </>
         )}
 
         {message ? <p className="profile-message">{message}</p> : null}

@@ -264,10 +264,15 @@
   border-top: 1px solid #d2dcf3;
 }
 
-.sidebar-nav button {
+.sidebar-nav button,
+.sidebar-nav a {
   background: #f7f9ff;
   border-color: transparent;
   color: #23385c;
+  text-decoration: none;
+  display: block;
+  width: 100%;
+  text-align: left;
 }
 
 .workspace-sidebar .sidebar-nav {
@@ -277,13 +282,15 @@
   overflow: auto;
 }
 
-.sidebar-nav button:hover {
+.sidebar-nav button:hover,
+.sidebar-nav a:hover {
   background: #dfeeff;
   border-color: #8fb3ff;
   color: #15315e;
 }
 
-.sidebar-nav button.active {
+.sidebar-nav button.active,
+.sidebar-nav a.active {
   background: linear-gradient(90deg, #4b82ff 0%, #3d71ef 100%);
   border-color: #5d89ef;
   color: #ffffff;
@@ -334,6 +341,7 @@
 
 /* Flat button style: border appears only on hover (square frame) */
 .sidebar-nav button,
+.sidebar-nav a,
 .logout-button,
 .create-content-button,
 .enter-button,
@@ -348,6 +356,7 @@
 }
 
 .sidebar-nav button:hover,
+.sidebar-nav a:hover,
 .logout-button:hover,
 .create-content-button:hover,
 .enter-button:hover,
@@ -363,7 +372,9 @@
 
 /* Sidebar buttons: borderless by default, highlight on hover only */
 .workspace-sidebar .sidebar-nav button,
+.workspace-sidebar .sidebar-nav a,
 .workspace-sidebar .sidebar-nav button.active,
+.workspace-sidebar .sidebar-nav a.active,
 .workspace-sidebar .logout-button {
   border: 1px solid transparent;
   border-radius: 10px;
@@ -372,7 +383,9 @@
 }
 
 .workspace-sidebar .sidebar-nav button:hover,
+.workspace-sidebar .sidebar-nav a:hover,
 .workspace-sidebar .sidebar-nav button.active:hover,
+.workspace-sidebar .sidebar-nav a.active:hover,
 .workspace-sidebar .logout-button:hover {
   border-color: #6f98ef;
   box-shadow: none;

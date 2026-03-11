@@ -1,15 +1,51 @@
 import { useMemo } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import TableOfContents from "../components/markdown/TableOfContents";
 import { getSubtopicPages } from "../components/markdown/headingUtils";
 import { getCourseSkillRewards } from "../services/skillRewardsService";
+import { normalizeExampleRecord } from "../services/courseService";
+import { useAuth } from "../contexts/AuthContext";
+import { useAppData } from "../contexts/AppDataContext";
 
-export default function ContentDetailPage({ contentItem, onBack, onEnterStudy, isLoggedIn = false }) {
+export default function ContentDetailPage() {
+  const { courseId } = useParams();
+  const navigate = useNavigate();
+  const { currentUserKey } = useAuth();
+  const { examples, prepareStudy } = useAppData();
+
+  const contentItem = useMemo(() => {
+    const found = examples.find((e) => e.id === courseId);
+    return found ? normalizeExampleRecord(found) : null;
+  }, [examples, courseId]);
+
+  const isLoggedIn = Boolean(currentUserKey);
+
   const subtopics = useMemo(
-    () => getSubtopicPages(contentItem.content, contentItem.title),
-    [contentItem.content, contentItem.title],
+    () => (contentItem ? getSubtopicPages(contentItem.content, contentItem.title) : []),
+    [contentItem],
   );
-  const rewards = getCourseSkillRewards(contentItem);
+  const rewards = contentItem ? getCourseSkillRewards(contentItem) : [];
   const totalSkillPoints = rewards.reduce((sum, reward) => sum + reward.points, 0);
+
+  if (!contentItem) {
+    return (
+      <section className="workspace-content">
+        <header className="content-header">
+          <h1>ไม่พบเนื้อหา</h1>
+          <p>ไม่พบเนื้อหาที่ต้องการ</p>
+        </header>
+        <button type="button" className="back-button" onClick={() => navigate("/content")}>
+          กลับหน้ารายการเนื้อหา
+        </button>
+      </section>
+    );
+  }
+
+  const handleEnterStudy = () => {
+    const result = prepareStudy(contentItem);
+    if (result?.blocked) return;
+    navigate(`/content/${courseId}/study`, { state: { initialSubtopicId: result.initialSubtopicId } });
+  };
 
   return (
     <section className="workspace-content content-theme-exam">
@@ -18,7 +54,7 @@ export default function ContentDetailPage({ contentItem, onBack, onEnterStudy, i
           <h1>{contentItem.title}</h1>
           <p>รายละเอียดคอร์สก่อนเข้าเรียน</p>
         </div>
-        <button type="button" className="back-button" onClick={onBack}>
+        <button type="button" className="back-button" onClick={() => navigate("/content")}>
           กลับหน้ารายการเนื้อหา
         </button>
       </header>
@@ -62,7 +98,7 @@ export default function ContentDetailPage({ contentItem, onBack, onEnterStudy, i
           <button
             type="button"
             className="enter-button"
-            onClick={isLoggedIn ? onEnterStudy : undefined}
+            onClick={isLoggedIn ? handleEnterStudy : undefined}
             disabled={!isLoggedIn}
           >
             {isLoggedIn ? "เข้าเรียนเนื้อหานี้" : "กรุณา Login ก่อนเข้าเรียน"}

@@ -177,6 +177,7 @@
 }
 
 .sidebar-nav button,
+.sidebar-nav a,
 .logout-button {
   border: 1px solid #314c77;
   background: #1b345c;
@@ -186,9 +187,12 @@
   text-align: left;
   font-weight: 600;
   cursor: pointer;
+  text-decoration: none;
+  display: block;
 }
 
-.sidebar-nav button.active {
+.sidebar-nav button.active,
+.sidebar-nav a.active {
   background: #2f66da;
   border-color: #2f66da;
 }

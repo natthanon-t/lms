@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchAnalyticsApi, fetchCourseLearnerApi } from "../services/analyticsApiService";
+import { useAuth } from "../contexts/AuthContext";
+import { useAppData } from "../contexts/AppDataContext";
 
 const THAI_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
 
@@ -254,13 +256,11 @@ function formatDate(iso) {
 }
 
 // ── Main SummaryPage ──────────────────────────────────────────────────────────
-export default function SummaryPage({
-  lessonCount,
-  examCount,
-  users,
-  userTotalScore = 0,
-  examples,
-}) {
+export default function SummaryPage() {
+  const { users } = useAuth();
+  const { examples, examBank, userTotalScore } = useAppData();
+  const lessonCount = examples.length;
+  const examCount = examBank.length;
   const [analytics, setAnalytics] = useState(null);
   const [learners, setLearners] = useState([]);
   const [selectedCourseId, setSelectedCourseId] = useState("");

@@ -5,6 +5,7 @@ import {
   fetchExamAttemptsApi,
   fetchExamsApi,
 } from "../services/examApiService";
+import { useAuth } from "../contexts/AuthContext";
 
 const PASS_THRESHOLD = 70;
 
@@ -126,7 +127,9 @@ function AnswerModal({ attempt, onClose }) {
   );
 }
 
-export default function ExamHistoryPage({ mode = "management" }) {
+export default function ExamHistoryPage() {
+  const { canViewAllExamHistory } = useAuth();
+  const mode = canViewAllExamHistory ? "management" : "self";
   const [attempts, setAttempts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");

@@ -1,26 +1,46 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getStoredImages } from "../services/contentImagesStore";
 import { fetchCourseImagesApi } from "../services/mediaApiService";
 import { recordSubtopicTimeApi } from "../services/courseApiService";
 import MarkdownContent from "../components/markdown/MarkdownContent";
 import TableOfContents from "../components/markdown/TableOfContents";
 import { getSubtopicPages } from "../components/markdown/headingUtils";
+import { normalizeExampleRecord, toCourseDraft } from "../services/courseService";
+import { useAuth } from "../contexts/AuthContext";
+import { useAppData } from "../contexts/AppDataContext";
 
 const normalizeAnswer = (value) => String(value ?? "").trim().toLowerCase();
 
-export default function StudyPage({ draft, onBack, progress, onMarkSubtopicComplete, onSubmitSubtopicAnswer, initialSubtopicId = "" }) {
+export default function StudyPage() {
+  const { courseId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { currentUserKey } = useAuth();
+  const { examples, learningProgress, handleMarkSubtopicComplete, handleSubmitSubtopicAnswer } = useAppData();
+
+  const contentItem = useMemo(() => {
+    const found = examples.find((e) => e.id === courseId);
+    return found ? normalizeExampleRecord(found) : null;
+  }, [examples, courseId]);
+
+  const draft = useMemo(() => contentItem ? toCourseDraft(contentItem) : null, [contentItem]);
+  const initialSubtopicId = location.state?.initialSubtopicId ?? "";
+  const progress = (learningProgress[currentUserKey] ?? {})[courseId] ?? {};
+
   const [activeSubtopicId, setActiveSubtopicId] = useState(initialSubtopicId);
-  const [contentImages, setContentImages] = useState(() => getStoredImages(draft.sourceId ?? draft.id));
+  const [contentImages, setContentImages] = useState(() => getStoredImages(draft?.sourceId ?? draft?.id ?? ""));
   const timeSpentRef = useRef(progress?.timeSpent ?? {});
   const pendingSecondsRef = useRef(0);
   // lockedDisplaySeconds: null = unlocked, number = seconds spent so far (countdown display)
   const [lockedDisplaySeconds, setLockedDisplaySeconds] = useState(null);
 
   useEffect(() => {
-    const courseId = draft.sourceId ?? draft.id;
-    setContentImages(getStoredImages(courseId));
-    if (courseId) {
-      fetchCourseImagesApi(courseId)
+    if (!draft) return;
+    const draftCourseId = draft.sourceId ?? draft.id;
+    setContentImages(getStoredImages(draftCourseId));
+    if (draftCourseId) {
+      fetchCourseImagesApi(draftCourseId)
         .then((apiImages) => {
           if (Object.keys(apiImages).length > 0) {
             setContentImages((prev) => ({ ...prev, ...apiImages }));
@@ -28,9 +48,9 @@ export default function StudyPage({ draft, onBack, progress, onMarkSubtopicCompl
         })
         .catch(() => {});
     }
-  }, [draft.sourceId, draft.id]);
+  }, [draft?.sourceId, draft?.id]);
   const [answerInputs, setAnswerInputs] = useState({});
-  const subtopicPages = useMemo(() => getSubtopicPages(draft.content, draft.title), [draft.content, draft.title]);
+  const subtopicPages = useMemo(() => draft ? getSubtopicPages(draft.content, draft.title) : [], [draft?.content, draft?.title]);
   const selectedSubtopic = subtopicPages.find((subtopic) => subtopic.id === activeSubtopicId) ?? subtopicPages[0];
   const selectedSubtopicAnswers = progress?.answers?.[selectedSubtopic?.id] ?? {};
   const selectedSubtopicCompleted = Boolean(progress?.completedSubtopics?.[selectedSubtopic?.id]);
@@ -73,7 +93,7 @@ export default function StudyPage({ draft, onBack, progress, onMarkSubtopicCompl
   // Uses ref for accumulation to avoid re-renders every second.
   // Only updates state when lock status changes or countdown needs display.
   useEffect(() => {
-    const courseId = draft.sourceId;
+    const courseId = draft?.sourceId;
     const subtopicId = selectedSubtopic?.id;
     if (!courseId || !subtopicId) return;
 
@@ -106,7 +126,7 @@ export default function StudyPage({ draft, onBack, progress, onMarkSubtopicCompl
         pendingSecondsRef.current = 0;
       }
     };
-  }, [selectedSubtopic?.id, draft.sourceId]);
+  }, [selectedSubtopic?.id, draft?.sourceId]);
 
   const subtopicMinTime = selectedSubtopic?.minTimeMinutes ?? 0;
   const requiredSeconds = subtopicMinTime * 60;
@@ -129,7 +149,7 @@ export default function StudyPage({ draft, onBack, progress, onMarkSubtopicCompl
     }
     const typedAnswer = answerInputs[question.id] ?? "";
     const isCorrect = normalizeAnswer(typedAnswer) === normalizeAnswer(question.answer);
-    onSubmitSubtopicAnswer?.(draft.sourceId, selectedSubtopic.id, {
+    handleSubmitSubtopicAnswer(draft?.sourceId, selectedSubtopic.id, {
       ...question,
       typedAnswer,
       isCorrect,
@@ -142,9 +162,20 @@ export default function StudyPage({ draft, onBack, progress, onMarkSubtopicCompl
     }
 
     const questionScore = selectedSubtopic.questions.reduce((total, question) => total + question.points, 0);
-    const subtopicScore = Number(selectedSubtopic.baseScore ?? draft.subtopicCompletionScore ?? 20) + questionScore;
-    onMarkSubtopicComplete?.(draft.sourceId, selectedSubtopic.id, subtopicScore);
+    const subtopicScore = Number(selectedSubtopic.baseScore ?? draft?.subtopicCompletionScore ?? 20) + questionScore;
+    handleMarkSubtopicComplete(draft?.sourceId, selectedSubtopic.id, subtopicScore);
   };
+
+  if (!draft) {
+    return (
+      <section className="workspace-content">
+        <header className="content-header">
+          <h1>ไม่พบเนื้อหา</h1>
+          <p>กำลังโหลด...</p>
+        </header>
+      </section>
+    );
+  }
 
   return (
     <section className="workspace-content content-theme-exam">
@@ -153,7 +184,7 @@ export default function StudyPage({ draft, onBack, progress, onMarkSubtopicCompl
           <h1>{draft.title}</h1>
           <p>หน้าเรียนเนื้อหา</p>
         </div>
-        <button type="button" className="back-button" onClick={onBack}>
+        <button type="button" className="back-button" onClick={() => navigate(`/content/${courseId}`)}>
           กลับหน้าเลือกเนื้อหา
         </button>
       </header>

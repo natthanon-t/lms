@@ -1,3 +1,5 @@
+export const avatarStorageKey = (username) => `profile_avatar_${username}`;
+
 export const getAvatarColor = (username) => {
   let hash = 0;
   const str = String(username || "");

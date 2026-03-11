@@ -1,20 +1,40 @@
+import { useNavigate } from "react-router-dom";
 import StatusSelect from "../components/StatusSelect";
 import { STATUS_OPTIONS, isItemOwner, canViewItemByStatus } from "../services/accessControlService";
+import { useAuth } from "../contexts/AuthContext";
+import { useAppData } from "../contexts/AppDataContext";
 
-export default function ContentPage({
-  examples,
-  onOpenEditor,
-  onOpenDetail,
-  onCreateContent,
-  onUpdateContentStatus,
-  currentUserKey = "",
-  hasManageAccess = false,
-  canCreate = false,
-}) {
+export default function ContentPage() {
+  const navigate = useNavigate();
+  const { currentUserKey, canManageContent } = useAuth();
+  const { examples, openContentDetail, openContentEditor, createContent, updateContentStatus } = useAppData();
+
+  const hasManageAccess = canManageContent;
+  const canCreate = canManageContent;
+
   const canManageExample = (example) => hasManageAccess || isItemOwner(example, currentUserKey);
   const visibleExamples = examples.filter((example) =>
     canViewItemByStatus({ item: example, currentUserKey, hasManageAccess }),
   );
+
+  const handleOpenEditor = (example) => {
+    const item = openContentEditor(example);
+    if (!item) return;
+    navigate(`/content/${example.id}/edit`);
+  };
+
+  const handleOpenDetail = (example) => {
+    const result = openContentDetail(example);
+    if (result?.blocked) return;
+    navigate(`/content/${example.id}`);
+  };
+
+  const handleCreateContent = async () => {
+    const result = await createContent();
+    if (result?.success && result.saved) {
+      navigate(`/content/${result.saved.id}/edit`);
+    }
+  };
 
   return (
     <section className="workspace-content content-theme-exam">
@@ -26,7 +46,7 @@ export default function ContentPage({
       {canCreate ? (
         <div className="section-row">
           <p className="section-label">รายการคอร์ส</p>
-          <button type="button" className="create-content-button" onClick={onCreateContent}>
+          <button type="button" className="create-content-button" onClick={handleCreateContent}>
             + สร้างเนื้อหา
           </button>
         </div>
@@ -45,7 +65,7 @@ export default function ContentPage({
                   <StatusSelect
                     value={example.status ?? "active"}
                     options={STATUS_OPTIONS}
-                    onChange={(status) => onUpdateContentStatus?.(example.id, status)}
+                    onChange={(status) => updateContentStatus(example.id, status)}
                   />
                 ) : null}
                 {canManageExample(example) ? (
@@ -53,7 +73,7 @@ export default function ContentPage({
                     type="button"
                     className="gear-button"
                     aria-label={`จัดการ ${example.title}`}
-                    onClick={() => onOpenEditor(example)}
+                    onClick={() => handleOpenEditor(example)}
                   >
                     ⚙
                   </button>
@@ -69,7 +89,7 @@ export default function ContentPage({
                 ))}
               </div>
             ) : null}
-            <button type="button" className="enter-button" onClick={() => onOpenDetail(example)}>
+            <button type="button" className="enter-button" onClick={() => handleOpenDetail(example)}>
               ดูรายละเอียด
             </button>
           </article>

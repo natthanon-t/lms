@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useEscapeKey } from "../hooks/useEscapeKey";
 import { getInitials } from "../utils/avatar";
+import { useAuth } from "../contexts/AuthContext";
+import { useAppData } from "../contexts/AppDataContext";
 
 const statusOptions = ["active", "inactive"];
 const employeeCodePattern = /^2026-[A-Z0-9]{2}-\d{4}$/;
@@ -12,18 +14,9 @@ function getRoleKey(role) {
   return "user";
 }
 
-export default function UserManagementPage({
-  users,
-  roleOptions = [],
-  currentUserKey = "",
-  onUpdateUserRole,
-  onUpdateUserStatus,
-  onUpdateUserProfile,
-  defaultPassword,
-  onUpdateDefaultPassword,
-  onResetUserPassword,
-  onCreateUser,
-}) {
+export default function UserManagementPage() {
+  const { currentUserKey, users, adminRoles: roleOptions, defaultUserPassword: defaultPassword, handleUpdateDefaultPassword: onUpdateDefaultPassword } = useAuth();
+  const { handleUpdateUserRole: onUpdateUserRole, handleUpdateUserStatus: onUpdateUserStatus, handleUpdateUserProfileByAdmin: onUpdateUserProfile, handleResetUserPassword: onResetUserPassword, handleCreateUser: onCreateUser } = useAppData();
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");

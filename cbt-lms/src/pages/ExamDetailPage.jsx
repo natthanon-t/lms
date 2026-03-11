@@ -1,13 +1,56 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { useAppData } from "../contexts/AppDataContext";
 
-export default function ExamDetailPage({ exam, onBack, onStartExam, userAttempts = [], isLoggedIn = false }) {
+export default function ExamDetailPage() {
+  const { examId } = useParams();
+  const navigate = useNavigate();
+  const { currentUserKey } = useAuth();
+  const { examDraft, currentExamAttempts, openExam, examBank, loadCurrentExamAttempts } = useAppData();
   const [orderMode, setOrderMode] = useState("sequential");
   const [showHistory, setShowHistory] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const maxAttempts = Number(exam.maxAttempts ?? 0);
+  const isLoggedIn = Boolean(currentUserKey);
+
+  // Load exam if not in context or doesn't match
+  useEffect(() => {
+    const alreadyLoaded = examDraft?.sourceId === examId || examDraft?.id === examId;
+    if (!alreadyLoaded) {
+      const fromBank = examBank.find((e) => e.id === examId);
+      if (fromBank) {
+        setLoading(true);
+        openExam(fromBank).then(() => setLoading(false));
+      }
+    }
+    if (examId && currentUserKey) {
+      void loadCurrentExamAttempts(examId);
+    }
+  }, [examId, currentUserKey, examDraft?.sourceId, examDraft?.id, examBank, openExam, loadCurrentExamAttempts]);
+
+  const exam = examDraft;
+  const userAttempts = currentExamAttempts;
+
+  const maxAttempts = Number(exam?.maxAttempts ?? 0);
   const attemptCount = userAttempts.length;
   const hasReachedMax = maxAttempts > 0 && attemptCount >= maxAttempts;
   const remainingAttempts = maxAttempts > 0 ? maxAttempts - attemptCount : null;
+
+  const handleStartExam = () => {
+    navigate(`/exam/${examId}/take`, { state: { orderMode } });
+  };
+
+  if (loading || !exam?.title) {
+    return (
+      <section className="workspace-content">
+        <header className="content-header">
+          <h1>กำลังโหลดข้อสอบ</h1>
+          <p>Loading...</p>
+        </header>
+      </section>
+    );
+  }
 
   if (showHistory) {
     return (
@@ -99,7 +142,7 @@ export default function ExamDetailPage({ exam, onBack, onStartExam, userAttempts
           <h1>รายละเอียดข้อสอบ</h1>
           <p>ตรวจสอบรายละเอียดก่อนเริ่มทำข้อสอบ</p>
         </div>
-        <button type="button" className="back-button" onClick={onBack}>
+        <button type="button" className="back-button" onClick={() => navigate("/exam")}>
           กลับหน้าข้อสอบ
         </button>
       </header>
@@ -160,7 +203,7 @@ export default function ExamDetailPage({ exam, onBack, onStartExam, userAttempts
           <button
             type="button"
             className="enter-button"
-            onClick={() => onStartExam(orderMode)}
+            onClick={handleStartExam}
             disabled={!isLoggedIn || hasReachedMax}
           >
             {!isLoggedIn ? "กรุณา Login ก่อนเริ่มสอบ" : hasReachedMax ? "ถึงจำนวนครั้งสูงสุดแล้ว" : "เริ่มสอบ"}
