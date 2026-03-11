@@ -89,12 +89,26 @@ export const deleteExamApi = async (id) =>
 
 // ── Attempts ──────────────────────────────────────────────────────────────────
 
-export const saveExamAttemptApi = async (examId, { correctCount, totalQuestions, scorePercent, domainStats, answers }) =>
+export const saveExamAttemptApi = async (examId, answers) =>
   request(`/api/exams/${encodeURIComponent(examId)}/attempts`, {
     method: "POST",
     headers: authHeaders(),
-    body: JSON.stringify({ correctCount, totalQuestions, scorePercent, domainStats, answers }),
+    body: JSON.stringify({ answers }),
   });
+
+export const fetchMyExamAttemptsApi = async () => {
+  const payload = await request("/api/exams/me/attempts", {
+    headers: authHeaders(),
+  });
+  return Array.isArray(payload?.attempts) ? payload.attempts : [];
+};
+
+export const fetchMyExamAttemptDetailsApi = async (attemptId) => {
+  const payload = await request(`/api/exams/me/attempts/${encodeURIComponent(attemptId)}`, {
+    headers: authHeaders(),
+  });
+  return Array.isArray(payload?.details) ? payload.details : [];
+};
 
 export const fetchExamAttemptsApi = async (examId) => {
   const payload = await request(`/api/exams/${encodeURIComponent(examId)}/attempts`, {

@@ -14,6 +14,7 @@ import ExamPage from "./pages/ExamPage";
 import ExamDetailPage from "./pages/ExamDetailPage";
 import ExamEditorPage from "./pages/ExamEditorPage";
 import ExamTakingPage from "./pages/ExamTakingPage";
+import ExamResultPage from "./pages/ExamResultPage";
 import ExamHistoryPage from "./pages/ExamHistoryPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import LobbyPage from "./pages/LobbyPage";
@@ -136,6 +137,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <ExamTakingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/exam/:examId/result"
+            element={
+              <ProtectedRoute>
+                <ExamResultPage />
               </ProtectedRoute>
             }
           />
