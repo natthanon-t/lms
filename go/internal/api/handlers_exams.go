@@ -199,30 +199,51 @@ func (h *Handler) SaveExamAttempt(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
 	}
 
-	domainStats := make(map[string]data.ExamDomainStat, len(req.DomainStats))
-	for domain, stat := range req.DomainStats {
-		domainStats[domain] = data.ExamDomainStat{Correct: stat.Correct, Total: stat.Total}
-	}
-
-	answers := make([]data.ExamAnswerInput, 0, len(req.Answers))
+	rawAnswers := make([]struct{ QuestionID, Selected string }, 0, len(req.Answers))
 	for _, ans := range req.Answers {
-		answers = append(answers, data.ExamAnswerInput{
+		rawAnswers = append(rawAnswers, struct{ QuestionID, Selected string }{
 			QuestionID: ans.QuestionID,
 			Selected:   ans.Selected,
-			IsCorrect:  ans.IsCorrect, // *bool — nil for text-type questions
 		})
 	}
 
-	attempt, err := data.SaveExamAttempt(
-		examID, username,
-		req.CorrectCount, req.TotalQuestions, req.ScorePercent,
-		domainStats, answers,
-	)
+	attempt, details, err := data.GradeAndSaveExamAttempt(examID, username, rawAnswers)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot save attempt")
 	}
+	return c.JSON(fiber.Map{"attempt": attempt, "details": details})
+}
 
-	return c.JSON(fiber.Map{"attempt": attempt})
+func (h *Handler) GetMyExamAttempts(c *fiber.Ctx) error {
+	username, err := auth.CurrentUsername(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
+	}
+	attempts, err := data.GetMyAllExamAttempts(username)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot get attempts")
+	}
+	return c.JSON(fiber.Map{"attempts": attempts})
+}
+
+func (h *Handler) GetMyExamAttemptDetails(c *fiber.Ctx) error {
+	username, err := auth.CurrentUsername(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
+	}
+	idStr := strings.TrimSpace(c.Params("id"))
+	attemptID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil || attemptID <= 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid attempt id")
+	}
+	details, err := data.GetMyExamAttemptDetails(username, attemptID)
+	if err != nil {
+		if errors.Is(err, data.ErrForbidden) {
+			return fiber.NewError(fiber.StatusForbidden, "not your attempt")
+		}
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot get attempt details")
+	}
+	return c.JSON(fiber.Map{"details": details})
 }
 
 func (h *Handler) GetAllExamAttemptsAdmin(c *fiber.Ctx) error {

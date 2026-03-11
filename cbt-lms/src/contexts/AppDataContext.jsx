@@ -251,28 +251,14 @@ export function AppDataProvider({ children }) {
   };
 
   const handleSaveAttempt = useCallback(
-    async (result) => {
-      if (!currentUserKey || !examDraft.sourceId) return;
-      const domainStatsMap = {};
-      result.domainStats.forEach(({ domain, correct, total }) => {
-        domainStatsMap[domain] = { correct, total };
-      });
-      const answers = result.details.map(({ question, selected, isCorrect }) => ({
-        questionId: question.id,
-        selected: selected ?? "",
-        isCorrect,
-      }));
+    async (rawAnswers) => {
+      if (!currentUserKey || !examDraft.sourceId) return null;
       try {
-        await saveExamAttemptApi(examDraft.sourceId, {
-          correctCount: result.correctCount,
-          totalQuestions: result.totalQuestions,
-          scorePercent: result.scorePercent,
-          domainStats: domainStatsMap,
-          answers,
-        });
+        const payload = await saveExamAttemptApi(examDraft.sourceId, rawAnswers);
         void loadCurrentExamAttempts(examDraft.sourceId);
+        return payload; // { attempt, details }
       } catch {
-        // noop
+        return null;
       }
     },
     [currentUserKey, examDraft.sourceId, loadCurrentExamAttempts],

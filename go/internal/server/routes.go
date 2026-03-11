@@ -114,6 +114,8 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	examManagement.Delete("/:id", handler.DeleteExam)
 
 	examHistory := protected.Group("/exams", auth.RequirePermissions(auth.PermissionSystemExamHistory))
+	examHistory.Get("/me/attempts", handler.GetMyExamAttempts)
+	examHistory.Get("/me/attempts/:id", handler.GetMyExamAttemptDetails)
 	examHistory.Get("/:id/attempts", handler.GetExamAttempts)
 
 	examAttempts := protected.Group("/exams", auth.RequirePermissions(auth.PermissionExamTake))

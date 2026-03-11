@@ -112,7 +112,6 @@ export default function ExamTakingPage() {
   const draft = examDraft;
   const orderMode = location.state?.orderMode ?? "sequential";
   const durationSeconds = (draft?.defaultTime ?? 0) * 60;
-  const onEndExam = () => navigate(`/exam/${examId}`);
   const onSaveAttempt = handleSaveAttempt;
   const selectedQuestions = useMemo(() => {
     return pickQuestionsByDomainPercentage(draft.questions, draft.numberOfQuestions, draft.domainPercentages);
@@ -126,76 +125,111 @@ export default function ExamTakingPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [remainingSeconds, setRemainingSeconds] = useState(durationSeconds);
-  const [submittedResult, setSubmittedResult] = useState(null);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     setCurrentIndex(0);
     setAnswers({});
     setRemainingSeconds(durationSeconds);
-    setSubmittedResult(null);
+    setSubmitting(false);
   }, [draft.sourceId, orderMode, durationSeconds]);
 
   const totalQuestions = orderedQuestions.length;
 
-  const submitExam = useCallback(() => {
-    const details = orderedQuestions.map((question, index) => {
-      const selected = answers[question.id] ?? null;
-      const isTextType = question.questionType === "text";
-      const isCorrect = isTextType ? null : normalizeText(selected) === normalizeText(question.answerKey);
+  const submitExam = useCallback(async () => {
+    setSubmitting(true);
+    const rawAnswers = orderedQuestions.map((question) => ({
+      questionId: question.id,
+      selected: answers[question.id] ?? "",
+    }));
+    const payload = await onSaveAttempt(rawAnswers);
 
-      return {
-        index: index + 1,
-        question,
-        selected,
-        isCorrect,
-      };
-    });
+    if (!payload) {
+      // fallback: grade client-side if backend fails
+      const details = orderedQuestions.map((question, index) => {
+        const selected = answers[question.id] ?? null;
+        const isTextType = question.questionType === "text";
+        const isCorrect = isTextType ? null : normalizeText(selected) === normalizeText(question.answerKey);
+        return { index: index + 1, question, selected, isCorrect };
+      });
+      const gradedDetails = details.filter((item) => item.isCorrect !== null);
+      const correctCount = gradedDetails.filter((item) => item.isCorrect).length;
+      const gradedTotal = gradedDetails.length;
+      const scorePercent = gradedTotal > 0 ? Math.round((correctCount / gradedTotal) * 100) : 0;
+      const domainStatsMap = {};
+      details.forEach((item) => {
+        if (item.isCorrect === null) return;
+        const domain = item.question.domain || "-";
+        if (!domainStatsMap[domain]) domainStatsMap[domain] = { domain, total: 0, correct: 0 };
+        domainStatsMap[domain].total += 1;
+        if (item.isCorrect) domainStatsMap[domain].correct += 1;
+      });
+      const domainStats = Object.values(domainStatsMap)
+        .map((e) => ({ ...e, percent: e.total > 0 ? Math.round((e.correct / e.total) * 100) : 0 }))
+        .sort((a, b) => a.domain.localeCompare(b.domain));
+      navigate(`/exam/${examId}/result`, {
+        state: { result: { correctCount, totalQuestions, gradedTotal, scorePercent, details, domainStats }, examTitle: draft.title },
+        replace: true,
+      });
+      return;
+    }
 
-    const gradedDetails = details.filter((item) => item.isCorrect !== null);
-    const correctCount = gradedDetails.filter((item) => item.isCorrect).length;
-    const gradedTotal = gradedDetails.length;
-    const scorePercent = gradedTotal > 0 ? Math.round((correctCount / gradedTotal) * 100) : 0;
-    const domainStatsMap = details.reduce((acc, item) => {
-      if (item.isCorrect === null) {
-        return acc;
-      }
+    // Use backend-graded result
+    const { attempt, details: backendDetails } = payload;
+    const details = (backendDetails ?? []).map((item, index) => ({
+      index: index + 1,
+      question: {
+        id: item.questionId,
+        domain: item.domain,
+        questionType: item.questionType,
+        question: item.question,
+        choices: item.choices,
+        answerKey: item.answerKey,
+        explanation: item.explanation,
+      },
+      selected: item.selected || null,
+      isCorrect: item.isCorrect,
+    }));
+    const gradedDetails = details.filter((d) => d.isCorrect !== null);
+    const domainStatsMap = {};
+    gradedDetails.forEach((item) => {
       const domain = item.question.domain || "-";
-      if (!acc[domain]) {
-        acc[domain] = { domain, total: 0, correct: 0 };
-      }
-      acc[domain].total += 1;
-      if (item.isCorrect) {
-        acc[domain].correct += 1;
-      }
-      return acc;
-    }, {});
+      if (!domainStatsMap[domain]) domainStatsMap[domain] = { domain, total: 0, correct: 0 };
+      domainStatsMap[domain].total += 1;
+      if (item.isCorrect) domainStatsMap[domain].correct += 1;
+    });
     const domainStats = Object.values(domainStatsMap)
-      .map((entry) => ({
-        ...entry,
-        percent: entry.total > 0 ? Math.round((entry.correct / entry.total) * 100) : 0,
-      }))
+      .map((e) => ({ ...e, percent: e.total > 0 ? Math.round((e.correct / e.total) * 100) : 0 }))
       .sort((a, b) => a.domain.localeCompare(b.domain));
-
-    const result = {
-      correctCount,
-      totalQuestions,
-      gradedTotal,
-      scorePercent,
-      details,
-      domainStats,
-    };
-    setSubmittedResult(result);
-    onSaveAttempt(result);
-  }, [answers, orderedQuestions, totalQuestions, onSaveAttempt]);
+    navigate(`/exam/${examId}/result`, {
+      state: {
+        result: {
+          attemptId: attempt?.id ?? null,
+          correctCount: attempt?.correctCount ?? 0,
+          totalQuestions: attempt?.totalQuestions ?? details.length,
+          gradedTotal: gradedDetails.length,
+          scorePercent: attempt?.scorePercent ?? 0,
+          details,
+          domainStats,
+        },
+        examTitle: draft.title,
+      },
+      replace: true,
+    });
+  }, [answers, orderedQuestions, totalQuestions, onSaveAttempt, navigate, examId, draft.title]);
 
   useEffect(() => {
-    if (submittedResult) {
+    if (submitting) {
       return undefined;
     }
 
-    if (remainingSeconds <= 0) {
-      submitExam();
+    if (durationSeconds > 0 && remainingSeconds <= 0) {
+      void submitExam();
+      return undefined;
+    }
+
+    if (durationSeconds <= 0) {
       return undefined;
     }
 
@@ -204,9 +238,20 @@ export default function ExamTakingPage() {
     }, 1000);
 
     return () => clearInterval(timerId);
-  }, [remainingSeconds, submittedResult, submitExam]);
+  }, [durationSeconds, remainingSeconds, submitting, submitExam]);
 
   const currentQuestion = orderedQuestions[currentIndex];
+
+  if (submitting) {
+    return (
+      <section className="workspace-content">
+        <header className="content-header">
+          <h1>เข้าสอบ: {draft.title}</h1>
+          <p>กำลังตรวจข้อสอบ...</p>
+        </header>
+      </section>
+    );
+  }
 
   if (!currentQuestion) {
     return (
@@ -223,91 +268,6 @@ export default function ExamTakingPage() {
     setShowEndConfirm(true);
   };
 
-  if (submittedResult) {
-    return (
-      <section className="workspace-content">
-        <header className="content-header editor-head">
-          <div>
-            <h1>ผลการสอบ: {draft.title}</h1>
-            <p>
-              คะแนน {submittedResult.correctCount}/{submittedResult.gradedTotal} ({submittedResult.scorePercent}%)
-              {submittedResult.gradedTotal < submittedResult.totalQuestions ? (
-                <span style={{ fontSize: "0.85rem", color: "var(--text-muted, #888)", marginLeft: "0.5rem" }}>
-                  (รวม {submittedResult.totalQuestions} ข้อ, {submittedResult.totalQuestions - submittedResult.gradedTotal} ข้อพิมพ์ตอบ)
-                </span>
-              ) : null}
-            </p>
-          </div>
-          <button type="button" className="back-button" onClick={onEndExam}>
-            กลับหน้าข้อสอบ
-          </button>
-        </header>
-
-        <div className="result-list">
-          <article className="info-card result-card">
-            <h3>สถิติราย DomainOfKnowledge</h3>
-            <div className="domain-result-list">
-              {submittedResult.domainStats.map((entry) => (
-                <div key={entry.domain} className="domain-result-item">
-                  <div className="domain-result-head">
-                    <p>{entry.domain}</p>
-                    <p>
-                      {entry.correct}/{entry.total}
-                    </p>
-                  </div>
-                  <div className="domain-result-bar">
-                    <div className="domain-result-fill" style={{ width: `${entry.percent}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </article>
-
-          {submittedResult.details.map((item) => (
-            <article key={item.question.id} className="info-card result-card">
-              <h3>
-                ข้อ {item.index}: {item.question.question}
-              </h3>
-              {item.question.questionType === "text" ? (
-                <>
-                  <p>
-                    <strong>คำตอบที่พิมพ์:</strong>{" "}
-                    {item.selected ? (
-                      <span style={{ whiteSpace: "pre-wrap" }}>{item.selected}</span>
-                    ) : (
-                      <em style={{ color: "var(--text-muted, #888)" }}>ไม่ได้ตอบ</em>
-                    )}
-                  </p>
-                  <p className="result-pending">ข้อพิมพ์ตอบอิสระ — ไม่นับคะแนนอัตโนมัติ</p>
-                  {item.question.explanation ? (
-                    <p>
-                      <strong>แนวคำตอบ:</strong> {item.question.explanation}
-                    </p>
-                  ) : null}
-                </>
-              ) : (
-                <>
-                  <p>
-                    <strong>คำตอบที่เลือก:</strong> {item.selected ?? "ไม่ได้ตอบ"}
-                  </p>
-                  <p>
-                    <strong>เฉลย:</strong> {item.question.answerKey}
-                  </p>
-                  <p className={item.isCorrect ? "result-correct" : "result-wrong"}>
-                    {item.isCorrect ? "ถูก" : "ผิด"}
-                  </p>
-                  <p>
-                    <strong>คำอธิบาย:</strong> {item.question.explanation}
-                  </p>
-                </>
-              )}
-            </article>
-          ))}
-        </div>
-      </section>
-    );
-  }
-
   return (
     <section className="workspace-content">
       {showEndConfirm && (
@@ -317,7 +277,7 @@ export default function ExamTakingPage() {
           confirmLabel="สิ้นสุดการสอบ"
           cancelLabel="ยกเลิก"
           confirmDanger
-          onConfirm={() => { setShowEndConfirm(false); submitExam(); }}
+          onConfirm={() => { setShowEndConfirm(false); void submitExam(); }}
           onCancel={() => setShowEndConfirm(false)}
         />
       )}
@@ -401,7 +361,7 @@ export default function ExamTakingPage() {
             ถัดไป
           </button>
           {currentIndex === totalQuestions - 1 ? (
-            <button type="button" className="submit-exam-button" onClick={submitExam}>
+            <button type="button" className="submit-exam-button" onClick={() => void submitExam()}>
               ส่งข้อสอบ
             </button>
           ) : null}

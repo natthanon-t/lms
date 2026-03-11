@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   fetchAllExamAttemptsAdminApi,
   fetchExamAttemptDetailsAdminApi,
-  fetchExamAttemptsApi,
-  fetchExamsApi,
+  fetchMyExamAttemptsApi,
+  fetchMyExamAttemptDetailsApi,
 } from "../services/examApiService";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -31,14 +31,14 @@ function formatDate(dateStr) {
   });
 }
 
-function AnswerModal({ attempt, onClose }) {
+function AnswerModal({ attempt, fetchDetails, onClose }) {
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
     setLoading(true);
-    void fetchExamAttemptDetailsAdminApi(attempt.id)
+    void fetchDetails(attempt.id)
       .then((items) => {
         if (mounted) {
           setDetails(items);
@@ -57,7 +57,7 @@ function AnswerModal({ attempt, onClose }) {
     return () => {
       mounted = false;
     };
-  }, [attempt.id]);
+  }, [attempt.id, fetchDetails]);
 
   return (
     <div className="exam-answer-overlay" onClick={onClose}>
@@ -150,33 +150,20 @@ export default function ExamHistoryPage() {
         return;
       }
 
-      const exams = await fetchExamsApi();
-      const attemptsByExam = await Promise.all(
-        exams.map(async (exam) => {
-          try {
-            const items = await fetchExamAttemptsApi(exam.id);
-            return items.map((attempt) => ({
-              id: attempt.attemptId,
-              examTitle: exam.title,
-              employeeCode: "",
-              name: "ฉัน",
-              correctCount: attempt.correctCount,
-              totalQuestions: attempt.totalQuestions,
-              scorePercent: attempt.scorePercent,
-              startedAt: attempt.date,
-              finishedAt: attempt.date,
-            }));
-          } catch {
-            return [];
-          }
-        }),
-      );
-
+      const data = await fetchMyExamAttemptsApi();
       if (mounted) {
         setAttempts(
-          attemptsByExam
-            .flat()
-            .sort((a, b) => new Date(b.finishedAt ?? b.startedAt ?? 0) - new Date(a.finishedAt ?? a.startedAt ?? 0)),
+          data.map((attempt) => ({
+            id: String(attempt.id),
+            examTitle: attempt.examTitle ?? attempt.examId ?? "—",
+            employeeCode: "",
+            name: "ฉัน",
+            correctCount: attempt.correctCount,
+            totalQuestions: attempt.totalQuestions,
+            scorePercent: attempt.scorePercent,
+            startedAt: attempt.startedAt,
+            finishedAt: attempt.finishedAt,
+          }))
         );
       }
     };
@@ -223,7 +210,7 @@ export default function ExamHistoryPage() {
   const avgScore = filtered.length
     ? Math.round(filtered.reduce((sum, attempt) => sum + attempt.scorePercent, 0) / filtered.length)
     : 0;
-  const totalColumns = mode === "management" ? 9 : 6;
+  const totalColumns = mode === "management" ? 9 : 7;
 
   return (
     <section className="workspace-content">
@@ -273,7 +260,7 @@ export default function ExamHistoryPage() {
               <th style={{ textAlign: "center" }}>ถูก / ทั้งหมด</th>
               <th>ผล</th>
               <th>วันที่ทำ</th>
-              {mode === "management" ? <th></th> : null}
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -296,17 +283,15 @@ export default function ExamHistoryPage() {
                   <td style={{ textAlign: "center" }}>{row.correctCount} / {row.totalQuestions}</td>
                   <td><ResultBadge score={row.scorePercent} /></td>
                   <td>{formatDate(row.finishedAt ?? row.startedAt)}</td>
-                  {mode === "management" ? (
-                    <td>
-                      <button
-                        type="button"
-                        className="view-answers-btn"
-                        onClick={() => setSelectedAttempt(row)}
-                      >
-                        ดูคำตอบ
-                      </button>
-                    </td>
-                  ) : null}
+                  <td>
+                    <button
+                      type="button"
+                      className="view-answers-btn"
+                      onClick={() => setSelectedAttempt(row)}
+                    >
+                      ดูคำตอบ
+                    </button>
+                  </td>
                 </tr>
               ))
             )}
@@ -314,8 +299,12 @@ export default function ExamHistoryPage() {
         </table>
       </div>
 
-      {mode === "management" && selectedAttempt ? (
-        <AnswerModal attempt={selectedAttempt} onClose={() => setSelectedAttempt(null)} />
+      {selectedAttempt ? (
+        <AnswerModal
+          attempt={selectedAttempt}
+          fetchDetails={mode === "management" ? fetchExamAttemptDetailsAdminApi : fetchMyExamAttemptDetailsApi}
+          onClose={() => setSelectedAttempt(null)}
+        />
       ) : null}
     </section>
   );

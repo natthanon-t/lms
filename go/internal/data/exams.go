@@ -561,6 +561,141 @@ func GetExamAttemptDetails(attemptID int64) ([]ExamAttemptAnswer, error) {
 	return details, rows.Err()
 }
 
+// GetMyExamAttemptDetails returns the per-question answers for an attempt owned by the given user.
+// Returns ErrForbidden if the attempt does not belong to the user.
+func GetMyExamAttemptDetails(username string, attemptID int64) ([]ExamAttemptAnswer, error) {
+	var owner string
+	if err := db.QueryRow(`SELECT username FROM exam_attempts WHERE id = $1`, attemptID).Scan(&owner); err != nil {
+		return nil, err
+	}
+	if owner != username {
+		return nil, ErrForbidden
+	}
+	return GetExamAttemptDetails(attemptID)
+}
+
+// GetMyAllExamAttempts returns all exam attempts for a user across all exams, with exam title.
+func GetMyAllExamAttempts(username string) ([]AdminExamAttempt, error) {
+	rows, err := db.Query(`
+		SELECT ea.id, ea.correct_count, ea.total_questions, ea.score_percent::float8,
+		       ea.started_at, ea.finished_at, e.title
+		FROM exam_attempts ea
+		JOIN exams e ON e.id = ea.exam_id
+		WHERE ea.username = $1
+		ORDER BY ea.started_at DESC`,
+		username,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	attempts := make([]AdminExamAttempt, 0)
+	for rows.Next() {
+		var a AdminExamAttempt
+		var finishedAt sql.NullTime
+		if err := rows.Scan(
+			&a.ID, &a.CorrectCount, &a.TotalQuestions, &a.ScorePercent,
+			&a.StartedAt, &finishedAt, &a.ExamTitle,
+		); err != nil {
+			continue
+		}
+		if finishedAt.Valid {
+			a.FinishedAt = &finishedAt.Time
+		}
+		a.Username = username
+		attempts = append(attempts, a)
+	}
+	return attempts, rows.Err()
+}
+
+// GradeAndSaveExamAttempt fetches exam questions, grades the submitted answers, saves the attempt, and returns graded details.
+func GradeAndSaveExamAttempt(examID, username string, rawAnswers []struct{ QuestionID, Selected string }) (ExamAttempt, []ExamAttemptAnswer, error) {
+	// 1. Load exam questions with answer keys
+	qRows, err := db.Query(`
+		SELECT id, domain, COALESCE(question_type,'multiple_choice'), question,
+		       choice_a, choice_b, choice_c, choice_d, answer_key, explanation
+		FROM exam_questions WHERE exam_id = $1 ORDER BY id`, examID)
+	if err != nil {
+		return ExamAttempt{}, nil, err
+	}
+	defer qRows.Close()
+
+	type questionRecord struct {
+		ID           string
+		Domain       string
+		QuestionType string
+		Question     string
+		Choices      []string
+		AnswerKey    string
+		Explanation  string
+	}
+	questions := make(map[string]questionRecord)
+	for qRows.Next() {
+		var q questionRecord
+		var choiceA, choiceB, choiceC, choiceD string
+		if err := qRows.Scan(&q.ID, &q.Domain, &q.QuestionType, &q.Question,
+			&choiceA, &choiceB, &choiceC, &choiceD, &q.AnswerKey, &q.Explanation); err != nil {
+			continue
+		}
+		q.Choices = []string{choiceA, choiceB, choiceC, choiceD}
+		questions[q.ID] = q
+	}
+
+	// 2. Grade only the submitted answers (not all questions in the exam)
+	var answers []ExamAnswerInput
+	var details []ExamAttemptAnswer
+	domainStats := make(map[string]ExamDomainStat)
+	correctCount := 0
+	totalGraded := 0
+
+	for _, raw := range rawAnswers {
+		q, ok := questions[raw.QuestionID]
+		if !ok {
+			continue // skip if question not found in this exam
+		}
+		var isCorrect *bool
+		if q.QuestionType != "text" && strings.TrimSpace(q.AnswerKey) != "" {
+			graded := strings.EqualFold(strings.TrimSpace(raw.Selected), strings.TrimSpace(q.AnswerKey))
+			isCorrect = &graded
+			totalGraded++
+			if graded {
+				correctCount++
+			}
+			ds := domainStats[q.Domain]
+			ds.Total++
+			if graded {
+				ds.Correct++
+			}
+			domainStats[q.Domain] = ds
+		}
+		answers = append(answers, ExamAnswerInput{QuestionID: raw.QuestionID, Selected: raw.Selected, IsCorrect: isCorrect})
+		details = append(details, ExamAttemptAnswer{
+			QuestionID:   raw.QuestionID,
+			Domain:       q.Domain,
+			QuestionType: q.QuestionType,
+			Question:     q.Question,
+			Choices:      q.Choices,
+			AnswerKey:    q.AnswerKey,
+			Explanation:  q.Explanation,
+			Selected:     raw.Selected,
+			IsCorrect:    isCorrect,
+		})
+	}
+
+	totalQuestions := len(rawAnswers)
+	var scorePercent float64
+	if totalGraded > 0 {
+		scorePercent = float64(correctCount) / float64(totalGraded) * 100
+	}
+
+	attempt, err := SaveExamAttempt(examID, username, correctCount, totalQuestions, scorePercent, domainStats, answers)
+	if err != nil {
+		return ExamAttempt{}, nil, err
+	}
+	return attempt, details, nil
+}
+
 // GetAllExamAttemptsAdmin returns paginated exam attempts across all users for admin view.
 func GetAllExamAttemptsAdmin(limit, offset int) ([]AdminExamAttempt, int, error) {
 	var total int

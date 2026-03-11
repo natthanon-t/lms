@@ -30,20 +30,10 @@ type examStatusRequest struct {
 }
 
 type examAttemptRequest struct {
-	CorrectCount   int                          `json:"correctCount"`
-	TotalQuestions int                          `json:"totalQuestions"`
-	ScorePercent   float64                      `json:"scorePercent"`
-	DomainStats    map[string]examDomainStatBody `json:"domainStats"`
-	Answers        []examAnswerBody             `json:"answers"`
-}
-
-type examDomainStatBody struct {
-	Correct int `json:"correct"`
-	Total   int `json:"total"`
+	Answers []examAnswerBody `json:"answers"`
 }
 
 type examAnswerBody struct {
 	QuestionID string `json:"questionId"`
 	Selected   string `json:"selected"`
-	IsCorrect  *bool  `json:"isCorrect"`
 }
