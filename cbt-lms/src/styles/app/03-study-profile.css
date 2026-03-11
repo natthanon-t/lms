@@ -453,7 +453,7 @@
 
 .skill-progress span {
   display: block;
-  height: calc(100vh - 84px);
+  height: 100%;
   background: linear-gradient(90deg, #3f8cff, #2454b8);
 }
 
@@ -508,6 +508,9 @@
   align-items: flex-start;
   gap: 0;
   flex-wrap: wrap;
+  border-top: 4px solid #2f66da;
+  position: relative;
+  overflow: hidden;
 }
 
 .profile-left-panel {
@@ -533,18 +536,21 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  position: relative;
+  z-index: 2;
 }
 
 .profile-avatar-circle {
-  width: 80px;
-  height: 80px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   overflow: hidden;
-  border: 2px solid #d5e0f7;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
   flex-shrink: 0;
 }
 
@@ -559,7 +565,7 @@
 }
 
 .profile-avatar-initials {
-  font-size: 1.7rem;
+  font-size: 2rem;
   font-weight: 800;
   color: #fff;
   letter-spacing: 0.02em;
@@ -675,3 +681,121 @@
   border-radius: 2px;
 }
 
+/* ── Profile stat strip ───────────────────────────────────────────────────── */
+.profile-stat-strip {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.profile-stat-box {
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid;
+}
+
+.profile-stat-box-blue   { background: #eff6ff; border-color: #bfdbfe; }
+.profile-stat-box-green  { background: #f0fdf4; border-color: #bbf7d0; }
+.profile-stat-box-purple { background: #faf5ff; border-color: #e9d5ff; }
+.profile-stat-box-orange { background: #fff7ed; border-color: #fed7aa; }
+
+.profile-stat-num {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #1a2f57;
+}
+
+.profile-stat-lbl {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6b8ab8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── Acquired skill tier styling ──────────────────────────────────────────── */
+.acquired-skill-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.skill-tier-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 2px 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.skill-tier-high .skill-tier-badge,
+.skill-tier-badge.skill-tier-high {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.skill-tier-mid .skill-tier-badge,
+.skill-tier-badge.skill-tier-mid {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.skill-tier-low .skill-tier-badge,
+.skill-tier-badge.skill-tier-low {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.acquired-skill-item.skill-tier-high {
+  border-color: #86efac;
+}
+
+.acquired-skill-item.skill-tier-mid {
+  border-color: #fde047;
+}
+
+.skill-tier-high .power-progress span { background: linear-gradient(90deg, #22c55e, #15803d); }
+.skill-tier-mid  .power-progress span { background: linear-gradient(90deg, #fbbf24, #d97706); }
+.skill-tier-low  .power-progress span { background: linear-gradient(90deg, #60a5fa, #2563eb); }
+
+/* ── Profile panel title ──────────────────────────────────────────────────── */
+.profile-panel-title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #45608f;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e8eef8;
+  margin-bottom: 4px;
+}
+
+.acquired-skill-box-title {
+  margin: 0 0 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #45608f;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 860px) {
+  .profile-stat-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-stat-strip {
+    grid-template-columns: 1fr 1fr;
+  }
+}

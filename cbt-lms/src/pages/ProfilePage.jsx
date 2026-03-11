@@ -657,9 +657,29 @@ export default function ProfilePage() {
         </div>
       ) : null}
 
+      {/* Stats strip */}
+      <div className="profile-stat-strip">
+        <div className="profile-stat-box profile-stat-box-blue">
+          <span className="profile-stat-num">{activeDaysThisYear}</span>
+          <span className="profile-stat-lbl">วันที่ใช้งาน (ปีนี้)</span>
+        </div>
+        <div className="profile-stat-box profile-stat-box-green">
+          <span className="profile-stat-num">{completedTrackedCourses}</span>
+          <span className="profile-stat-lbl">คอร์สที่เรียนจบ</span>
+        </div>
+        <div className="profile-stat-box profile-stat-box-purple">
+          <span className="profile-stat-num">{trackedCourseCount}</span>
+          <span className="profile-stat-lbl">คอร์สที่มี Activity</span>
+        </div>
+        <div className="profile-stat-box profile-stat-box-orange">
+          <span className="profile-stat-num">{totalSkillScore}</span>
+          <span className="profile-stat-lbl">คะแนนทักษะรวม</span>
+        </div>
+      </div>
+
       <section className="profile-dashboard-grid">
         <article className="info-card profile-projects-panel">
-          <h3>COURSES</h3>
+          <h3 className="profile-panel-title">คอร์สเรียน</h3>
           {(() => {
             const lv = getLevel(totalScore);
             const progress = getLevelProgress(totalScore);
@@ -723,81 +743,81 @@ export default function ProfilePage() {
         </article>
 
         <article className="info-card profile-skills-panel">
-          <h3>SKILLS</h3>
-          {!skillRows.length ? (
-            <p className="toc-empty">ยังไม่มีการกำหนดทักษะในคอร์ส</p>
-          ) : (
-            <>
-              <div className="acquired-skill-box">
-                <h4>ทักษะที่มีแล้ว (Power 0/100)</h4>
-                {acquiredSkillRows.length ? (
-                  <div className="acquired-skill-grid">
-                    {acquiredSkillRows.map((row) => (
-                      <div key={`power-${row.skill}`} className="acquired-skill-item">
-                        <p className="skill-name">{row.skill}</p>
-                        <p className="skill-score">
-                          {row.powerScore} / 100
-                        </p>
-                        <div className="skill-progress power-progress">
-                          <span style={{ width: `${row.powerScore}%` }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="toc-empty">ยังไม่มีทักษะที่ได้คะแนน</p>
-                )}
-              </div>
-
-              <div className="radar-wrap">
-                <svg viewBox={`0 0 ${RADAR_SIZE} ${RADAR_SIZE}`} className="skill-radar" aria-label="Skill radar chart">
-                  {radarGeometry.rings.map((ring, index) => (
-                    <polygon key={`ring-${RADAR_LEVELS[index]}`} points={ring} className="radar-ring" />
-                  ))}
-                  {radarGeometry.axisPoints.map((point) => (
-                    <line
-                      key={`axis-${point.id}`}
-                      x1={RADAR_CENTER}
-                      y1={RADAR_CENTER}
-                      x2={point.axisX}
-                      y2={point.axisY}
-                      className="radar-axis"
-                    />
-                  ))}
-                  <polygon points={radarGeometry.dataPolygon} className="radar-data" />
-                  {radarGeometry.dataPoints.map((point, index) => (
-                    <circle key={`dot-${skillRows[index].skill}`} cx={point.x} cy={point.y} r="4" className="radar-dot" />
-                  ))}
-                  {radarGeometry.axisPoints.map((point) => (
-                    <text
-                      key={`label-${point.id}`}
-                      x={point.labelX}
-                      y={point.labelY}
-                      textAnchor={point.textAnchor}
-                      dominantBaseline={point.dominantBaseline}
-                      className="radar-label"
-                    >
-                      {toRadarLabel(point.skill)}
-                    </text>
-                  ))}
-                </svg>
-              </div>
-
-              <div className="skill-grid">
-                {skillRows.map((row) => (
-                  <div key={row.skill} className="skill-item">
-                    <p className="skill-name">{row.skill}</p>
-                    <p className="skill-score">
-                      {row.currentPoints} / {row.maxPoints} คะแนน ({row.percent}%)
-                    </p>
-                    <div className="skill-progress">
-                      <span style={{ width: `${row.percent}%` }} />
+          <h3 className="profile-panel-title">ทักษะ</h3>
+          <div className="acquired-skill-box">
+            <h4 className="acquired-skill-box-title">ทักษะที่ได้รับแล้ว</h4>
+            {acquiredSkillRows.length ? (
+              <div className="acquired-skill-grid">
+                {acquiredSkillRows.map((row) => (
+                  <div
+                    key={`power-${row.skill}`}
+                    className={`acquired-skill-item ${row.powerScore >= 70 ? "skill-tier-high" : row.powerScore >= 40 ? "skill-tier-mid" : "skill-tier-low"}`}
+                  >
+                    <div className="acquired-skill-header">
+                      <p className="skill-name">{row.skill}</p>
+                      <span className={`skill-tier-badge ${row.powerScore >= 70 ? "skill-tier-high" : row.powerScore >= 40 ? "skill-tier-mid" : "skill-tier-low"}`}>
+                        {row.powerScore >= 70 ? "เชี่ยวชาญ" : row.powerScore >= 40 ? "กำลังพัฒนา" : "เริ่มต้น"}
+                      </span>
+                    </div>
+                    <p className="skill-score">{row.powerScore} / 100</p>
+                    <div className="skill-progress power-progress">
+                      <span style={{ width: `${row.powerScore}%` }} />
                     </div>
                   </div>
                 ))}
               </div>
-            </>
-          )}
+            ) : (
+              <p className="toc-empty">ยังไม่มีทักษะที่ได้คะแนน</p>
+            )}
+          </div>
+
+          <div className="radar-wrap">
+            <svg viewBox={`0 0 ${RADAR_SIZE} ${RADAR_SIZE}`} className="skill-radar" aria-label="Skill radar chart">
+              {radarGeometry.rings.map((ring, index) => (
+                <polygon key={`ring-${RADAR_LEVELS[index]}`} points={ring} className="radar-ring" />
+              ))}
+              {radarGeometry.axisPoints.map((point) => (
+                <line
+                  key={`axis-${point.id}`}
+                  x1={RADAR_CENTER}
+                  y1={RADAR_CENTER}
+                  x2={point.axisX}
+                  y2={point.axisY}
+                  className="radar-axis"
+                />
+              ))}
+              {radarGeometry.dataPolygon && <polygon points={radarGeometry.dataPolygon} className="radar-data" />}
+              {radarGeometry.dataPoints.map((point, index) => (
+                <circle key={`dot-${skillRows[index].skill}`} cx={point.x} cy={point.y} r="4" className="radar-dot" />
+              ))}
+              {radarGeometry.axisPoints.map((point) => (
+                <text
+                  key={`label-${point.id}`}
+                  x={point.labelX}
+                  y={point.labelY}
+                  textAnchor={point.textAnchor}
+                  dominantBaseline={point.dominantBaseline}
+                  className="radar-label"
+                >
+                  {toRadarLabel(point.skill)}
+                </text>
+              ))}
+            </svg>
+          </div>
+
+          <div className="skill-grid">
+            {skillRows.map((row) => (
+              <div key={row.skill} className="skill-item">
+                <p className="skill-name">{row.skill}</p>
+                <p className="skill-score">
+                  {row.currentPoints} / {row.maxPoints} คะแนน ({row.percent}%)
+                </p>
+                <div className="skill-progress">
+                  <span style={{ width: `${row.percent}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
         </article>
       </section>
     </section>

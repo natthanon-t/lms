@@ -64,96 +64,139 @@ export default function ExamResultPage() {
     );
   }
 
+  const scoreNum = parseFloat(result.scorePercent);
+  const scoreColor = scoreNum >= 80 ? "#1f8d4e" : scoreNum >= 60 ? "#d97706" : "#b13a3a";
+
   return (
     <section className="workspace-content">
       <header className="content-header editor-head">
         <div>
           <h1>ผลการสอบ: {examTitle}</h1>
-          <p>
-            คะแนน {result.correctCount}/{result.gradedTotal} ({result.scorePercent}%)
-            {result.gradedTotal < result.totalQuestions ? (
-              <span style={{ fontSize: "0.85rem", color: "var(--text-muted, #888)", marginLeft: "0.5rem" }}>
-                (รวม {result.totalQuestions} ข้อ, {result.totalQuestions - result.gradedTotal} ข้อพิมพ์ตอบ)
-              </span>
-            ) : null}
-          </p>
         </div>
         <button type="button" className="back-button" onClick={() => navigate(`/exam/${examId}`)}>
           กลับหน้าข้อสอบ
         </button>
       </header>
 
-      <div className="result-list">
-        <article className="info-card result-card">
-          <h3>สถิติราย DomainOfKnowledge</h3>
-          <div className="domain-result-list">
-            {result.domainStats.map((entry) => (
-              <div key={entry.domain} className="domain-result-item">
-                <div className="domain-result-head">
-                  <p>{entry.domain}</p>
-                  <p>
-                    {entry.correct}/{entry.total}
-                  </p>
-                </div>
-                <div className="domain-result-bar">
-                  <div className="domain-result-fill" style={{ width: `${entry.percent}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </article>
+      {/* Score banner */}
+      <div className="result-score-banner">
+        <div className="result-score-ring" style={{ "--score-color": scoreColor }}>
+          <span className="result-score-pct">{result.scorePercent}%</span>
+          <span className="result-score-label">คะแนน</span>
+        </div>
+        <div className="result-score-info">
+          <p className="result-score-fraction">
+            {result.correctCount} <span>/ {result.gradedTotal} ข้อ</span>
+          </p>
+          {result.gradedTotal < result.totalQuestions && (
+            <p className="result-score-note">
+              รวม {result.totalQuestions} ข้อ · {result.totalQuestions - result.gradedTotal} ข้อพิมพ์ตอบ (ไม่นับคะแนนอัตโนมัติ)
+            </p>
+          )}
+          <p className="result-score-status" style={{ color: scoreColor }}>
+            {scoreNum >= 80 ? "ยอดเยี่ยม" : scoreNum >= 60 ? "ผ่านเกณฑ์" : "ต้องพัฒนาเพิ่ม"}
+          </p>
+        </div>
+      </div>
 
-        {loadingDetails ? (
+      {/* Two-column split */}
+      <div className="result-split">
+        {/* Left: domain stats (sticky) */}
+        <aside className="result-domain-col">
           <article className="info-card result-card">
-            <p style={{ color: "var(--text-muted, #888)", textAlign: "center" }}>กำลังโหลดเฉลย…</p>
+            <h3>สถิติราย Domain</h3>
+            <div className="domain-result-list">
+              {result.domainStats.map((entry) => (
+                <div key={entry.domain} className="domain-result-item">
+                  <div className="domain-result-head">
+                    <p>{entry.domain}</p>
+                    <p>
+                      {entry.correct}/{entry.total}
+                    </p>
+                  </div>
+                  <div className="domain-result-bar">
+                    <div className="domain-result-fill" style={{ width: `${entry.percent}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
           </article>
-        ) : (
-          details.map((item) => (
-            <article key={item.question.id} className="info-card result-card">
-              <h3>
-                ข้อ {item.index}: {item.question.question}
-              </h3>
-              {item.question.questionType === "text" ? (
-                <>
-                  <p>
-                    <strong>คำตอบที่พิมพ์:</strong>{" "}
-                    {item.selected ? (
-                      <span style={{ whiteSpace: "pre-wrap" }}>{item.selected}</span>
-                    ) : (
-                      <em style={{ color: "var(--text-muted, #888)" }}>ไม่ได้ตอบ</em>
-                    )}
-                  </p>
-                  <p className="result-pending">ข้อพิมพ์ตอบอิสระ — ไม่นับคะแนนอัตโนมัติ</p>
-                  {item.question.explanation ? (
-                    <p>
-                      <strong>แนวคำตอบ:</strong> {item.question.explanation}
-                    </p>
-                  ) : null}
-                </>
-              ) : (
-                <>
-                  <p>
-                    <strong>คำตอบที่เลือก:</strong> {item.selected ?? "ไม่ได้ตอบ"}
-                  </p>
-                  <p>
-                    <strong>เฉลย:</strong>{" "}
-                    {item.question.answerKey || (
-                      <em style={{ color: "var(--text-muted, #888)" }}>ไม่มีเฉลย</em>
-                    )}
-                  </p>
-                  <p className={item.isCorrect ? "result-correct" : "result-wrong"}>
-                    {item.isCorrect ? "ถูก" : "ผิด"}
-                  </p>
-                  {item.question.explanation ? (
-                    <p>
-                      <strong>คำอธิบาย:</strong> {item.question.explanation}
-                    </p>
-                  ) : null}
-                </>
-              )}
+        </aside>
+
+        {/* Right: question details */}
+        <div className="result-questions-col">
+          {loadingDetails ? (
+            <article className="info-card result-card">
+              <p style={{ color: "var(--text-muted, #888)", textAlign: "center" }}>กำลังโหลดเฉลย…</p>
             </article>
-          ))
-        )}
+          ) : (
+            details.map((item) => {
+              const cardClass =
+                item.question.questionType === "text"
+                  ? "result-card-pending"
+                  : item.isCorrect
+                  ? "result-card-correct"
+                  : "result-card-wrong";
+              return (
+                <article key={item.question.id} className={`info-card result-card ${cardClass}`}>
+                  <div className="result-q-head">
+                    <span className="result-q-num">ข้อ {item.index}</span>
+                    {item.question.questionType !== "text" && (
+                      <span className={item.isCorrect ? "result-badge-correct" : "result-badge-wrong"}>
+                        {item.isCorrect ? "ถูก" : "ผิด"}
+                      </span>
+                    )}
+                    {item.question.questionType === "text" && (
+                      <span className="result-badge-pending">พิมพ์ตอบ</span>
+                    )}
+                  </div>
+                  <h3 className="result-q-text">{item.question.question}</h3>
+
+                  {item.question.questionType === "text" ? (
+                    <>
+                      <p>
+                        <strong>คำตอบที่พิมพ์:</strong>{" "}
+                        {item.selected ? (
+                          <span style={{ whiteSpace: "pre-wrap" }}>{item.selected}</span>
+                        ) : (
+                          <em style={{ color: "var(--text-muted, #888)" }}>ไม่ได้ตอบ</em>
+                        )}
+                      </p>
+                      <p className="result-pending">ข้อพิมพ์ตอบอิสระ — ไม่นับคะแนนอัตโนมัติ</p>
+                      {item.question.explanation ? (
+                        <p>
+                          <strong>แนวคำตอบ:</strong> {item.question.explanation}
+                        </p>
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      <div className="result-answer-row">
+                        <div className="result-answer-box result-answer-selected">
+                          <span className="result-answer-box-label">คำตอบที่เลือก</span>
+                          <span>{item.selected ?? <em style={{ color: "#888" }}>ไม่ได้ตอบ</em>}</span>
+                        </div>
+                        <div className="result-answer-box result-answer-key">
+                          <span className="result-answer-box-label">เฉลย</span>
+                          <span>
+                            {item.question.answerKey || (
+                              <em style={{ color: "#888" }}>ไม่มีเฉลย</em>
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                      {item.question.explanation ? (
+                        <p className="result-explain">
+                          <strong>คำอธิบาย:</strong> {item.question.explanation}
+                        </p>
+                      ) : null}
+                    </>
+                  )}
+                </article>
+              );
+            })
+          )}
+        </div>
       </div>
     </section>
   );

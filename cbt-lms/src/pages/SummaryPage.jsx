@@ -99,34 +99,47 @@ function SvgLabel({ x, cy, maxPx, fontSize, fill, text }) {
 }
 
 // ── Chart 2: Top Course Creators ──────────────────────────────────────────────
+const CREATOR_RANK_STYLES = [
+  { rankBg: "linear-gradient(135deg,#fbbf24,#f59e0b)", rankColor: "#78350f", avatarBg: "linear-gradient(135deg,#fcd34d,#f59e0b)" },
+  { rankBg: "linear-gradient(135deg,#e2e8f0,#cbd5e1)", rankColor: "#1e293b", avatarBg: "linear-gradient(135deg,#e2e8f0,#94a3b8)" },
+  { rankBg: "linear-gradient(135deg,#fed7aa,#fb923c)", rankColor: "#7c2d12", avatarBg: "linear-gradient(135deg,#fdba74,#f97316)" },
+  { rankBg: "#eef3ff", rankColor: "#2454b8", avatarBg: "linear-gradient(135deg,#60a5fa,#2f66da)" },
+  { rankBg: "#eef3ff", rankColor: "#2454b8", avatarBg: "linear-gradient(135deg,#60a5fa,#2f66da)" },
+];
+
+function getInitials(name = "") {
+  return name.split(/\s+/).map((w) => w[0] ?? "").join("").slice(0, 2).toUpperCase() || "?";
+}
+
 function CourseCreatorsChart({ data }) {
-  const W = 480, H = 190, ML = 120, MR = 60, MT = 10, MB = 16;
-  const PW = W - ML - MR;
   if (!data?.length) return <p className="chart-empty">ไม่มีข้อมูล</p>;
   const maxCount = Math.max(...data.map((c) => c.count), 1);
-  const BAR_H = 24, GAP = 10;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%">
+    <div className="creator-list">
       {data.map((item, i) => {
-        const y = MT + i * (BAR_H + GAP);
-        const bW = (item.count / maxCount) * PW;
+        const s = CREATOR_RANK_STYLES[i] ?? CREATOR_RANK_STYLES[3];
+        const pct = Math.round((item.count / maxCount) * 100);
         return (
-          <g key={item.name}>
-            <text x={ML - 8} y={y + BAR_H / 2 + 4} textAnchor="end" fontSize="11" fill="#1a2f57">{item.name}</text>
-            <rect x={ML} y={y} width={bW} height={BAR_H} rx="4" fill="#3f8cff"><title>{item.name}: {item.count} คอร์ส</title></rect>
-            <text x={ML + bW + 6} y={y + BAR_H / 2 + 4} textAnchor="start" fontSize="11" fontWeight="700" fill="#2454b8">{item.count} คอร์ส</text>
-          </g>
+          <div key={item.name} className="creator-row">
+            <div className="creator-rank-badge" style={{ background: s.rankBg, color: s.rankColor }}>
+              {i + 1}
+            </div>
+            <div className="creator-avatar" style={{ background: s.avatarBg }}>
+              {getInitials(item.name)}
+            </div>
+            <div className="creator-info">
+              <div className="creator-name-row">
+                <span className="creator-name">{item.name}</span>
+                <span className="creator-count">{item.count} คอร์ส</span>
+              </div>
+              <div className="creator-bar-track">
+                <div className="creator-bar-fill" style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+          </div>
         );
       })}
-      <line
-        x1={ML}
-        y1={MT + data.length * BAR_H + (data.length - 1) * GAP + 6}
-        x2={ML + PW}
-        y2={MT + data.length * BAR_H + (data.length - 1) * GAP + 6}
-        stroke="#c8d6f0"
-        strokeWidth="1"
-      />
-    </svg>
+    </div>
   );
 }
 
@@ -212,29 +225,45 @@ function CourseStatusChart({ data }) {
 }
 
 // ── Chart 5: Top Enrollment ────────────────────────────────────────────────────
+const RANK_STYLES = [
+  { color: "#b45309", bg: "#fef9ee", border: "#fde68a", badge: "linear-gradient(135deg,#fbbf24,#f59e0b)" },
+  { color: "#475569", bg: "#f8fafc", border: "#e2e8f0", badge: "linear-gradient(135deg,#e2e8f0,#cbd5e1)" },
+  { color: "#b45309", bg: "#fff7f0", border: "#fed7aa", badge: "linear-gradient(135deg,#fb923c,#f97316)" },
+  { color: "#1d4ed8", bg: "#eff6ff", border: "#bfdbfe", badge: "linear-gradient(135deg,#60a5fa,#3b82f6)" },
+  { color: "#1d4ed8", bg: "#f0f7ff", border: "#bfdbfe", badge: "linear-gradient(135deg,#93c5fd,#60a5fa)" },
+];
+
 function TopEnrollmentChart({ data }) {
-  const W = 700, ML = 185, MR = 80, MT = 16;
-  const PW = W - ML - MR;
   if (!data?.length) return <p className="chart-empty">ไม่มีข้อมูล</p>;
   const maxCount = Math.max(...data.map((e) => e.count), 1);
-  const BAR_H = 34, GAP = 10;
-  const H = MT + data.length * (BAR_H + GAP) - GAP + 16;
-  const COLORS = ["#2454b8", "#2f66da", "#3f8cff", "#60a5fa", "#93c5fd"];
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%">
+    <div className="top-enrollment-grid">
       {data.map((item, i) => {
-        const y = MT + i * (BAR_H + GAP);
-        const cy = y + BAR_H / 2;
-        const bW = (item.count / maxCount) * PW;
+        const s = RANK_STYLES[i] ?? RANK_STYLES[4];
+        const pct = Math.round((item.count / maxCount) * 100);
         return (
-          <g key={item.course}>
-            <SvgLabel x={ML - 8} cy={cy} maxPx={ML - 12} fontSize={12} fill="#1a2f57" text={item.course} />
-            <rect x={ML} y={y} width={bW} height={BAR_H} rx="5" fill={COLORS[i]}><title>{item.course}: {item.count} คน</title></rect>
-            <text x={ML + bW + 8} y={cy + 5} textAnchor="start" fontSize="12" fontWeight="700" fill={COLORS[i]}>{item.count} คน</text>
-          </g>
+          <div
+            key={item.course}
+            className="top-enrollment-card"
+            style={{ background: s.bg, borderColor: s.border }}
+          >
+            <div className="top-enrollment-rank-badge" style={{ background: s.badge }}>
+              #{i + 1}
+            </div>
+            <p className="top-enrollment-name">{item.course}</p>
+            <p className="top-enrollment-count" style={{ color: s.color }}>
+              {item.count}<span> คน</span>
+            </p>
+            <div className="top-enrollment-bar-track">
+              <div
+                className="top-enrollment-bar-fill"
+                style={{ width: `${pct}%`, background: s.badge }}
+              />
+            </div>
+          </div>
         );
       })}
-    </svg>
+    </div>
   );
 }
 
@@ -417,44 +446,49 @@ export default function SummaryPage() {
         <article className="metric-card"><h3>ค่าเฉลี่ยคอร์สที่เรียนจบต่อคน</h3><p>{organizationSummary.avgCompletedCourses}</p></article>
       </div>
 
+      <div className="summary-section-head">
+        <span>แผนภูมิและสถิติ</span>
+      </div>
+
       <div className="summary-chart-grid">
-        <div className="chart-card">
-          <h3 className="chart-card-title">Daily Activity (Pass / Failed)</h3>
-          <p className="chart-card-sub">ผลการทำข้อสอบในรอบสัปดาห์นี้</p>
+        <div className="chart-card chart-card-accent-yellow">
+          <h3 className="chart-card-title">Daily Activity</h3>
+          <p className="chart-card-sub">ผลการทำข้อสอบ (ผ่าน / ไม่ผ่าน) รอบสัปดาห์นี้</p>
           <DailyActivityChart data={analytics?.dailyExamActivity} />
         </div>
 
-        <div className="chart-card">
+        <div className="chart-card chart-card-accent-blue">
           <h3 className="chart-card-title">ผู้สร้างคอร์สสูงสุด</h3>
           <p className="chart-card-sub">อันดับผู้ที่สร้างคอร์สเยอะที่สุด</p>
           <CourseCreatorsChart data={analytics?.topCreators} />
         </div>
 
-        <div className="chart-card">
+        <div className="chart-card chart-card-accent-green">
           <h3 className="chart-card-title">คอร์สที่เรียนจบรายเดือน</h3>
           <p className="chart-card-sub">จำนวนคอร์สที่เรียนจบในแต่ละเดือน (ปีนี้)</p>
           <MonthlyCompletionsChart data={analytics?.monthlyCompletions} />
         </div>
 
-        <div className="chart-card">
+        <div className="chart-card chart-card-accent-purple">
           <h3 className="chart-card-title">สถานะการเรียนรายคอร์ส</h3>
           <p className="chart-card-sub">สัดส่วนผู้เรียนในแต่ละสถานะ (Top 5)</p>
           <CourseStatusChart data={analytics?.courseStatus} />
         </div>
 
-        <div className="chart-card chart-card-full">
-          <h3 className="chart-card-title">คอร์สยอดนิยม (จำนวนผู้เรียน)</h3>
+        <div className="chart-card chart-card-full chart-card-accent-blue">
+          <h3 className="chart-card-title">คอร์สยอดนิยม</h3>
           <p className="chart-card-sub">5 คอร์สที่มีผู้เรียนสูงสุด</p>
           <TopEnrollmentChart data={analytics?.topEnrollment} />
         </div>
       </div>
 
+      <div className="summary-section-head" style={{ marginTop: "28px" }}>
+        <span>สถานะการเรียนรายบุคคล</span>
+      </div>
+
       <div className="course-status-section">
         <div className="course-status-header">
-          <div>
-            <h2 className="chart-card-title">สถานะการเรียนรายบุคคล</h2>
-            <p className="chart-card-sub">เลือกคอร์สเพื่อดูความคืบหน้าของแต่ละคน</p>
-          </div>
+          <p className="chart-card-sub" style={{ margin: 0 }}>เลือกคอร์สเพื่อดูความคืบหน้าของแต่ละคน</p>
           <select
             className="course-status-select"
             value={selectedCourseId}

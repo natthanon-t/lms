@@ -49,6 +49,7 @@ export default function RolePermissionPage() {
   const [matrix, setMatrix] = useState(DEFAULT_MATRIX);
   const [saveState, setSaveState] = useState("idle");
   const [isDirty, setIsDirty] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [actionError, setActionError] = useState("");
@@ -130,7 +131,8 @@ export default function RolePermissionPage() {
       );
       setSaveState("saved");
       setIsDirty(false);
-      setTimeout(() => setSaveState("idle"), 2000);
+      setShowSaved(true);
+      setTimeout(() => { setSaveState("idle"); setShowSaved(false); }, 2500);
     } catch (err) {
       setActionError(err?.message ?? "ไม่สามารถบันทึกสิทธิ์ได้");
       setSaveState("error");
@@ -232,31 +234,29 @@ export default function RolePermissionPage() {
         />
       )}
 
-      <header className="content-header">
+      <header className="content-header perm-page-header">
         <div>
           <h1>สิทธิ์การใช้งาน</h1>
           <p>กำหนดสิทธิ์การเข้าถึงฟีเจอร์ต่าง ๆ ของแต่ละบทบาทจากข้อมูลหลังบ้าน</p>
         </div>
         {isDirty && (
-          <div style={{ marginLeft: "auto" }}>
-            <button
-              type="button"
-              className="enter-button"
-              style={{ borderRadius: "999px" }}
-              disabled={saveState === "saving"}
-              onClick={handleSave}
-            >
-              {saveState === "saving"
-                ? "กำลังบันทึก…"
-                : saveState === "saved"
-                  ? "✓ บันทึกแล้ว"
-                  : saveState === "error"
-                    ? "❌ บันทึกไม่สำเร็จ"
-                    : "บันทึก"}
-            </button>
-          </div>
+          <button
+            type="button"
+            className={`perm-save-btn perm-save-btn-${saveState}`}
+            disabled={saveState === "saving"}
+            onClick={handleSave}
+          >
+            {saveState === "saving" ? "กำลังบันทึก…" : saveState === "error" ? "✕ บันทึกไม่สำเร็จ" : "บันทึกสิทธิ์"}
+          </button>
         )}
       </header>
+
+      {showSaved && (
+        <div className="perm-saved-banner">
+          <span className="perm-saved-icon">✓</span>
+          บันทึกสิทธิ์สำเร็จแล้ว
+        </div>
+      )}
 
       {loading ? (
         <div className="info-card" style={{ marginBottom: "1rem" }}>
@@ -278,12 +278,11 @@ export default function RolePermissionPage() {
 
       {/* ── Add Role inline form ── */}
       {showAddRole && !loading && !loadError && (
-        <div className="info-card" style={{ marginBottom: "1rem", display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
-          <label style={{ fontWeight: 600, whiteSpace: "nowrap" }}>ชื่อบทบาทใหม่:</label>
+        <div className="perm-add-role-form">
+          <label className="perm-add-role-label">ชื่อบทบาทใหม่:</label>
           <input
             type="text"
-            className="editor-input"
-            style={{ flex: "1 1 200px", minWidth: "160px" }}
+            className="perm-add-role-input"
             placeholder="เช่น ผู้สอน"
             value={newRoleLabel}
             onChange={(e) => { setNewRoleLabel(e.target.value); setAddError(""); }}
@@ -293,9 +292,9 @@ export default function RolePermissionPage() {
             }}
             autoFocus
           />
-          <button type="button" className="enter-button" onClick={handleAddRole}>ยืนยัน</button>
+          <button type="button" className="enter-button perm-add-role-confirm" onClick={handleAddRole}>ยืนยัน</button>
           <button type="button" className="back-button" onClick={() => { setShowAddRole(false); setNewRoleLabel(""); setAddError(""); }}>ยกเลิก</button>
-          {addError && <span style={{ color: "var(--color-danger, #e54)", fontSize: "0.875rem" }}>{addError}</span>}
+          {addError && <span className="perm-add-role-error">{addError}</span>}
         </div>
       )}
 
@@ -311,16 +310,13 @@ export default function RolePermissionPage() {
                 const isEditing = editingRoleKey === r.key;
 
                 return (
-                  <th key={r.key} className="perm-role-col">
-                    <div style={{ position: "relative", display: "inline-block", marginTop: "0.25rem" }}>
-
-                      {/* ── Role name (click to rename if not locked) ── */}
+                  <th key={r.key} className={`perm-role-col${isLocked ? " perm-role-col-locked" : ""}`}>
+                    <div className="perm-role-col-inner">
                       {isEditing ? (
                         <input
                           type="text"
-                          className="editor-input"
+                          className="perm-rename-input"
                           value={editingRoleLabel}
-                          style={{ width: "90px", fontSize: "0.85rem", padding: "2px 6px" }}
                           autoFocus
                           onChange={(e) => setEditingRoleLabel(e.target.value)}
                           onBlur={commitRename}
@@ -331,58 +327,22 @@ export default function RolePermissionPage() {
                         />
                       ) : (
                         <span
+                          className={`perm-role-name${isBuiltIn ? "" : " perm-role-name-editable"}`}
                           title={isBuiltIn ? "บทบาทนี้ไม่สามารถแก้ไขชื่อได้" : "คลิกเพื่อแก้ไขชื่อ"}
-                          style={{
-                            cursor: isBuiltIn ? "default" : "text",
-                            borderBottom: isBuiltIn ? "none" : "1px dashed #9ca3af",
-                            paddingBottom: "1px",
-                          }}
                           onClick={() => !isBuiltIn && startRename(r)}
                         >
                           {r.label}
                         </span>
                       )}
-
-                      {/* ── (Default) label below name ── */}
                       {isDefaultLabel && (
-                        <span style={{
-                          display: "block",
-                          fontSize: "0.68rem",
-                          color: "#9ca3af",
-                          marginTop: "0.1rem",
-                          fontWeight: 400,
-                          letterSpacing: "0.01em",
-                        }}>(Default)</span>
+                        <span className="perm-role-default-tag">(Default)</span>
                       )}
-
-                      {/* ── Delete button (hidden for locked roles) ── */}
                       {!isBuiltIn && !isEditing && (
                         <button
                           type="button"
+                          className="perm-delete-btn"
                           title={`ลบบทบาท ${r.label}`}
                           onClick={() => handleRemoveRole(r.key)}
-                          style={{
-                            position: "absolute",
-                            top: "-8px",
-                            right: "-14px",
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            color: "#9ca3af",
-                            fontSize: "0.65rem",
-                            lineHeight: 1,
-                            padding: "2px",
-                            opacity: 0.5,
-                            transition: "opacity 0.2s, color 0.2s",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.opacity = "1";
-                            e.currentTarget.style.color = "var(--color-danger, #e54)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.opacity = "0.5";
-                            e.currentTarget.style.color = "#9ca3af";
-                          }}
                         >
                           ✕
                         </button>
@@ -391,18 +351,12 @@ export default function RolePermissionPage() {
                   </th>
                 );
               })}
-              {/* ── Add Role button as last column header ── */}
-              <th className="perm-role-col">
+              <th className="perm-role-col perm-add-col">
                 <button
                   type="button"
+                  className="perm-add-col-btn"
                   onClick={() => setShowAddRole(true)}
                   disabled={loading || Boolean(loadError)}
-                  style={{
-                    background: "none", border: "1.5px dashed currentColor",
-                    borderRadius: "999px", padding: "0.2rem 0.75rem",
-                    cursor: "pointer", fontSize: "0.85rem", opacity: 0.65,
-                    whiteSpace: "nowrap",
-                  }}
                   title="เพิ่ม Role ใหม่"
                 >
                   + เพิ่ม Role
