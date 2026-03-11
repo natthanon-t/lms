@@ -117,6 +117,7 @@ export default function ProfilePage({
   currentUser,
   username,
   onSaveName,
+  onSaveProfile,
   onChangePassword,
   examples,
   currentUserProgress,
@@ -405,7 +406,7 @@ export default function ProfilePage({
       return;
     }
 
-    const result = await onSaveName?.(trimmedName);
+    const result = await (onSaveProfile?.({ name: trimmedName, employeeCode: editModalEmployeeCode }) ?? onSaveName?.(trimmedName));
     setEditModalMessage(result?.message ?? "บันทึกข้อมูลเรียบร้อย");
     if (result?.success !== false) {
       setShowEditModal(false);
@@ -591,8 +592,7 @@ export default function ProfilePage({
                 id="edit-modal-employee-code"
                 type="text"
                 value={editModalEmployeeCode}
-                readOnly
-                className="um-input-readonly"
+                onChange={(e) => setEditModalEmployeeCode(e.target.value)}
               />
               <button type="submit" className="enter-button">
                 บันทึก

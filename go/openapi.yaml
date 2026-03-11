@@ -175,7 +175,7 @@ paths:
   /api/profile:
     patch:
       tags: [Profile]
-      summary: Update current user name
+      summary: Update current user profile
       security:
         - bearerAuth: []
       requestBody:
@@ -183,7 +183,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateProfileNameRequest"
+              $ref: "#/components/schemas/UpdateProfileRequest"
       responses:
         "200":
           description: Profile updated
@@ -1221,11 +1221,11 @@ components:
           type: string
         employee_code:
           type: string
-          description: Format XXXX-XX-XXXX
+          description: Format XXXX-XX-XXXX (optional)
         password:
           type: string
           minLength: 8
-      required: [name, username, employee_code, password]
+      required: [name, username, password]
 
     RegisterResponse:
       type: object
@@ -1281,12 +1281,15 @@ components:
           $ref: "#/components/schemas/UserPayload"
       required: [message, token, refresh_token, token_type, expires_in, user]
 
-    UpdateProfileNameRequest:
+    UpdateProfileRequest:
       type: object
       properties:
         name:
           type: string
-      required: [name]
+        employee_code:
+          type: string
+          description: Format XXXX-XX-XXXX (optional)
+      required: []
 
     ChangePasswordRequest:
       type: object

@@ -80,7 +80,6 @@ export default function LoginScreen({ onLogin, onRegister, onCancel }) {
         setError("username ใช้ได้เฉพาะ a-z, A-Z, 0-9, . _ -");
         return;
       }
-      const codeToSubmit = employeeCode.trim() || "XXXX-XX-XXXX";
       if (employeeCode.trim() && !/^[A-Z0-9]{4}-[A-Z0-9]{2}-[A-Z0-9]{4}$/i.test(employeeCode.trim())) {
         setError("รหัสพนักงานต้องอยู่ในรูปแบบ XXXX-XX-XXXX");
         return;
@@ -90,7 +89,7 @@ export default function LoginScreen({ onLogin, onRegister, onCancel }) {
         return;
       }
 
-      onRegister?.({ name: name.trim(), username: user.trim(), employeeCode: codeToSubmit.toUpperCase(), password })
+      onRegister?.({ name: name.trim(), username: user.trim(), employeeCode: employeeCode.trim().toUpperCase() || "", password })
         .then((result) => {
           if (!result?.success) {
             setError(getFriendlyRegisterError(result?.message));

@@ -62,6 +62,15 @@ export const updateProfileName = async (name) =>
     body: JSON.stringify({ name }),
   });
 
+export const updateProfile = async ({ name, employeeCode }) =>
+  authRequest("/api/profile", {
+    method: "PATCH",
+    body: JSON.stringify({
+      ...(name !== undefined && { name }),
+      ...(employeeCode !== undefined && { employee_code: employeeCode }),
+    }),
+  });
+
 export const changeProfilePassword = async (currentPassword, nextPassword) =>
   authRequest("/api/profile/change-password", {
     method: "POST",

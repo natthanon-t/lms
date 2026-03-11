@@ -73,6 +73,7 @@ import {
   listUsersAdmin,
   resetUserPasswordAdmin,
   updateDefaultResetPasswordAdmin,
+  updateProfile,
   updateProfileName,
   updateUserAdmin,
 } from "./services/userApiService";
@@ -718,6 +719,30 @@ export default function App() {
     }
   };
 
+  const handleSaveProfile = async ({ name, employeeCode }) => {
+    if (!currentUserKey) {
+      return { success: false, message: "ไม่พบผู้ใช้ที่ล็อกอิน" };
+    }
+    try {
+      const payload = await updateProfile({ name, employeeCode });
+      const user = payload?.user ?? {};
+      const username = String(user?.username ?? currentUserKey).trim().toLowerCase();
+      setUsers((prevUsers) => ({
+        ...prevUsers,
+        [username]: {
+          ...(prevUsers[username] ?? {}),
+          name: user?.name ?? name,
+          employeeCode: user?.employee_code ?? employeeCode ?? prevUsers[username]?.employeeCode ?? "",
+          role: user?.role ?? prevUsers[username]?.role ?? "ผู้ใช้งาน",
+          status: user?.status ?? prevUsers[username]?.status ?? "active",
+        },
+      }));
+      return { success: true, message: "บันทึกข้อมูลเรียบร้อย" };
+    } catch (error) {
+      return { success: false, message: error?.message ?? "ไม่สามารถบันทึกข้อมูลได้" };
+    }
+  };
+
   const handleChangePassword = async (username, currentPassword, nextPassword) => {
     if (!username || username !== currentUserKey) {
       return { success: false, message: "ไม่สามารถเปลี่ยนรหัสผ่านได้" };
@@ -1053,6 +1078,7 @@ export default function App() {
             currentUser={currentUser}
             username={currentUserKey}
             onSaveName={handleSaveName}
+            onSaveProfile={handleSaveProfile}
             onChangePassword={handleChangePassword}
             examples={examples}
             currentUserProgress={learningProgress[currentUserKey] ?? {}}
