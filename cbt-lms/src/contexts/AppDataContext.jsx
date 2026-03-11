@@ -252,7 +252,9 @@ export function AppDataProvider({ children }) {
 
   const handleSaveAttempt = useCallback(
     async (result) => {
-      if (!currentUserKey || !examDraft.sourceId) return;
+      if (!currentUserKey || !examDraft.sourceId) {
+        return { success: false, message: "ไม่พบข้อมูลข้อสอบหรือยังไม่ได้เข้าสู่ระบบ" };
+      }
       const domainStatsMap = {};
       result.domainStats.forEach(({ domain, correct, total }) => {
         domainStatsMap[domain] = { correct, total };
@@ -271,8 +273,10 @@ export function AppDataProvider({ children }) {
           answers,
         });
         void loadCurrentExamAttempts(examDraft.sourceId);
-      } catch {
-        // noop
+        return { success: true };
+      } catch (err) {
+        console.error("[handleSaveAttempt] failed to save exam attempt:", err);
+        return { success: false, message: err?.message ?? "บันทึกผลการสอบไม่สำเร็จ" };
       }
     },
     [currentUserKey, examDraft.sourceId, loadCurrentExamAttempts],

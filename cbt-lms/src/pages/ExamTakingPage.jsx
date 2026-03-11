@@ -107,7 +107,21 @@ export default function ExamTakingPage() {
   const { examId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { examDraft, handleSaveAttempt } = useAppData();
+  const { examDraft, handleSaveAttempt, openExam, examBank } = useAppData();
+  const [saveError, setSaveError] = useState(null);
+  const [examLoading, setExamLoading] = useState(false);
+
+  // Load exam if context draft doesn't match current examId (e.g. page refresh)
+  useEffect(() => {
+    const alreadyLoaded = examDraft?.sourceId === examId || examDraft?.id === examId;
+    if (!alreadyLoaded && examId) {
+      const fromBank = examBank.find((e) => e.id === examId);
+      if (fromBank) {
+        setExamLoading(true);
+        openExam(fromBank).then(() => setExamLoading(false));
+      }
+    }
+  }, [examId, examDraft?.sourceId, examDraft?.id, examBank, openExam]);
 
   const draft = examDraft;
   const orderMode = location.state?.orderMode ?? "sequential";
@@ -186,7 +200,12 @@ export default function ExamTakingPage() {
       domainStats,
     };
     setSubmittedResult(result);
-    onSaveAttempt(result);
+    setSaveError(null);
+    onSaveAttempt(result).then((res) => {
+      if (res && !res.success) {
+        setSaveError(res.message ?? "บันทึกผลการสอบไม่สำเร็จ");
+      }
+    });
   }, [answers, orderedQuestions, totalQuestions, onSaveAttempt]);
 
   useEffect(() => {
@@ -223,9 +242,34 @@ export default function ExamTakingPage() {
     setShowEndConfirm(true);
   };
 
+  if (examLoading || (!draft?.title && examId)) {
+    return (
+      <section className="workspace-content">
+        <header className="content-header">
+          <h1>กำลังโหลดข้อสอบ</h1>
+          <p>Loading...</p>
+        </header>
+      </section>
+    );
+  }
+
   if (submittedResult) {
     return (
       <section className="workspace-content">
+        {saveError ? (
+          <div
+            style={{
+              background: "#fef2f2",
+              border: "1px solid #fca5a5",
+              borderRadius: "8px",
+              color: "#b91c1c",
+              padding: "12px 16px",
+              marginBottom: "16px",
+            }}
+          >
+            ⚠️ ไม่สามารถบันทึกผลการสอบได้: {saveError} — กรุณาติดต่อผู้ดูแลระบบ
+          </div>
+        ) : null}
         <header className="content-header editor-head">
           <div>
             <h1>ผลการสอบ: {draft.title}</h1>
