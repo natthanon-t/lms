@@ -3,18 +3,81 @@ import { useNavigate } from "react-router-dom";
 import { canViewItemByStatus } from "../services/accessControlService";
 import { useAuth } from "../contexts/AuthContext";
 import { useAppData } from "../contexts/AppDataContext";
+import { getSubtopicPages } from "../components/markdown/headingUtils";
+
+const QUOTES = [
+  "LMS status: 'In Progress.' My brain: 'In Bed.'",
+  "99% Loading... (My motivation, not the website).",
+  "If 'Procrastination' was a course, I would be the Top Student.",
+  "LMS stands for: Let Me Sleep.",
+  "My favorite activity? Looking at the due date and closing the tab.",
+  "I'm not ignoring the lesson, I'm just giving it some space.",
+  "The 'Due Date' is the only thing moving fast around here.",
+  "I'll start the module in 5 minutes... (Sent 3 hours ago).",
+  "My progress bar is shorter than my attention span.",
+  "I’m a professional 'Next' button clicker.",
+  "The most dangerous game: Clicking 'Submit' when the WiFi is low.",
+  "Nothing brings people together like a video with no 'Skip' button.",
+  "Instruction: 'Please watch the full video.' Me: Plays at 2.0x speed.",
+  "That mini-heart attack when the loading circle stops spinning.",
+  "My nightmare: A 30-minute video that doesn't let me fast-forward.",
+  "User: Clicks Submit | LMS: 'Error 404' | Me: Cries.",
+  "I don’t need an alarm. The LMS notification is enough to scare me.",
+  "My laptop is currently hotter than my future.",
+  "The 'Logout' button is the most user-friendly feature here.",
+  "Is it a 'Learning Path' or a 'Highway to Stress'?",
+];
 
 export default function LobbyPage() {
   const navigate = useNavigate();
   const { currentUserKey, canManageContent, canManageExams, currentUser } = useAuth();
-  const { examples, examBank, openContentDetail, openExam, canManageExamItem, userTotalScore, userSkillScores, learningProgress } = useAppData();
+  const { examples, examBank, openContentDetail, openExam, canManageExamItem, userSkillScores, learningProgress } = useAppData();
 
-  const limitedExamples = useMemo(() => {
+  const dailyQuote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+
+  const inProgressCourses = useMemo(() => {
+    const userProgress = learningProgress[currentUserKey] ?? {};
     return examples
-      .filter((example) => canViewItemByStatus({ item: example, currentUserKey, hasManageAccess: canManageContent }))
-      .sort((a, b) => (b.learnerCount ?? 0) - (a.learnerCount ?? 0))
+      .filter(e =>
+        canViewItemByStatus({ item: e, currentUserKey, hasManageAccess: canManageContent })
+        && userProgress[e.id]
+      )
+      .map(e => {
+        const completedSubtopics = userProgress[e.id]?.completedSubtopics ?? {};
+        const allSubtopics = getSubtopicPages(e.content ?? '', e.title);
+        const total = allSubtopics.length;
+        const done = allSubtopics.filter(s => Boolean(completedSubtopics[s.id])).length;
+        const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+        return { ...e, percent, done, total };
+      })
+      .filter(e => e.total > 0 && e.done < e.total)
+      .sort((a, b) => b.percent - a.percent)
       .slice(0, 4);
-  }, [examples, currentUserKey, canManageContent]);
+  }, [examples, learningProgress, currentUserKey, canManageContent]);
+
+  const recommendedCourses = useMemo(() => {
+    const userProgress = learningProgress[currentUserKey] ?? {};
+    const mySkills = userSkillScores ?? {};
+    return examples
+      .filter(e =>
+        canViewItemByStatus({ item: e, currentUserKey, hasManageAccess: canManageContent })
+        && !userProgress[e.id]
+      )
+      .map(e => {
+        const skills = e.skills ?? [];
+        const relevance = skills.reduce((sum, skill) => {
+          const score = mySkills[skill] ?? 0;
+          return sum + (score < 40 ? 2 : score < 70 ? 1 : 0);
+        }, 0);
+        return { ...e, relevance };
+      })
+      .sort((a, b) =>
+        b.relevance !== a.relevance
+          ? b.relevance - a.relevance
+          : (b.learnerCount ?? 0) - (a.learnerCount ?? 0)
+      )
+      .slice(0, 4);
+  }, [examples, learningProgress, currentUserKey, canManageContent, userSkillScores]);
 
   const limitedExams = useMemo(() => {
     return examBank
@@ -22,15 +85,6 @@ export default function LobbyPage() {
       .sort((a, b) => (b.attemptCount ?? 0) - (a.attemptCount ?? 0))
       .slice(0, 4);
   }, [examBank, currentUserKey, canManageExams]);
-
-  const stats = useMemo(() => {
-    const totalCourses = examples.filter(e => canViewItemByStatus({ item: e, currentUserKey, hasManageAccess: canManageContent })).length;
-    const totalExams = examBank.filter(e => canViewItemByStatus({ item: e, currentUserKey, hasManageAccess: canManageExams })).length;
-    const myScore = userTotalScore ?? 0;
-    const skillCount = Object.keys(userSkillScores ?? {}).length;
-    const coursesStarted = Object.keys(learningProgress[currentUserKey] ?? {}).length;
-    return { totalCourses, totalExams, myScore, skillCount, coursesStarted };
-  }, [examples, examBank, userTotalScore, userSkillScores, learningProgress, currentUserKey, canManageContent, canManageExams]);
 
   const handleEnterClass = (example) => {
     const result = openContentDetail(example);
@@ -52,42 +106,41 @@ export default function LobbyPage() {
       {/* Personalized greeting header */}
       <div className="lobby-hero">
         <div className="lobby-hero-text">
-          <h1>สวัสดี, {currentUser?.name || currentUserKey} 👋</h1>
-          <p>ยินดีต้อนรับกลับ — วันนี้อยากเรียนอะไร?</p>
+          <h1>สวัสดี, {currentUser?.name || 'Guest'} 👋</h1>
+          <p>{dailyQuote}</p>
         </div>
       </div>
 
-      {/* Stats Dashboard */}
-      <div className="metric-grid lobby-metric-grid">
-        <article className="metric-card">
-          <h3>คอร์สทั้งหมด</h3>
-          <p>{stats.totalCourses}</p>
-        </article>
-        <article className="metric-card">
-          <h3>ข้อสอบทั้งหมด</h3>
-          <p>{stats.totalExams}</p>
-        </article>
-        <article className="metric-card">
-          <h3>คะแนนของฉัน</h3>
-          <p>{stats.myScore}</p>
-        </article>
-        <article className="metric-card">
-          <h3>ทักษะที่มี</h3>
-          <p>{stats.skillCount}</p>
-        </article>
-        <article className="metric-card">
-          <h3>คอร์สที่เข้าเรียน</h3>
-          <p>{stats.coursesStarted}</p>
-        </article>
-      </div>
-
-      {/* Section with "view all" link */}
+      {/* Learning Progress */}
       <div className="section-row lobby-section-row">
-        <p className="section-label">บทเรียนแนะนำ</p>
+        <p className="section-label">กำลังเรียนอยู่</p>
+      </div>
+      {inProgressCourses.length > 0 ? (
+        <div className="lobby-progress-list">
+          {inProgressCourses.map(course => (
+            <div key={course.id} className="lobby-progress-item" onClick={() => handleEnterClass(course)}>
+              <img src={course.image} alt={course.title} className="lobby-progress-thumb" />
+              <div className="lobby-progress-info">
+                <h4 className="lobby-progress-title">{course.title}</h4>
+                <div className="lobby-progress-track">
+                  <div className="lobby-progress-fill" style={{ width: `${course.percent}%` }} />
+                </div>
+                <span className="lobby-progress-pct">{course.percent}% &mdash; {course.done}/{course.total} หัวข้อ</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="lobby-empty-hint">ยังไม่มีบทเรียนที่กำลังเรียนอยู่ — เลือกบทเรียนจากด้านล่างได้เลย!</p>
+      )}
+
+      {/* Recommended for You */}
+      <div className="section-row lobby-section-row">
+        <p className="section-label">แนะนำสำหรับคุณ</p>
         <a href="#" className="lobby-view-all" onClick={(e) => { e.preventDefault(); navigate('/content'); }}>ดูทั้งหมด →</a>
       </div>
       <div className="example-grid">
-        {limitedExamples.map((example) => (
+        {recommendedCourses.map((example) => (
           <article key={example.id} className="example-card">
             <img src={example.image} alt={example.title} className="card-image" />
             <div className="example-head">
