@@ -23,10 +23,10 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 	req.EmployeeCode = data.NormalizeEmployeeCode(req.EmployeeCode)
 	req.Password = strings.TrimSpace(req.Password)
 
-	if req.Name == "" || req.Username == "" || req.EmployeeCode == "" || req.Password == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "name, username, employee_code and password are required")
+	if req.Name == "" || req.Username == "" || req.Password == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "name, username and password are required")
 	}
-	if !data.IsValidEmployeeCode(req.EmployeeCode) {
+	if req.EmployeeCode != "" && !data.IsValidEmployeeCode(req.EmployeeCode) {
 		return fiber.NewError(fiber.StatusBadRequest, "employee_code must be in format XXXX-XX-XXXX")
 	}
 	if len(req.Password) < 8 {
