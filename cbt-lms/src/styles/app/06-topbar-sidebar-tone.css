@@ -339,7 +339,7 @@
   color: #5f7399;
 }
 
-/* Flat button style: border appears only on hover (square frame) */
+/* Rounded button style */
 .sidebar-nav button,
 .sidebar-nav a,
 .logout-button,
@@ -348,10 +348,15 @@
 .back-button,
 .save-button,
 .end-exam-button,
-.submit-exam-button,
+.submit-exam-button {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  box-shadow: none;
+}
+
 .manage-button {
   border: 1px solid transparent;
-  border-radius: 0;
+  border-radius: 10px;
   box-shadow: none;
 }
 
@@ -363,10 +368,15 @@
 .back-button:hover,
 .save-button:hover,
 .end-exam-button:hover,
-.submit-exam-button:hover,
+.submit-exam-button:hover {
+  border-color: #6e93ff;
+  border-radius: 999px;
+  box-shadow: none;
+}
+
 .manage-button:hover {
   border-color: #6e93ff;
-  border-radius: 0;
+  border-radius: 10px;
   box-shadow: none;
 }
 

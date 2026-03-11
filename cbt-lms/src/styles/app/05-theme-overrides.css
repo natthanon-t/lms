@@ -1193,3 +1193,73 @@
     width: 100%;
   }
 }
+
+/* ── Lobby Hero ─────────────────────────────────────────────────────── */
+.lobby-hero {
+  background: linear-gradient(135deg, #1b3d7a 0%, #2f66da 100%);
+  border-radius: 18px;
+  padding: 28px 32px;
+  margin-bottom: 20px;
+  color: #fff;
+}
+
+.lobby-hero h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.lobby-hero p {
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.95rem;
+}
+
+/* ── Section row (flex header with label + action link) ────────────── */
+.section-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 20px 0 12px;
+}
+
+.lobby-section-row {
+  margin: 20px 0 12px;
+}
+
+/* ── Lobby metric grid (narrower: 5 cards in 1 row up to 1200px) ─────── */
+.lobby-metric-grid {
+  grid-template-columns: repeat(5, 1fr);
+  margin-bottom: 8px;
+}
+
+@media (max-width: 900px) {
+  .lobby-metric-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .lobby-metric-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ── Lobby "view all" link ────────────────────────────────────────────── */
+.lobby-view-all {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #2f66da;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  border-bottom: 1px dashed #a0b8e8;
+  padding-bottom: 1px;
+  transition: color 0.2s ease, border-bottom-color 0.2s ease;
+}
+
+.lobby-view-all:hover {
+  color: #1f4fb5;
+  border-bottom-color: #1f4fb5;
+}
