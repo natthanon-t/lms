@@ -162,6 +162,9 @@ CREATE TABLE courses (
   owner_username            TEXT,
   status                    TEXT         NOT NULL DEFAULT 'inprogress'
                             CHECK (status IN ('active', 'inprogress', 'inactive')),
+  visibility                TEXT         NOT NULL DEFAULT 'public'
+                            CHECK (visibility IN ('public', 'private')),
+  allowed_usernames         TEXT[]       NOT NULL DEFAULT '{}',
   description               TEXT         NOT NULL DEFAULT '',
   image                     TEXT         NOT NULL DEFAULT '',
   content                   TEXT         NOT NULL DEFAULT '',   -- Markdown
@@ -279,6 +282,9 @@ CREATE TABLE exams (
   owner_username      TEXT,
   status              TEXT         NOT NULL DEFAULT 'inprogress'
                       CHECK (status IN ('active', 'inprogress', 'inactive')),
+  visibility          TEXT         NOT NULL DEFAULT 'public'
+                      CHECK (visibility IN ('public', 'private')),
+  allowed_usernames   TEXT[]       NOT NULL DEFAULT '{}',
   description         TEXT         NOT NULL DEFAULT '',
   instructions        TEXT         NOT NULL DEFAULT '',
   image               TEXT         NOT NULL DEFAULT '',
@@ -308,7 +314,7 @@ CREATE TABLE exam_questions (
   exam_id       TEXT  NOT NULL,
   domain        TEXT  NOT NULL DEFAULT '',
   question_type TEXT  NOT NULL DEFAULT 'multiple_choice',  -- multiple_choice | text
-  question      TEXT  NOT NULL,
+  question      TEXT  NOT NULL DEFAULT '',
   choice_a      TEXT  NOT NULL DEFAULT '',
   choice_b      TEXT  NOT NULL DEFAULT '',
   choice_c      TEXT  NOT NULL DEFAULT '',

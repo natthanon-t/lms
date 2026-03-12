@@ -6,13 +6,14 @@ import { useAppData } from "../contexts/AppDataContext";
 export default function ExamDetailPage() {
   const { examId } = useParams();
   const navigate = useNavigate();
-  const { currentUserKey } = useAuth();
+  const { currentUserKey, canTakeExam } = useAuth();
   const { examDraft, currentExamAttempts, openExam, examBank, loadCurrentExamAttempts } = useAppData();
   const [orderMode, setOrderMode] = useState("sequential");
   const [showHistory, setShowHistory] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const isLoggedIn = Boolean(currentUserKey);
+  const canStartExam = isLoggedIn && canTakeExam;
 
   // Load exam if not in context or doesn't match
   useEffect(() => {
@@ -203,10 +204,11 @@ export default function ExamDetailPage() {
           <button
             type="button"
             className="enter-button"
-            onClick={handleStartExam}
-            disabled={!isLoggedIn || hasReachedMax}
+            onClick={canStartExam && !hasReachedMax ? handleStartExam : undefined}
+            disabled={!canStartExam || hasReachedMax}
+            title={!isLoggedIn ? "กรุณา Login ก่อนเริ่มสอบ" : !canTakeExam ? "คุณไม่มีสิทธิ์เข้าทำข้อสอบ" : hasReachedMax ? "ถึงจำนวนครั้งสูงสุดแล้ว" : ""}
           >
-            {!isLoggedIn ? "กรุณา Login ก่อนเริ่มสอบ" : hasReachedMax ? "ถึงจำนวนครั้งสูงสุดแล้ว" : "เริ่มสอบ"}
+            {!isLoggedIn ? "กรุณา Login ก่อนเริ่มสอบ" : !canTakeExam ? "ไม่มีสิทธิ์เข้าทำข้อสอบ" : hasReachedMax ? "ถึงจำนวนครั้งสูงสุดแล้ว" : "เริ่มสอบ"}
           </button>
           {attemptCount > 0 && (
             <button type="button" className="manage-button" onClick={() => setShowHistory(true)}>

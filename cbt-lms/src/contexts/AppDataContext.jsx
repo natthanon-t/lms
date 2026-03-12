@@ -49,7 +49,9 @@ export function AppDataProvider({ children }) {
     currentUserKey,
     currentUser,
     canManageContent,
+    canViewAllContent,
     canManageExams,
+    canViewAllExams,
     defaultUserPassword,
     setDefaultUserPassword,
     setUsers,
@@ -78,8 +80,12 @@ export function AppDataProvider({ children }) {
     [currentUser, currentUserKey, canManageExams],
   );
   const canViewContentItem = useCallback(
-    (item) => canViewItemByStatus({ item, currentUserKey, hasManageAccess: canManageContent }),
-    [currentUserKey, canManageContent],
+    (item) => canViewItemByStatus({ item, currentUserKey, hasManageAccess: canManageContent, hasViewAllAccess: canViewAllContent }),
+    [currentUserKey, canManageContent, canViewAllContent],
+  );
+  const canViewExamItem = useCallback(
+    (item) => canViewItemByStatus({ item, currentUserKey, hasManageAccess: canManageExams, hasViewAllAccess: canViewAllExams }),
+    [currentUserKey, canManageExams, canViewAllExams],
   );
 
   const syncPrimaryCourseDrafts = useCallback((course) => {
@@ -600,6 +606,7 @@ export function AppDataProvider({ children }) {
     handleDeleteExam,
     handleSaveAttempt,
     canManageExamItem,
+    canViewExamItem,
     // study
     handleMarkSubtopicComplete,
     handleSubmitSubtopicAnswer,

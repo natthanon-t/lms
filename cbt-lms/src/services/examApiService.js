@@ -60,6 +60,8 @@ export const upsertExamApi = async (exam) =>
       title:             exam.title,
       creator:           exam.creator,
       status:            exam.status,
+      visibility:        exam.visibility ?? "public",
+      allowedUsernames:  Array.isArray(exam.allowedUsernames) ? exam.allowedUsernames : [],
       description:       exam.description,
       instructions:      exam.instructions,
       image:             exam.image,

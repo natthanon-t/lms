@@ -12,7 +12,17 @@ export const canManageOwnedItem = ({ item, currentUser, currentUserKey, hasManag
   return hasManageAccess || isItemOwner(item, currentUserKey);
 };
 
-export const canViewItemByStatus = ({ item, currentUserKey, hasManageAccess }) => {
+export const canViewItemByStatus = ({ item, currentUserKey, hasManageAccess, hasViewAllAccess }) => {
   const normalizedStatus = String(item?.status ?? "active").toLowerCase();
-  return hasManageAccess || normalizedStatus === "active" || isItemOwner(item, currentUserKey);
+  if (!hasManageAccess && normalizedStatus !== "active") {
+    return isItemOwner(item, currentUserKey);
+  }
+  const visibility = String(item?.visibility ?? "public").toLowerCase();
+  if (visibility === "private") {
+    if (hasViewAllAccess || hasManageAccess) return true;
+    if (isItemOwner(item, currentUserKey)) return true;
+    const allowed = Array.isArray(item?.allowedUsernames) ? item.allowedUsernames : [];
+    return Boolean(currentUserKey) && allowed.includes(currentUserKey);
+  }
+  return true;
 };

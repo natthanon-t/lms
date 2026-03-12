@@ -54,11 +54,22 @@ func (h *Handler) UpsertCourse(c *fiber.Ctx) error {
 		}
 	}
 
+	visibility := strings.ToLower(strings.TrimSpace(req.Visibility))
+	if visibility != "private" {
+		visibility = "public"
+	}
+	allowedUsernames := req.AllowedUsernames
+	if allowedUsernames == nil {
+		allowedUsernames = []string{}
+	}
+
 	course := data.Course{
 		ID:                      req.ID,
 		Title:                   req.Title,
 		Creator:                 strings.TrimSpace(req.Creator),
 		Status:                  req.Status,
+		Visibility:              visibility,
+		AllowedUsernames:        allowedUsernames,
 		Description:             strings.TrimSpace(req.Description),
 		Image:                   strings.TrimSpace(req.Image),
 		Content:                 req.Content,

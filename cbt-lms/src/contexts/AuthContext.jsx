@@ -47,13 +47,17 @@ export function AuthProvider({ children }) {
   const currentUser = currentUserKey ? users[currentUserKey] ?? null : null;
 
   const permissionSet = useMemo(() => new Set(currentPermissions), [currentPermissions]);
+  const canLearnContent = permissionSet.has("content.learn");
+  const canManageContent = permissionSet.has("content.manage");
+  const canViewAllContent = permissionSet.has("content.view_all");
+  const canTakeExam = permissionSet.has("exam.take");
+  const canManageExams = permissionSet.has("exam.manage");
+  const canViewAllExams = permissionSet.has("exam.view_all");
   const canManageUsers = permissionSet.has("management.users.manage");
   const canViewAllExamHistory = permissionSet.has("management.exam_history.view");
   const canViewOwnExamHistory = permissionSet.has("system.exam_history.view");
   const canViewExamHistory = canViewAllExamHistory || canViewOwnExamHistory;
   const canViewSummary = permissionSet.has("system.report.view");
-  const canManageContent = permissionSet.has("content.manage");
-  const canManageExams = permissionSet.has("exam.manage");
 
   const visibleSidebarTabs = useMemo(() => {
     if (!currentUser) return null;
@@ -250,13 +254,17 @@ export function AuthProvider({ children }) {
     defaultUserPassword,
     setDefaultUserPassword,
     permissionSet,
+    canLearnContent,
+    canManageContent,
+    canViewAllContent,
+    canTakeExam,
+    canManageExams,
+    canViewAllExams,
     canManageUsers,
     canViewAllExamHistory,
     canViewOwnExamHistory,
     canViewExamHistory,
     canViewSummary,
-    canManageContent,
-    canManageExams,
     visibleSidebarTabs,
     handleLoginFromBackend,
     handleRegisterFromBackend,

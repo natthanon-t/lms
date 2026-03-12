@@ -30,7 +30,7 @@ const QUOTES = [
 
 export default function LobbyPage() {
   const navigate = useNavigate();
-  const { currentUserKey, canManageContent, canManageExams, currentUser } = useAuth();
+  const { currentUserKey, canManageContent, canViewAllContent, canManageExams, canViewAllExams, currentUser } = useAuth();
   const { examples, examBank, openContentDetail, openExam, canManageExamItem, userSkillScores, learningProgress } = useAppData();
 
   const dailyQuote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
@@ -39,7 +39,7 @@ export default function LobbyPage() {
     const userProgress = learningProgress[currentUserKey] ?? {};
     return examples
       .filter(e =>
-        canViewItemByStatus({ item: e, currentUserKey, hasManageAccess: canManageContent })
+        canViewItemByStatus({ item: e, currentUserKey, hasManageAccess: canManageContent, hasViewAllAccess: canViewAllContent })
         && userProgress[e.id]
       )
       .map(e => {
@@ -60,7 +60,7 @@ export default function LobbyPage() {
     const mySkills = userSkillScores ?? {};
     return examples
       .filter(e =>
-        canViewItemByStatus({ item: e, currentUserKey, hasManageAccess: canManageContent })
+        canViewItemByStatus({ item: e, currentUserKey, hasManageAccess: canManageContent, hasViewAllAccess: canViewAllContent })
         && !userProgress[e.id]
       )
       .map(e => {
@@ -81,10 +81,10 @@ export default function LobbyPage() {
 
   const limitedExams = useMemo(() => {
     return examBank
-      .filter((exam) => canViewItemByStatus({ item: exam, currentUserKey, hasManageAccess: canManageExams }))
+      .filter((exam) => canViewItemByStatus({ item: exam, currentUserKey, hasManageAccess: canManageExams, hasViewAllAccess: canViewAllExams }))
       .sort((a, b) => (b.attemptCount ?? 0) - (a.attemptCount ?? 0))
       .slice(0, 4);
-  }, [examBank, currentUserKey, canManageExams]);
+  }, [examBank, currentUserKey, canManageExams, canViewAllExams]);
 
   const handleEnterClass = (example) => {
     const result = openContentDetail(example);

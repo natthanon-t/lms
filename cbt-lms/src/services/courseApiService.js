@@ -16,6 +16,8 @@ export const upsertCourseApi = async (course) =>
       title:                   course.title,
       creator:                 course.creator,
       status:                  course.status,
+      visibility:              course.visibility ?? "public",
+      allowedUsernames:        Array.isArray(course.allowedUsernames) ? course.allowedUsernames : [],
       description:             course.description,
       image:                   course.image,
       content:                 course.content,

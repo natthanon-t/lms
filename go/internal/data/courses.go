@@ -12,7 +12,9 @@ func ListCourses(limit, offset int) ([]Course, int, error) {
 	}
 
 	rows, err := db.Query(`
-		SELECT c.id, c.title, c.creator, COALESCE(c.owner_username, ''), c.status, c.description, c.image, c.content,
+		SELECT c.id, c.title, c.creator, COALESCE(c.owner_username, ''), c.status,
+		       COALESCE(c.visibility, 'public'), COALESCE(c.allowed_usernames, '{}'),
+		       c.description, c.image, c.content,
 		       c.skill_points, c.subtopic_completion_score, c.course_completion_score, c.created_at,
 		       COUNT(DISTINCT e.username) AS learner_count
 		FROM courses c
@@ -31,11 +33,15 @@ func ListCourses(limit, offset int) ([]Course, int, error) {
 		var c Course
 		if err := rows.Scan(
 			&c.ID, &c.Title, &c.Creator, &c.OwnerUsername, &c.Status,
+			&c.Visibility, (*StringArray)(&c.AllowedUsernames),
 			&c.Description, &c.Image, &c.Content,
 			&c.SkillPoints, &c.SubtopicCompletionScore, &c.CourseCompletionScore, &c.CreatedAt,
 			&c.LearnerCount,
 		); err != nil {
 			return nil, 0, err
+		}
+		if c.AllowedUsernames == nil {
+			c.AllowedUsernames = []string{}
 		}
 		c.SkillRewards = []SkillReward{}
 		courseIdx[c.ID] = len(courses)
@@ -91,26 +97,40 @@ func UpsertCourse(c Course, callerUsername string, isAdmin bool) (Course, error)
 		ownerPtr = &c.OwnerUsername
 	}
 
+	if c.Visibility == "" {
+		c.Visibility = "public"
+	}
+	if c.AllowedUsernames == nil {
+		c.AllowedUsernames = []string{}
+	}
+
 	err = db.QueryRow(`
-		INSERT INTO courses (id, title, creator, owner_username, status, description, image, content,
+		INSERT INTO courses (id, title, creator, owner_username, status, visibility, allowed_usernames,
+		                     description, image, content,
 		                     skill_points, subtopic_completion_score, course_completion_score)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
 		ON CONFLICT (id) DO UPDATE SET
-			title                    = EXCLUDED.title,
-			creator                  = EXCLUDED.creator,
-			status                   = EXCLUDED.status,
-			description              = EXCLUDED.description,
-			image                    = EXCLUDED.image,
-			content                  = EXCLUDED.content,
-			skill_points             = EXCLUDED.skill_points,
+			title                     = EXCLUDED.title,
+			creator                   = EXCLUDED.creator,
+			status                    = EXCLUDED.status,
+			visibility                = EXCLUDED.visibility,
+			allowed_usernames         = EXCLUDED.allowed_usernames,
+			description               = EXCLUDED.description,
+			image                     = EXCLUDED.image,
+			content                   = EXCLUDED.content,
+			skill_points              = EXCLUDED.skill_points,
 			subtopic_completion_score = EXCLUDED.subtopic_completion_score,
-			course_completion_score  = EXCLUDED.course_completion_score
-		RETURNING id, title, creator, COALESCE(owner_username, ''), status, description, image, content,
+			course_completion_score   = EXCLUDED.course_completion_score
+		RETURNING id, title, creator, COALESCE(owner_username, ''), status,
+		          COALESCE(visibility, 'public'), COALESCE(allowed_usernames, '{}'),
+		          description, image, content,
 		          skill_points, subtopic_completion_score, course_completion_score, created_at`,
-		c.ID, c.Title, c.Creator, ownerPtr, c.Status, c.Description, c.Image, c.Content,
+		c.ID, c.Title, c.Creator, ownerPtr, c.Status, c.Visibility, StringArray(c.AllowedUsernames),
+		c.Description, c.Image, c.Content,
 		c.SkillPoints, c.SubtopicCompletionScore, c.CourseCompletionScore,
 	).Scan(
 		&c.ID, &c.Title, &c.Creator, &c.OwnerUsername, &c.Status,
+		&c.Visibility, (*StringArray)(&c.AllowedUsernames),
 		&c.Description, &c.Image, &c.Content,
 		&c.SkillPoints, &c.SubtopicCompletionScore, &c.CourseCompletionScore, &c.CreatedAt,
 	)

@@ -7,11 +7,13 @@ import (
 )
 
 const (
-	PermissionContentLearn  = "content.learn"
-	PermissionContentManage = "content.manage"
+	PermissionContentLearn   = "content.learn"
+	PermissionContentManage  = "content.manage"
+	PermissionContentViewAll = "content.view_all"
 
-	PermissionExamTake   = "exam.take"
-	PermissionExamManage = "exam.manage"
+	PermissionExamTake    = "exam.take"
+	PermissionExamManage  = "exam.manage"
+	PermissionExamViewAll = "exam.view_all"
 
 	PermissionSystemReport      = "system.report.view"
 	PermissionSystemExamHistory = "system.exam_history.view"

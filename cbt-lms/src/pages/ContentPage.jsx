@@ -6,7 +6,7 @@ import { useAppData } from "../contexts/AppDataContext";
 
 export default function ContentPage() {
   const navigate = useNavigate();
-  const { currentUserKey, canManageContent } = useAuth();
+  const { currentUserKey, canManageContent, canViewAllContent } = useAuth();
   const { examples, openContentDetail, openContentEditor, createContent, updateContentStatus } = useAppData();
 
   const hasManageAccess = canManageContent;
@@ -14,7 +14,7 @@ export default function ContentPage() {
 
   const canManageExample = (example) => hasManageAccess || isItemOwner(example, currentUserKey);
   const visibleExamples = examples.filter((example) =>
-    canViewItemByStatus({ item: example, currentUserKey, hasManageAccess }),
+    canViewItemByStatus({ item: example, currentUserKey, hasManageAccess, hasViewAllAccess: canViewAllContent }),
   );
 
   const handleOpenEditor = (example) => {

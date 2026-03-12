@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
 )
 
 // ── Seed-file JSON structures ─────────────────────────────────────────────────
@@ -49,6 +50,10 @@ func EnsureExamSchema() error {
 		ALTER TABLE exam_attempts ADD COLUMN IF NOT EXISTS domain_stats JSONB NOT NULL DEFAULT '{}';
 		ALTER TABLE exam_questions ADD COLUMN IF NOT EXISTS question_type TEXT NOT NULL DEFAULT 'multiple_choice';
 		ALTER TABLE exam_attempt_answers ALTER COLUMN is_correct DROP NOT NULL;
+		ALTER TABLE exams ADD COLUMN IF NOT EXISTS visibility TEXT NOT NULL DEFAULT 'public';
+		ALTER TABLE exams ADD COLUMN IF NOT EXISTS allowed_usernames TEXT[] NOT NULL DEFAULT '{}';
+		ALTER TABLE courses ADD COLUMN IF NOT EXISTS visibility TEXT NOT NULL DEFAULT 'public';
+		ALTER TABLE courses ADD COLUMN IF NOT EXISTS allowed_usernames TEXT[] NOT NULL DEFAULT '{}';
 	`)
 	return err
 }
@@ -63,6 +68,7 @@ func ListExams(limit, offset int) ([]Exam, int, error) {
 
 	rows, err := db.Query(`
 		SELECT ex.id, ex.title, ex.creator, COALESCE(ex.owner_username, ''), ex.status,
+		       COALESCE(ex.visibility, 'public'), COALESCE(ex.allowed_usernames, '{}'),
 		       ex.description, ex.instructions, ex.image,
 		       ex.number_of_questions, ex.default_time, ex.max_attempts, ex.created_at,
 		       COUNT(DISTINCT ea.username) AS attempt_count
@@ -82,11 +88,15 @@ func ListExams(limit, offset int) ([]Exam, int, error) {
 		var e Exam
 		if err := rows.Scan(
 			&e.ID, &e.Title, &e.Creator, &e.OwnerUsername, &e.Status,
+			&e.Visibility, (*StringArray)(&e.AllowedUsernames),
 			&e.Description, &e.Instructions, &e.Image,
 			&e.NumberOfQuestions, &e.DefaultTime, &e.MaxAttempts, &e.CreatedAt,
 			&e.AttemptCount,
 		); err != nil {
 			return nil, 0, err
+		}
+		if e.AllowedUsernames == nil {
+			e.AllowedUsernames = []string{}
 		}
 		e.DomainPercentages = map[string]int{}
 		e.Questions = []ExamQuestion{}
@@ -125,11 +135,13 @@ func GetExam(id string) (*Exam, error) {
 	var e Exam
 	err := db.QueryRow(`
 		SELECT id, title, creator, COALESCE(owner_username, ''), status,
+		       COALESCE(visibility, 'public'), COALESCE(allowed_usernames, '{}'),
 		       description, instructions, image,
 		       number_of_questions, default_time, max_attempts, created_at
 		FROM exams WHERE id = $1`, id,
 	).Scan(
 		&e.ID, &e.Title, &e.Creator, &e.OwnerUsername, &e.Status,
+		&e.Visibility, (*StringArray)(&e.AllowedUsernames),
 		&e.Description, &e.Instructions, &e.Image,
 		&e.NumberOfQuestions, &e.DefaultTime, &e.MaxAttempts, &e.CreatedAt,
 	)
@@ -180,11 +192,13 @@ func GetExamPublic(id string) (*PublicExam, error) {
 	var e PublicExam
 	err := db.QueryRow(`
 		SELECT id, title, creator, status,
+		       COALESCE(visibility, 'public'), COALESCE(allowed_usernames, '{}'),
 		       description, instructions, image,
 		       number_of_questions, default_time, max_attempts, created_at
 		FROM exams WHERE id = $1`, id,
 	).Scan(
 		&e.ID, &e.Title, &e.Creator, &e.Status,
+		&e.Visibility, (*StringArray)(&e.AllowedUsernames),
 		&e.Description, &e.Instructions, &e.Image,
 		&e.NumberOfQuestions, &e.DefaultTime, &e.MaxAttempts, &e.CreatedAt,
 	)
@@ -256,16 +270,24 @@ func UpsertExam(exam Exam, callerUsername string, isAdmin bool) (Exam, error) {
 	if exam.DomainPercentages == nil {
 		exam.DomainPercentages = map[string]int{}
 	}
+	if exam.Visibility == "" {
+		exam.Visibility = "public"
+	}
+	if exam.AllowedUsernames == nil {
+		exam.AllowedUsernames = []string{}
+	}
 
 	err = db.QueryRow(`
-		INSERT INTO exams (id, title, creator, owner_username, status,
+		INSERT INTO exams (id, title, creator, owner_username, status, visibility, allowed_usernames,
 		                   description, instructions, image,
 		                   number_of_questions, default_time, max_attempts)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
 		ON CONFLICT (id) DO UPDATE SET
 			title               = EXCLUDED.title,
 			creator             = EXCLUDED.creator,
 			status              = EXCLUDED.status,
+			visibility          = EXCLUDED.visibility,
+			allowed_usernames   = EXCLUDED.allowed_usernames,
 			description         = EXCLUDED.description,
 			instructions        = EXCLUDED.instructions,
 			image               = EXCLUDED.image,
@@ -273,13 +295,15 @@ func UpsertExam(exam Exam, callerUsername string, isAdmin bool) (Exam, error) {
 			default_time        = EXCLUDED.default_time,
 			max_attempts        = EXCLUDED.max_attempts
 		RETURNING id, title, creator, COALESCE(owner_username, ''), status,
+		          COALESCE(visibility, 'public'), COALESCE(allowed_usernames, '{}'),
 		          description, instructions, image,
 		          number_of_questions, default_time, max_attempts, created_at`,
-		exam.ID, exam.Title, exam.Creator, ownerPtr, exam.Status,
+		exam.ID, exam.Title, exam.Creator, ownerPtr, exam.Status, exam.Visibility, StringArray(exam.AllowedUsernames),
 		exam.Description, exam.Instructions, exam.Image,
 		exam.NumberOfQuestions, exam.DefaultTime, exam.MaxAttempts,
 	).Scan(
 		&exam.ID, &exam.Title, &exam.Creator, &exam.OwnerUsername, &exam.Status,
+		&exam.Visibility, (*StringArray)(&exam.AllowedUsernames),
 		&exam.Description, &exam.Instructions, &exam.Image,
 		&exam.NumberOfQuestions, &exam.DefaultTime, &exam.MaxAttempts, &exam.CreatedAt,
 	)

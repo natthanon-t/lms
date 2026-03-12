@@ -3,6 +3,60 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ensureCoverImage, fileToDataUrl } from "../services/imageService";
 import { parseExamUploadJson } from "../services/examService";
 import { useAppData } from "../contexts/AppDataContext";
+import { useAuth } from "../contexts/AuthContext";
+
+function AllowedUsernameInput({ onAdd, users = {}, excluded = [] }) {
+  const [value, setValue] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const suggestions = useMemo(() => {
+    const q = value.trim().toLowerCase();
+    if (!q) return [];
+    return Object.entries(users)
+      .filter(([u, info]) =>
+        !excluded.includes(u) &&
+        (u.includes(q) || String(info?.name ?? "").toLowerCase().includes(q))
+      )
+      .slice(0, 8);
+  }, [value, users, excluded]);
+
+  const commit = (username) => {
+    if (username) { onAdd(username); }
+    setValue("");
+    setOpen(false);
+  };
+
+  return (
+    <div className="allowed-user-input-row">
+      <div className="allowed-user-autocomplete">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => { setValue(e.target.value); setOpen(true); }}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(value.trim().toLowerCase()); } }}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onFocus={() => { if (value.trim()) setOpen(true); }}
+          placeholder="พิมพ์ username หรือชื่อ"
+        />
+        {open && suggestions.length > 0 && (
+          <div className="allowed-user-suggestions">
+            {suggestions.map(([u, info]) => (
+              <div key={u} className="allowed-user-suggestion-item" onMouseDown={() => commit(u)}>
+                <span className="suggestion-username">{u}</span>
+                {info?.name && info.name !== u && (
+                  <span className="suggestion-name"> — {info.name}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <button type="button" className="create-content-button" onClick={() => commit(value.trim().toLowerCase())}>
+        + เพิ่ม
+      </button>
+    </div>
+  );
+}
 
 const toDomainRows = (domainPercentages) => {
   const entries = Object.entries(domainPercentages ?? {});
@@ -44,6 +98,7 @@ export default function ExamEditorPage() {
   useParams(); // examId available but navigation uses context
   const navigate = useNavigate();
   const { examEditorDraft, saveExamEditorDraft, handleDeleteExam } = useAppData();
+  const { users } = useAuth();
 
   const draft = examEditorDraft;
   const [exam, setExam] = useState(draft);
@@ -264,6 +319,49 @@ export default function ExamEditorPage() {
             <option value="inactive">inactive</option>
           </select>
         </div>
+        <div className="editor-title-box">
+          <label htmlFor="exam-visibility">การมองเห็น</label>
+          <select
+            id="exam-visibility"
+            value={exam.visibility ?? "public"}
+            onChange={(event) => setExam((prev) => ({ ...prev, visibility: event.target.value }))}
+          >
+            <option value="public">Public — ทุกคนมองเห็น</option>
+            <option value="private">Private — เฉพาะที่ระบุ</option>
+          </select>
+        </div>
+        {(exam.visibility ?? "public") === "private" && (
+          <div className="editor-title-box editor-meta-full">
+            <label>ผู้ใช้ที่มองเห็นได้ (username)</label>
+            <div className="allowed-users-list">
+              {(Array.isArray(exam.allowedUsernames) ? exam.allowedUsernames : []).map((u, i) => (
+                <div key={i} className="allowed-user-row">
+                  <span className="allowed-user-tag">{u}</span>
+                  <button
+                    type="button"
+                    className="toc-delete-button"
+                    onClick={() => setExam((prev) => ({
+                      ...prev,
+                      allowedUsernames: (prev.allowedUsernames ?? []).filter((_, idx) => idx !== i),
+                    }))}
+                  >
+                    ลบ
+                  </button>
+                </div>
+              ))}
+              <AllowedUsernameInput
+                users={users}
+                excluded={Array.isArray(exam.allowedUsernames) ? exam.allowedUsernames : []}
+                onAdd={(username) => {
+                  const existing = Array.isArray(exam.allowedUsernames) ? exam.allowedUsernames : [];
+                  if (!existing.includes(username)) {
+                    setExam((prev) => ({ ...prev, allowedUsernames: [...existing, username] }));
+                  }
+                }}
+              />
+            </div>
+          </div>
+        )}
         <div className="editor-title-box">
           <label htmlFor="exam-creator">Creator</label>
           <input

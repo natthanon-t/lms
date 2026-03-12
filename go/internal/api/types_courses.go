@@ -5,6 +5,8 @@ type courseRequest struct {
 	Title                   string            `json:"title"`
 	Creator                 string            `json:"creator"`
 	Status                  string            `json:"status"`
+	Visibility              string            `json:"visibility"`
+	AllowedUsernames        []string          `json:"allowedUsernames"`
 	Description             string            `json:"description"`
 	Image                   string            `json:"image"`
 	Content                 string            `json:"content"`

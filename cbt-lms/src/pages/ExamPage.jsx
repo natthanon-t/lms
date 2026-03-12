@@ -6,7 +6,7 @@ import { useAppData } from "../contexts/AppDataContext";
 
 export default function ExamPage() {
   const navigate = useNavigate();
-  const { currentUserKey, canManageExams } = useAuth();
+  const { currentUserKey, canManageExams, canViewAllExams } = useAuth();
   const { examBank, openExam, openExamEditor, createExam, updateExamStatus } = useAppData();
 
   const hasManageAccess = canManageExams;
@@ -14,7 +14,7 @@ export default function ExamPage() {
 
   const canManageExam = (exam) => hasManageAccess || isItemOwner(exam, currentUserKey);
   const visibleExams = examBank.filter((exam) =>
-    canViewItemByStatus({ item: exam, currentUserKey, hasManageAccess }),
+    canViewItemByStatus({ item: exam, currentUserKey, hasManageAccess, hasViewAllAccess: canViewAllExams }),
   );
 
   const handleEnterExam = async (exam) => {

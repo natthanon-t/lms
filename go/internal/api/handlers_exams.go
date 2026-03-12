@@ -101,11 +101,22 @@ func (h *Handler) UpsertExam(c *fiber.Ctx) error {
 		})
 	}
 
+	visibility := strings.ToLower(strings.TrimSpace(req.Visibility))
+	if visibility != "private" {
+		visibility = "public"
+	}
+	allowedUsernames := req.AllowedUsernames
+	if allowedUsernames == nil {
+		allowedUsernames = []string{}
+	}
+
 	exam := data.Exam{
 		ID:                req.ID,
 		Title:             req.Title,
 		Creator:           strings.TrimSpace(req.Creator),
 		Status:            req.Status,
+		Visibility:        visibility,
+		AllowedUsernames:  allowedUsernames,
 		Description:       strings.TrimSpace(req.Description),
 		Instructions:      strings.TrimSpace(req.Instructions),
 		Image:             strings.TrimSpace(req.Image),

@@ -10,7 +10,7 @@ import { useAppData } from "../contexts/AppDataContext";
 export default function ContentDetailPage() {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { currentUserKey } = useAuth();
+  const { currentUserKey, canLearnContent } = useAuth();
   const { examples, prepareStudy } = useAppData();
 
   const contentItem = useMemo(() => {
@@ -19,6 +19,7 @@ export default function ContentDetailPage() {
   }, [examples, courseId]);
 
   const isLoggedIn = Boolean(currentUserKey);
+  const canEnterStudy = isLoggedIn && canLearnContent;
 
   const subtopics = useMemo(
     () => (contentItem ? getSubtopicPages(contentItem.content, contentItem.title) : []),
@@ -98,10 +99,11 @@ export default function ContentDetailPage() {
           <button
             type="button"
             className="enter-button"
-            onClick={isLoggedIn ? handleEnterStudy : undefined}
-            disabled={!isLoggedIn}
+            onClick={canEnterStudy ? handleEnterStudy : undefined}
+            disabled={!canEnterStudy}
+            title={!isLoggedIn ? "กรุณา Login ก่อนเข้าเรียน" : !canLearnContent ? "คุณไม่มีสิทธิ์เรียนเนื้อหา" : ""}
           >
-            {isLoggedIn ? "เข้าเรียนเนื้อหานี้" : "กรุณา Login ก่อนเข้าเรียน"}
+            {!isLoggedIn ? "กรุณา Login ก่อนเข้าเรียน" : !canLearnContent ? "ไม่มีสิทธิ์เรียนเนื้อหา" : "เข้าเรียนเนื้อหานี้"}
           </button>
         </article>
 

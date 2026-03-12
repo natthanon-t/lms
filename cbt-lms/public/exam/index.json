@@ -11,7 +11,7 @@
   },
   {
     "id": "cc2",
-    "title": "ISC2 CC Practice Exam",
+    "title": "ISC2 CC Practice Exam I",
     "description": "100 Questions • 120 Minutes",
     "instructions": "Follow the exam instructions and answer all questions carefully.",
     "numberOfQuestions": 100,
@@ -21,7 +21,7 @@
   },
   {
     "id": "cc3",
-    "title": "ISC2 CC Practice Exam",
+    "title": "ISC2 CC Practice Exam II",
     "description": "125 Questions • 120 Minutes",
     "instructions": "Follow the exam instructions and answer all questions carefully.",
     "numberOfQuestions": 125,

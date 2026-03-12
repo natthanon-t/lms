@@ -5,6 +5,8 @@ type examRequest struct {
 	Title             string            `json:"title"`
 	Creator           string            `json:"creator"`
 	Status            string            `json:"status"`
+	Visibility        string            `json:"visibility"`
+	AllowedUsernames  []string          `json:"allowedUsernames"`
 	Description       string            `json:"description"`
 	Instructions      string            `json:"instructions"`
 	Image             string            `json:"image"`
