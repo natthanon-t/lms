@@ -49,7 +49,7 @@ export default function ContentDetailPage() {
   };
 
   return (
-    <section className="workspace-content content-theme-exam">
+    <section className="workspace-content content-theme-exam content-detail-page">
       <header className="content-header editor-head">
         <div>
           <h1>{contentItem.title}</h1>
@@ -61,15 +61,15 @@ export default function ContentDetailPage() {
       </header>
 
       <div className="content-detail-grid">
-        <article className="info-card content-detail-card">
+        <article className="info-card content-detail-card content-detail-overview-card">
           <img src={contentItem.image} alt={contentItem.title} className="content-detail-cover" />
-          <p>
+          <p className="content-meta-item">
             <strong>ผู้สร้าง:</strong> {contentItem.creator ?? "ทีมผู้สอน"}
           </p>
-          <p>
+          <p className="content-meta-item">
             <strong>รายละเอียด:</strong> {contentItem.description ?? "-"}
           </p>
-          <p>
+          <p className="content-meta-item">
             <strong>หัวข้อย่อยทั้งหมด:</strong> {subtopics.length}
           </p>
           {rewards.length ? (
@@ -93,7 +93,7 @@ export default function ContentDetailPage() {
               </div>
             </div>
           ) : null}
-          <p>
+          <p className="content-meta-item">
             <strong>คะแนนจบคอร์ส:</strong> {contentItem.courseCompletionScore ?? 100}
           </p>
           <button

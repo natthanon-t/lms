@@ -268,8 +268,11 @@ export default function ExamTakingPage() {
     setShowEndConfirm(true);
   };
 
+  const answeredCount = Object.keys(answers).filter((key) => answers[key] !== "" && answers[key] != null).length;
+  const answeredPercent = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+
   return (
-    <section className="workspace-content">
+    <section className="workspace-content exam-taking-page">
       {showEndConfirm && (
         <ConfirmModal
           title="ต้องการสิ้นสุดการสอบ?"
@@ -286,22 +289,31 @@ export default function ExamTakingPage() {
           <h1>เข้าสอบ: {draft.title}</h1>
           <p>
             ข้อ {currentIndex + 1} / {totalQuestions}
+            {" · "}ตอบแล้ว {answeredCount}/{totalQuestions} ข้อ
           </p>
         </div>
         <div className="exam-top-actions">
-          <span className="timer-badge">เวลาคงเหลือ {formatTime(remainingSeconds)}</span>
+          <span className="timer-badge">⏱ เวลาคงเหลือ {formatTime(remainingSeconds)}</span>
         </div>
       </header>
 
       <article className="info-card question-card">
-        <p>
-          <strong>Domain:</strong> {currentQuestion.domain}
+        <div className="exam-progress-shell" aria-label="Exam progress">
+          <div className="exam-progress-track">
+            <div className="exam-progress-fill" style={{ width: `${answeredPercent}%` }} />
+          </div>
+          <span className="exam-progress-label">ตอบแล้ว {answeredCount}/{totalQuestions} ({answeredPercent}%)</span>
+        </div>
+
+        <p className="question-domain-label">
+          <span className="question-domain-badge">{currentQuestion.domain}</span>
+          <span className="question-counter">ข้อ {currentIndex + 1} จาก {totalQuestions}</span>
         </p>
         <h3>{currentQuestion.question}</h3>
 
         {currentQuestion.questionType === "text" ? (
           <div className="text-answer-wrap">
-            <p style={{ fontSize: "0.85rem", color: "var(--text-muted, #888)", marginBottom: "0.5rem" }}>
+            <p style={{ fontSize: "0.85rem", color: "var(--text-muted, #6b7280)", marginBottom: "0.5rem" }}>
               พิมพ์คำตอบของคุณด้านล่าง (ข้อนี้ไม่มีเฉลยตายตัว)
             </p>
             <textarea
@@ -350,7 +362,7 @@ export default function ExamTakingPage() {
             onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
             disabled={currentIndex === 0}
           >
-            ย้อนกลับ
+            ← ย้อนกลับ
           </button>
           <button
             type="button"
@@ -358,11 +370,11 @@ export default function ExamTakingPage() {
             onClick={() => setCurrentIndex((prev) => Math.min(totalQuestions - 1, prev + 1))}
             disabled={currentIndex === totalQuestions - 1}
           >
-            ถัดไป
+            ถัดไป →
           </button>
           {currentIndex === totalQuestions - 1 ? (
             <button type="button" className="submit-exam-button" onClick={() => void submitExam()}>
-              ส่งข้อสอบ
+              ✓ ส่งข้อสอบ
             </button>
           ) : null}
         </div>

@@ -98,8 +98,8 @@
   object-fit: contain;
   padding: 6px;
   background: #ffffff;
-  border: 1px solid #bdd0e8;
-  box-shadow: 0 6px 14px rgba(35, 57, 92, 0.12);
+  border: 1px solid #e2e8f0;
+  box-shadow: none;
 }
 
 .workspace-topbar-brand h1 {
@@ -230,10 +230,7 @@
 
 /* Cybertron tone */
 .workspace-layout {
-  background:
-    radial-gradient(circle at 15% 20%, rgba(122, 166, 255, 0.28), transparent 40%),
-    radial-gradient(circle at 85% 18%, rgba(109, 183, 255, 0.2), transparent 35%),
-    linear-gradient(180deg, #e8f1ff 0%, #dfeafd 100%);
+  background: #f0f4fa;
 }
 
 .workspace-topbar {
@@ -291,8 +288,8 @@
 
 .sidebar-nav button.active,
 .sidebar-nav a.active {
-  background: linear-gradient(90deg, #4b82ff 0%, #3d71ef 100%);
-  border-color: #5d89ef;
+  background: #2563eb;
+  border-color: #2563eb;
   color: #ffffff;
 }
 
@@ -344,14 +341,8 @@
 .sidebar-nav a,
 .logout-button,
 .create-content-button,
-.enter-button,
-.back-button,
-.save-button,
-.end-exam-button,
-.submit-exam-button {
-  border: 1px solid transparent;
+.save-button {
   border-radius: 999px;
-  box-shadow: none;
 }
 
 .manage-button {
@@ -363,15 +354,9 @@
 .sidebar-nav button:hover,
 .sidebar-nav a:hover,
 .logout-button:hover,
-.create-content-button:hover,
-.enter-button:hover,
-.back-button:hover,
-.save-button:hover,
-.end-exam-button:hover,
-.submit-exam-button:hover {
+.create-content-button:hover {
   border-color: #6e93ff;
   border-radius: 999px;
-  box-shadow: none;
 }
 
 .manage-button:hover {

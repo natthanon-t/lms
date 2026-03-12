@@ -3,7 +3,7 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: linear-gradient(140deg, #f5f7fb, #dce5ff);
+  background: #f0f4fa;
 }
 
 .login-shell {
@@ -21,9 +21,9 @@
 .login-card {
   width: 100%;
   background: #ffffff;
-  border: 1px solid #d7dff1;
-  border-radius: 16px;
-  box-shadow: 0 14px 30px rgba(25, 40, 75, 0.12);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   padding: 24px;
 }
 
@@ -538,50 +538,218 @@
   background: #2f66da;
   color: #ffffff;
   cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+}
+
+/* ย้อนกลับ = สีเทาเข้ม (neutral) */
+.exam-nav-actions .back-button {
+  background: #475569;
+  box-shadow: none;
+  border: none;
+}
+
+.exam-nav-actions .back-button:hover:not(:disabled) {
+  background: #334155;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ถัดไป = สีน้ำเงินหลัก */
+.exam-nav-actions .enter-button {
+  background: #2563eb;
+  box-shadow: none;
+  border: none;
+}
+
+.exam-nav-actions .enter-button:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: none;
+  box-shadow: none;
+}
+
+.enter-button:disabled,
+.back-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* สิ้นสุดการสอบ = สีแดง outline */
+.end-exam-button {
+  background: transparent;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  font-size: 0.85rem;
+  padding: 8px 24px;
+  box-shadow: none;
+}
+
+.end-exam-button:hover {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #b91c1c;
 }
 
 .editor-head {
+  position: sticky;
+  top: -24px;
+  z-index: 30;
   display: flex;
-  align-items: start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
+  margin: -22px -22px 20px;
+  padding: 14px 22px;
+  background: rgba(250, 252, 255, 0.97);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: none;
+}
+
+.editor-head h1 {
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.editor-head > div > p {
+  font-size: 0.82rem;
+  color: #5a7099;
+  margin: 2px 0 0;
 }
 
 .editor-header-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .save-button {
-  background: #1f8d4e;
+  background: #16a34a;
+  box-shadow: none;
+}
+
+.save-button:hover {
+  background: #15803d;
+  transform: none;
+  box-shadow: none;
 }
 
 .danger-button {
-  background: #d22f2f;
+  background: #dc2626;
+  box-shadow: none;
+}
+
+.danger-button:hover {
+  background: #b91c1c;
+  transform: none;
+  box-shadow: none;
+}
+
+.back-button {
+  background: #2563eb;
+  box-shadow: none;
+}
+
+.back-button:hover {
+  background: #1d4ed8;
+  transform: none;
 }
 
 .save-message {
-  margin: 10px 0 0;
-  color: #1f8d4e;
-  font-weight: 700;
+  margin: 0 0 14px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: #edfff5;
+  border: 1px solid #7de0b0;
+  color: #1a7044;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.save-message.is-error {
+  background: #fff2f2;
+  border-color: #f0a0a0;
+  color: #9a1f1f;
+}
+
+/* ── Editor section cards ─────────────────────────────────────────────────── */
+
+.editor-section-card {
+  margin-top: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.editor-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  background: #f8fafc;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.editor-section-head .section-icon {
+  font-size: 0.95rem;
+}
+
+.editor-section-body {
+  padding: 16px;
 }
 
 .editor-title-box {
-  margin-top: 16px;
   display: grid;
-  gap: 8px;
+  gap: 5px;
+}
+
+.editor-title-box + .editor-title-box {
+  margin-top: 12px;
 }
 
 .editor-title-box label {
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #4a6590;
+}
+
+.editor-title-box input,
+.editor-title-box select,
+.editor-title-box textarea {
+  border: 1.5px solid #c8d8f0;
+  border-radius: 9px;
+  padding: 9px 12px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: #f8fbff;
   color: #1a2f57;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+}
+
+.editor-title-box input:focus,
+.editor-title-box select:focus,
+.editor-title-box textarea:focus {
+  outline: none;
+  border-color: #3572e8;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(53, 114, 232, 0.12);
 }
 
 .editor-course-meta {
-  margin-top: 12px;
   display: grid;
-  gap: 10px;
+  gap: 12px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -589,10 +757,16 @@
   grid-column: 1 / -1;
 }
 
+/* Visibility private highlight */
 .allowed-users-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  margin-top: 4px;
+  padding: 12px;
+  background: #fffbf0;
+  border: 1.5px solid #f0cc70;
+  border-radius: 10px;
 }
 
 .allowed-user-row {
@@ -603,12 +777,13 @@
 
 .allowed-user-tag {
   flex: 1;
-  padding: 4px 10px;
-  background: var(--bg-card, #1e2a3a);
-  border: 1px solid var(--border-color, #2a3a4a);
+  padding: 5px 10px;
+  background: #fff8e6;
+  border: 1px solid #e8c84a;
   border-radius: 6px;
   font-size: 0.875rem;
-  color: var(--text-primary, #e0eaf8);
+  color: #5a3e00;
+  font-weight: 600;
 }
 
 .allowed-user-input-row {
@@ -635,10 +810,10 @@
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background: var(--bg-card, #1e2a3a);
-  border: 1px solid var(--border-color, #2a3a4a);
-  border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  background: #ffffff;
+  border: 1px solid #c8d8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(30, 65, 140, 0.15);
   z-index: 100;
   max-height: 200px;
   overflow-y: auto;
@@ -651,7 +826,7 @@
   display: flex;
   gap: 4px;
   align-items: baseline;
-  border-bottom: 1px solid var(--border-color, #2a3a4a);
+  border-bottom: 1px solid #e8f0fa;
 }
 
 .allowed-user-suggestion-item:last-child {
@@ -659,16 +834,16 @@
 }
 
 .allowed-user-suggestion-item:hover {
-  background: var(--bg-hover, #243447);
+  background: #eef4ff;
 }
 
 .suggestion-username {
-  color: var(--text-primary, #e0eaf8);
-  font-weight: 500;
+  color: #1a2f57;
+  font-weight: 600;
 }
 
 .suggestion-name {
-  color: var(--text-muted, #8899aa);
+  color: #6680a8;
   font-size: 0.8rem;
 }
 

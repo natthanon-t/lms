@@ -19,7 +19,7 @@
   background: var(--surface);
   border-color: var(--border);
   color: var(--foreground);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .workspace-sidebar {
@@ -93,12 +93,11 @@
 .toc-delete-button,
 .content-theme-exam .quiz-answer-row button,
 .content-theme-exam .subtopic-nav-button {
-  background: linear-gradient(180deg, #ffffff 0%, var(--surface) 100%);
+  background: var(--surface);
   border-color: var(--border);
   color: var(--foreground);
-  box-shadow: 0 6px 14px rgba(100, 116, 139, 0.14);
-  transition: background-color 0.22s ease, border-color 0.22s ease, color 0.22s ease,
-    box-shadow 0.22s ease, transform 0.16s ease;
+  box-shadow: none;
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 
 .sidebar-nav button:hover,
@@ -109,11 +108,11 @@
 .gear-button:hover,
 .subtopic-nav-button:hover,
 .toc-edit-button:hover {
-  background: #e6f2ff;
-  border-color: var(--primary-light);
-  color: var(--primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(0, 76, 153, 0.18);
+  background: #f1f5f9;
+  border-color: var(--border);
+  color: var(--foreground);
+  transform: none;
+  box-shadow: none;
 }
 
 .logout-button,
@@ -139,10 +138,10 @@
 .end-exam-button,
 .login-form button,
 .submit-exam-button {
-  background: linear-gradient(180deg, var(--primary-light) 0%, var(--primary) 100%);
-  border-color: #0a75dd;
+  background: var(--primary);
+  border-color: var(--primary);
   color: #ffffff;
-  box-shadow: 0 8px 18px rgba(0, 102, 204, 0.24);
+  box-shadow: none;
 }
 
 .create-content-button:hover,
@@ -155,50 +154,50 @@
 .submit-exam-button:hover,
 .sidebar-nav button.active:hover,
 .sidebar-nav a.active:hover {
-  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
+  background: var(--primary-dark);
   border-color: var(--primary-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 12px 22px rgba(0, 76, 153, 0.3);
+  transform: none;
+  box-shadow: none;
 }
 
 .save-button,
 .submit-exam-button {
-  background: linear-gradient(180deg, #1db6cf 0%, var(--accent) 100%);
+  background: var(--accent);
   border-color: var(--accent);
-  box-shadow: 0 8px 18px rgba(8, 145, 178, 0.24);
+  box-shadow: none;
 }
 
 .danger-button {
-  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+  background: #dc2626;
   border-color: #dc2626;
-  box-shadow: 0 8px 18px rgba(220, 38, 38, 0.26);
+  box-shadow: none;
 }
 
 .save-button:hover,
 .submit-exam-button:hover {
-  background: linear-gradient(180deg, var(--accent) 0%, #0e7490 100%);
+  background: #0e7490;
   border-color: #0e7490;
-  box-shadow: 0 12px 22px rgba(14, 116, 144, 0.32);
+  box-shadow: none;
 }
 
 .danger-button:hover {
-  background: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%);
+  background: #b91c1c;
   border-color: #b91c1c;
-  box-shadow: 0 12px 22px rgba(185, 28, 28, 0.32);
+  box-shadow: none;
 }
 
 .back-home-button {
-  background: linear-gradient(180deg, #ffffff 0%, var(--surface) 100%);
+  background: var(--surface);
   border-color: var(--border);
   color: var(--foreground);
-  box-shadow: 0 6px 14px rgba(100, 116, 139, 0.14);
+  box-shadow: none;
 }
 
 .back-home-button:hover {
-  background: #e6f2ff;
-  border-color: var(--primary-light);
-  color: var(--primary-dark);
-  transform: translateY(-1px);
+  background: #f1f5f9;
+  border-color: var(--border);
+  color: var(--foreground);
+  transform: none;
 }
 
 .sidebar-nav button:focus-visible,
@@ -221,7 +220,7 @@
 .submit-exam-button:focus-visible,
 .back-home-button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.22), 0 10px 20px rgba(0, 76, 153, 0.18);
+  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
 }
 
 .search-box input,
@@ -308,11 +307,10 @@
 }
 
 .choice-item.checked {
-  border-color: var(--primary);
-  background: #e6f2ff;
+  border-color: #2563eb;
+  background: #f0f4ff;
 }
 
-.timer-badge,
 .content-status-badge,
 .question-points {
   background: #e6f2ff;

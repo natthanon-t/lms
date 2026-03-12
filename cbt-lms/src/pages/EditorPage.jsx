@@ -477,102 +477,110 @@ export default function EditorPage() {
 
       {saveMessage ? <p className="save-message">{saveMessage}</p> : null}
 
-      <div className="editor-title-box">
-        <label htmlFor="editor-title">ชื่อเนื้อหา</label>
-        <input
-          id="editor-title"
-          value={draft.title}
-          onChange={(event) => onChangeDraft("title", event.target.value)}
-        />
-      </div>
+      <div className="editor-section-card">
+        <div className="editor-section-head">
+          <span className="section-icon">📋</span>
+          ข้อมูลทั่วไป
+        </div>
+        <div className="editor-section-body">
+          <div className="editor-title-box">
+            <label htmlFor="editor-title">ชื่อเนื้อหา</label>
+            <input
+              id="editor-title"
+              value={draft.title}
+              onChange={(event) => onChangeDraft("title", event.target.value)}
+            />
+          </div>
 
-      <div className="editor-course-meta">
-        <div className="editor-title-box">
-          <label htmlFor="editor-creator">ผู้สร้าง</label>
-          <input
-            id="editor-creator"
-            value={draft.creator ?? ""}
-            onChange={(event) => onChangeDraft("creator", event.target.value)}
-          />
-        </div>
-        <div className="editor-title-box">
-          <label htmlFor="editor-status">สถานะคอร์ส</label>
-          <select
-            id="editor-status"
-            value={draft.status ?? "active"}
-            onChange={(event) => onChangeDraft("status", event.target.value)}
-          >
-            <option value="inprogress">inprogress</option>
-            {canPublish && <option value="active">active</option>}
-            <option value="inactive">inactive</option>
-          </select>
-        </div>
-        <div className="editor-title-box">
-          <label htmlFor="editor-visibility">การมองเห็น</label>
-          <select
-            id="editor-visibility"
-            value={draft.visibility ?? "public"}
-            onChange={(event) => onChangeDraft("visibility", event.target.value)}
-          >
-            <option value="public">Public — ทุกคนมองเห็น</option>
-            <option value="private">Private — เฉพาะที่ระบุ</option>
-          </select>
-        </div>
-        {(draft.visibility ?? "public") === "private" && (
-          <div className="editor-title-box editor-meta-full">
-            <label>ผู้ใช้ที่มองเห็นได้ (username)</label>
-            <div className="allowed-users-list">
-              {(Array.isArray(draft.allowedUsernames) ? draft.allowedUsernames : []).map((u, i) => (
-                <div key={i} className="allowed-user-row">
-                  <span className="allowed-user-tag">{u}</span>
-                  <button
-                    type="button"
-                    className="toc-delete-button"
-                    onClick={() => {
-                      const next = (draft.allowedUsernames ?? []).filter((_, idx) => idx !== i);
-                      onChangeDraft("allowedUsernames", next);
+          <div className="editor-course-meta" style={{ marginTop: "12px" }}>
+            <div className="editor-title-box">
+              <label htmlFor="editor-creator">ผู้สร้าง</label>
+              <input
+                id="editor-creator"
+                value={draft.creator ?? ""}
+                onChange={(event) => onChangeDraft("creator", event.target.value)}
+              />
+            </div>
+            <div className="editor-title-box">
+              <label htmlFor="editor-status">สถานะคอร์ส</label>
+              <select
+                id="editor-status"
+                value={draft.status ?? "active"}
+                onChange={(event) => onChangeDraft("status", event.target.value)}
+              >
+                <option value="inprogress">inprogress</option>
+                {canPublish && <option value="active">active</option>}
+                <option value="inactive">inactive</option>
+              </select>
+            </div>
+            <div className="editor-title-box">
+              <label htmlFor="editor-visibility">การมองเห็น</label>
+              <select
+                id="editor-visibility"
+                value={draft.visibility ?? "public"}
+                onChange={(event) => onChangeDraft("visibility", event.target.value)}
+              >
+                <option value="public">Public — ทุกคนมองเห็น</option>
+                <option value="private">Private — เฉพาะที่ระบุ</option>
+              </select>
+            </div>
+            {(draft.visibility ?? "public") === "private" && (
+              <div className="editor-title-box editor-meta-full">
+                <label>ผู้ใช้ที่มองเห็นได้ (username)</label>
+                <div className="allowed-users-list">
+                  {(Array.isArray(draft.allowedUsernames) ? draft.allowedUsernames : []).map((u, i) => (
+                    <div key={i} className="allowed-user-row">
+                      <span className="allowed-user-tag">{u}</span>
+                      <button
+                        type="button"
+                        className="toc-delete-button"
+                        onClick={() => {
+                          const next = (draft.allowedUsernames ?? []).filter((_, idx) => idx !== i);
+                          onChangeDraft("allowedUsernames", next);
+                        }}
+                      >
+                        ลบ
+                      </button>
+                    </div>
+                  ))}
+                  <AllowedUsernameInput
+                    users={users}
+                    excluded={Array.isArray(draft.allowedUsernames) ? draft.allowedUsernames : []}
+                    onAdd={(username) => {
+                      const existing = Array.isArray(draft.allowedUsernames) ? draft.allowedUsernames : [];
+                      if (username && !existing.includes(username)) {
+                        onChangeDraft("allowedUsernames", [...existing, username]);
+                      }
                     }}
-                  >
-                    ลบ
-                  </button>
+                  />
                 </div>
-              ))}
-              <AllowedUsernameInput
-                users={users}
-                excluded={Array.isArray(draft.allowedUsernames) ? draft.allowedUsernames : []}
-                onAdd={(username) => {
-                  const existing = Array.isArray(draft.allowedUsernames) ? draft.allowedUsernames : [];
-                  if (username && !existing.includes(username)) {
-                    onChangeDraft("allowedUsernames", [...existing, username]);
-                  }
-                }}
+              </div>
+            )}
+            <div className="editor-title-box editor-meta-full">
+              <label htmlFor="editor-description">รายละเอียดคอร์ส</label>
+              <textarea
+                id="editor-description"
+                value={draft.description ?? ""}
+                onChange={(event) => onChangeDraft("description", event.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="editor-title-box editor-meta-full">
+              <label htmlFor="editor-image">ลิงก์รูปปกคอร์ส</label>
+              <input
+                id="editor-image"
+                value={draft.image ?? ""}
+                onChange={(event) => onChangeDraft("image", event.target.value)}
+                placeholder="https://..."
               />
             </div>
           </div>
-        )}
-        <div className="editor-title-box editor-meta-full">
-          <label htmlFor="editor-description">รายละเอียดคอร์ส</label>
-          <textarea
-            id="editor-description"
-            value={draft.description ?? ""}
-            onChange={(event) => onChangeDraft("description", event.target.value)}
-            rows={3}
-          />
-        </div>
-        <div className="editor-title-box editor-meta-full">
-          <label htmlFor="editor-image">ลิงก์รูปปกคอร์ส</label>
-          <input
-            id="editor-image"
-            value={draft.image ?? ""}
-            onChange={(event) => onChangeDraft("image", event.target.value)}
-            placeholder="https://..."
-          />
         </div>
       </div>
 
       <div className="editor-skill-card">
         <div className="editor-skill-head">
-          <h3>แท็กทักษะและคะแนนทักษะของคอร์ส</h3>
+          <h3>ทักษะและคะแนนรางวัล</h3>
           <button type="button" className="create-content-button" onClick={addSkillReward}>
             + เพิ่มทักษะ
           </button>
@@ -604,7 +612,7 @@ export default function EditorPage() {
             ))}
           </div>
         ) : (
-          <p className="toc-empty">ยังไม่ได้เพิ่มแท็กทักษะ</p>
+          <p className="toc-empty" style={{ padding: "12px 16px" }}>ยังไม่ได้เพิ่มแท็กทักษะ</p>
         )}
       </div>
 
@@ -677,21 +685,23 @@ export default function EditorPage() {
         {showPreview ? (
           <div className="preview-panel">
             <h3>Live Preview</h3>
-            {selectedSubtopic ? (
-              <div className="subtopic-nav">
-                <button type="button" className="subtopic-nav-button" onClick={() => jumpSubtopic(-1)}>
-                  ก่อนหน้า
-                </button>
-                <span>
-                  {selectedSubtopic.mainText} / {selectedSubtopic.subText}
-                </span>
-                <button type="button" className="subtopic-nav-button" onClick={() => jumpSubtopic(1)}>
-                  ถัดไป
-                </button>
+            <div className="preview-panel-body">
+              {selectedSubtopic ? (
+                <div className="subtopic-nav">
+                  <button type="button" className="subtopic-nav-button" onClick={() => jumpSubtopic(-1)}>
+                    ก่อนหน้า
+                  </button>
+                  <span>
+                    {selectedSubtopic.mainText} / {selectedSubtopic.subText}
+                  </span>
+                  <button type="button" className="subtopic-nav-button" onClick={() => jumpSubtopic(1)}>
+                    ถัดไป
+                  </button>
+                </div>
+              ) : null}
+              <div className="preview-body">
+                <MarkdownContent content={selectedSubtopic?.content ?? draft.content} images={contentImages} />
               </div>
-            ) : null}
-            <div className="preview-body">
-              <MarkdownContent content={selectedSubtopic?.content ?? draft.content} images={contentImages} />
             </div>
           </div>
         ) : null}

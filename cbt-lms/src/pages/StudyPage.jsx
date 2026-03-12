@@ -177,12 +177,16 @@ export default function StudyPage() {
     );
   }
 
+  const currentIndex = subtopicPages.findIndex((s) => s.id === selectedSubtopic?.id);
+  const totalSubtopics = subtopicPages.length;
+  const progressPercent = totalSubtopics > 0 ? Math.round((completedSubtopicIds.length / totalSubtopics) * 100) : 0;
+
   return (
     <section className="workspace-content content-theme-exam">
       <header className="content-header editor-head">
         <div>
           <h1>{draft.title}</h1>
-          <p>หน้าเรียนเนื้อหา</p>
+          <p>หน้าเรียนเนื้อหา — สำเร็จ {completedSubtopicIds.length}/{totalSubtopics} หัวข้อ ({progressPercent}%)</p>
         </div>
         <button type="button" className="back-button" onClick={() => navigate(`/content/${courseId}`)}>
           กลับหน้าเลือกเนื้อหา
@@ -193,14 +197,17 @@ export default function StudyPage() {
         <div className="preview-panel study-panel">
           {selectedSubtopic ? (
             <div className="subtopic-nav">
-              <button type="button" className="subtopic-nav-button" onClick={() => jumpSubtopic(-1)}>
-                ก่อนหน้า
+              <button type="button" className="subtopic-nav-button" disabled={currentIndex <= 0} onClick={() => jumpSubtopic(-1)}>
+                ← ก่อนหน้า
               </button>
               <span>
-                {selectedSubtopic.mainText} / {selectedSubtopic.subText}
+                {selectedSubtopicCompleted ? "✓ " : ""}
+                {selectedSubtopic.mainText}
+                {selectedSubtopic.subText ? ` / ${selectedSubtopic.subText}` : ""}
+                {" "}({currentIndex + 1}/{totalSubtopics})
               </span>
-              <button type="button" className="subtopic-nav-button" onClick={() => jumpSubtopic(1)}>
-                ถัดไป
+              <button type="button" className="subtopic-nav-button" disabled={currentIndex >= totalSubtopics - 1} onClick={() => jumpSubtopic(1)}>
+                ถัดไป →
               </button>
             </div>
           ) : null}
@@ -233,7 +240,7 @@ export default function StudyPage() {
                     const result = selectedSubtopicAnswers[question.id];
                     const inputId = `${question.id}-answer`;
                     return (
-                      <div key={question.id} className="quiz-question-card">
+                      <div key={question.id} className={`quiz-question-card${result?.isCorrect ? " quiz-card-correct" : result ? " quiz-card-wrong" : ""}`}>
                         <p className="quiz-question-text">
                           <span className="question-points">+{question.points}</span>
                           <strong>
@@ -250,15 +257,16 @@ export default function StudyPage() {
                             onChange={(event) =>
                               setAnswerInputs((prev) => ({ ...prev, [question.id]: event.target.value }))
                             }
-                            placeholder="พิมพ์คำตอบ"
+                            placeholder="พิมพ์คำตอบที่นี่..."
+                            disabled={result?.isCorrect}
                           />
-                          <button type="button" onClick={() => handleSubmitAnswer(question)}>
+                          <button type="button" onClick={() => handleSubmitAnswer(question)} disabled={result?.isCorrect}>
                             Submit
                           </button>
                         </div>
                         {result ? (
                           <p className={result.isCorrect ? "result-correct" : "result-wrong"}>
-                            {result.isCorrect ? "ตอบถูก" : "ตอบไม่ถูก"}
+                            {result.isCorrect ? "✅ ตอบถูกต้อง!" : "❌ ตอบไม่ถูก ลองใหม่อีกครั้ง"}
                           </p>
                         ) : null}
                       </div>
@@ -277,14 +285,14 @@ export default function StudyPage() {
                 disabled={!canComplete || selectedSubtopicCompleted}
                 onClick={handleCompleteSubtopic}
               >
-                {selectedSubtopicCompleted ? "หัวข้อนี้เสร็จสิ้นแล้ว" : "เสร็จสิ้นหัวข้อย่อย"}
+                {selectedSubtopicCompleted ? "✓ หัวข้อนี้เสร็จสิ้นแล้ว" : "เสร็จสิ้นหัวข้อย่อย →"}
               </button>
               {!canComplete && !isTimeUnlocked ? (
                 <p className="result-wrong">
-                  ต้องอ่านเนื้อหาให้ครบ {subtopicMinTime} นาทีก่อน
+                  ⏱ ต้องอ่านเนื้อหาให้ครบ {subtopicMinTime} นาทีก่อน
                 </p>
               ) : !canComplete && selectedSubtopic.questions.length > 0 ? (
-                <p className="result-wrong">ต้องตอบคำถามของหัวข้อนี้ให้ครบและถูกต้องก่อน</p>
+                <p className="result-wrong">📝 ต้องตอบคำถามของหัวข้อนี้ให้ครบและถูกต้องก่อน</p>
               ) : null}
             </div>
           ) : null}

@@ -298,144 +298,152 @@ export default function ExamEditorPage() {
         </div>
       </header>
 
-      <div className="editor-course-meta">
-        <div className="editor-title-box">
-          <label htmlFor="exam-name">Exam Name</label>
-          <input
-            id="exam-name"
-            value={exam.title ?? ""}
-            onChange={(event) => setExam((prev) => ({ ...prev, title: event.target.value }))}
-          />
+      <div className="editor-section-card">
+        <div className="editor-section-head">
+          <span className="section-icon">📋</span>
+          ข้อมูลทั่วไป
         </div>
-        <div className="editor-title-box">
-          <label htmlFor="exam-status">Status</label>
-          <select
-            id="exam-status"
-            value={exam.status ?? "active"}
-            onChange={(event) => setExam((prev) => ({ ...prev, status: event.target.value }))}
-          >
-            <option value="inprogress">inprogress</option>
-            <option value="active">active</option>
-            <option value="inactive">inactive</option>
-          </select>
-        </div>
-        <div className="editor-title-box">
-          <label htmlFor="exam-visibility">การมองเห็น</label>
-          <select
-            id="exam-visibility"
-            value={exam.visibility ?? "public"}
-            onChange={(event) => setExam((prev) => ({ ...prev, visibility: event.target.value }))}
-          >
-            <option value="public">Public — ทุกคนมองเห็น</option>
-            <option value="private">Private — เฉพาะที่ระบุ</option>
-          </select>
-        </div>
-        {(exam.visibility ?? "public") === "private" && (
-          <div className="editor-title-box editor-meta-full">
-            <label>ผู้ใช้ที่มองเห็นได้ (username)</label>
-            <div className="allowed-users-list">
-              {(Array.isArray(exam.allowedUsernames) ? exam.allowedUsernames : []).map((u, i) => (
-                <div key={i} className="allowed-user-row">
-                  <span className="allowed-user-tag">{u}</span>
-                  <button
-                    type="button"
-                    className="toc-delete-button"
-                    onClick={() => setExam((prev) => ({
-                      ...prev,
-                      allowedUsernames: (prev.allowedUsernames ?? []).filter((_, idx) => idx !== i),
-                    }))}
-                  >
-                    ลบ
-                  </button>
+        <div className="editor-section-body">
+          <div className="editor-course-meta">
+            <div className="editor-title-box">
+              <label htmlFor="exam-name">Exam Name</label>
+              <input
+                id="exam-name"
+                value={exam.title ?? ""}
+                onChange={(event) => setExam((prev) => ({ ...prev, title: event.target.value }))}
+              />
+            </div>
+            <div className="editor-title-box">
+              <label htmlFor="exam-status">Status</label>
+              <select
+                id="exam-status"
+                value={exam.status ?? "active"}
+                onChange={(event) => setExam((prev) => ({ ...prev, status: event.target.value }))}
+              >
+                <option value="inprogress">inprogress</option>
+                <option value="active">active</option>
+                <option value="inactive">inactive</option>
+              </select>
+            </div>
+            <div className="editor-title-box">
+              <label htmlFor="exam-visibility">การมองเห็น</label>
+              <select
+                id="exam-visibility"
+                value={exam.visibility ?? "public"}
+                onChange={(event) => setExam((prev) => ({ ...prev, visibility: event.target.value }))}
+              >
+                <option value="public">Public — ทุกคนมองเห็น</option>
+                <option value="private">Private — เฉพาะที่ระบุ</option>
+              </select>
+            </div>
+            {(exam.visibility ?? "public") === "private" && (
+              <div className="editor-title-box editor-meta-full">
+                <label>ผู้ใช้ที่มองเห็นได้ (username)</label>
+                <div className="allowed-users-list">
+                  {(Array.isArray(exam.allowedUsernames) ? exam.allowedUsernames : []).map((u, i) => (
+                    <div key={i} className="allowed-user-row">
+                      <span className="allowed-user-tag">{u}</span>
+                      <button
+                        type="button"
+                        className="toc-delete-button"
+                        onClick={() => setExam((prev) => ({
+                          ...prev,
+                          allowedUsernames: (prev.allowedUsernames ?? []).filter((_, idx) => idx !== i),
+                        }))}
+                      >
+                        ลบ
+                      </button>
+                    </div>
+                  ))}
+                  <AllowedUsernameInput
+                    users={users}
+                    excluded={Array.isArray(exam.allowedUsernames) ? exam.allowedUsernames : []}
+                    onAdd={(username) => {
+                      const existing = Array.isArray(exam.allowedUsernames) ? exam.allowedUsernames : [];
+                      if (!existing.includes(username)) {
+                        setExam((prev) => ({ ...prev, allowedUsernames: [...existing, username] }));
+                      }
+                    }}
+                  />
                 </div>
-              ))}
-              <AllowedUsernameInput
-                users={users}
-                excluded={Array.isArray(exam.allowedUsernames) ? exam.allowedUsernames : []}
-                onAdd={(username) => {
-                  const existing = Array.isArray(exam.allowedUsernames) ? exam.allowedUsernames : [];
-                  if (!existing.includes(username)) {
-                    setExam((prev) => ({ ...prev, allowedUsernames: [...existing, username] }));
-                  }
-                }}
+              </div>
+            )}
+            <div className="editor-title-box">
+              <label htmlFor="exam-creator">Creator</label>
+              <input
+                id="exam-creator"
+                value={exam.creator ?? ""}
+                onChange={(event) => setExam((prev) => ({ ...prev, creator: event.target.value }))}
+              />
+            </div>
+            <div className="editor-title-box">
+              <label htmlFor="exam-number-of-questions">Number of Questions</label>
+              <input
+                id="exam-number-of-questions"
+                type="number"
+                min={1}
+                value={Number(exam.numberOfQuestions ?? 0)}
+                onChange={(event) => setExam((prev) => ({ ...prev, numberOfQuestions: Number(event.target.value) }))}
+              />
+            </div>
+            <div className="editor-title-box">
+              <label htmlFor="exam-default-time">Default Time (minutes)</label>
+              <input
+                id="exam-default-time"
+                type="number"
+                min={1}
+                value={Number(exam.defaultTime ?? 0)}
+                onChange={(event) => setExam((prev) => ({ ...prev, defaultTime: Number(event.target.value) }))}
+              />
+            </div>
+            <div className="editor-title-box">
+              <label htmlFor="exam-max-attempts">จำนวนครั้งที่ทำได้ (0 = ไม่จำกัด)</label>
+              <input
+                id="exam-max-attempts"
+                type="number"
+                min={0}
+                value={Number(exam.maxAttempts ?? 0)}
+                onChange={(event) => setExam((prev) => ({ ...prev, maxAttempts: Number(event.target.value) }))}
+              />
+            </div>
+            <div className="editor-title-box editor-meta-full">
+              <label htmlFor="exam-image-url">Cover Image URL</label>
+              <input
+                id="exam-image-url"
+                value={exam.image ?? ""}
+                onChange={(event) => setExam((prev) => ({ ...prev, image: event.target.value }))}
+                placeholder="https://..."
+              />
+              <div className="default-password-row">
+                <input id="exam-image-upload" type="file" accept="image/*" onChange={handleUploadCoverImage} />
+                <button
+                  type="button"
+                  className="manage-button"
+                  onClick={() => setExam((prev) => ({ ...prev, image: "" }))}
+                >
+                  ล้างรูป (ใช้รูปสุ่ม)
+                </button>
+              </div>
+            </div>
+            <div className="editor-title-box editor-meta-full">
+              <label htmlFor="exam-description">Description</label>
+              <textarea
+                id="exam-description"
+                rows={2}
+                value={exam.description ?? ""}
+                onChange={(event) => setExam((prev) => ({ ...prev, description: event.target.value }))}
+              />
+            </div>
+            <div className="editor-title-box editor-meta-full">
+              <label htmlFor="exam-instructions">Instructions</label>
+              <textarea
+                id="exam-instructions"
+                rows={3}
+                value={exam.instructions ?? ""}
+                onChange={(event) => setExam((prev) => ({ ...prev, instructions: event.target.value }))}
               />
             </div>
           </div>
-        )}
-        <div className="editor-title-box">
-          <label htmlFor="exam-creator">Creator</label>
-          <input
-            id="exam-creator"
-            value={exam.creator ?? ""}
-            onChange={(event) => setExam((prev) => ({ ...prev, creator: event.target.value }))}
-          />
-        </div>
-        <div className="editor-title-box">
-          <label htmlFor="exam-number-of-questions">Number of Questions</label>
-          <input
-            id="exam-number-of-questions"
-            type="number"
-            min={1}
-            value={Number(exam.numberOfQuestions ?? 0)}
-            onChange={(event) => setExam((prev) => ({ ...prev, numberOfQuestions: Number(event.target.value) }))}
-          />
-        </div>
-        <div className="editor-title-box">
-          <label htmlFor="exam-default-time">Default Time (minutes)</label>
-          <input
-            id="exam-default-time"
-            type="number"
-            min={1}
-            value={Number(exam.defaultTime ?? 0)}
-            onChange={(event) => setExam((prev) => ({ ...prev, defaultTime: Number(event.target.value) }))}
-          />
-        </div>
-        <div className="editor-title-box">
-          <label htmlFor="exam-max-attempts">จำนวนครั้งที่ทำได้ (0 = ไม่จำกัด)</label>
-          <input
-            id="exam-max-attempts"
-            type="number"
-            min={0}
-            value={Number(exam.maxAttempts ?? 0)}
-            onChange={(event) => setExam((prev) => ({ ...prev, maxAttempts: Number(event.target.value) }))}
-          />
-        </div>
-        <div className="editor-title-box editor-meta-full">
-          <label htmlFor="exam-image-url">Cover Image URL</label>
-          <input
-            id="exam-image-url"
-            value={exam.image ?? ""}
-            onChange={(event) => setExam((prev) => ({ ...prev, image: event.target.value }))}
-            placeholder="https://..."
-          />
-          <div className="default-password-row">
-            <input id="exam-image-upload" type="file" accept="image/*" onChange={handleUploadCoverImage} />
-            <button
-              type="button"
-              className="manage-button"
-              onClick={() => setExam((prev) => ({ ...prev, image: "" }))}
-            >
-              ล้างรูป (ใช้รูปสุ่ม)
-            </button>
-          </div>
-        </div>
-        <div className="editor-title-box editor-meta-full">
-          <label htmlFor="exam-description">Description</label>
-          <textarea
-            id="exam-description"
-            rows={2}
-            value={exam.description ?? ""}
-            onChange={(event) => setExam((prev) => ({ ...prev, description: event.target.value }))}
-          />
-        </div>
-        <div className="editor-title-box editor-meta-full">
-          <label htmlFor="exam-instructions">Instructions</label>
-          <textarea
-            id="exam-instructions"
-            rows={3}
-            value={exam.instructions ?? ""}
-            onChange={(event) => setExam((prev) => ({ ...prev, instructions: event.target.value }))}
-          />
         </div>
       </div>
 
@@ -447,7 +455,7 @@ export default function ExamEditorPage() {
           <input id="exam-json-upload" type="file" accept=".json,application/json" onChange={handleImportExamJson} />
           <p>อัปโหลดไฟล์ข้อสอบครั้งเดียว แล้วแก้รายข้อได้เลย</p>
         </div>
-        <details style={{ marginTop: "0.5rem" }}>
+        <details style={{ marginTop: "0.5rem", padding: "0 16px" }}>
           <summary style={{ cursor: "pointer", fontSize: "0.85rem", color: "var(--text-muted, #888)" }}>
             ดู format ไฟล์ที่รองรับ
           </summary>
@@ -523,7 +531,7 @@ export default function ExamEditorPage() {
 }`}</pre>
         </details>
         {importStatus.message ? (
-          <p className={`exam-json-import-message ${importStatus.type === "error" ? "is-error" : "is-success"}`}>
+          <p className={`exam-json-import-message ${importStatus.type === "error" ? "is-error" : "is-success"}`} style={{ padding: "0 16px 12px" }}>
             {importStatus.message}
           </p>
         ) : null}
@@ -531,7 +539,7 @@ export default function ExamEditorPage() {
 
       <div className="editor-skill-card">
         <div className="editor-skill-head">
-          <h3>DomainPercentages (รวม {domainTotal}%)</h3>
+          <h3>Domain Percentages (รวม {domainTotal}%)</h3>
           <button
             type="button"
             className="create-content-button"
@@ -540,12 +548,10 @@ export default function ExamEditorPage() {
             + เพิ่ม Domain
           </button>
         </div>
-        <p style={{ fontSize: "0.85rem", color: "var(--text-muted, #888)", marginBottom: "0.5rem" }}>
+        <p style={{ fontSize: "0.85rem", color: "#4a6590", marginBottom: "0.5rem", padding: "4px 16px 0" }}>
           กำหนดสัดส่วน (%) ของข้อสอบในแต่ละ Domain — รวมทุก Domain ควรได้ 100%
           <br />
           ระบบจะสุ่มหรือเลือกข้อสอบให้ตรงตามสัดส่วนนี้เมื่อนักเรียนเริ่มสอบ
-          เช่น ถ้ากำหนด Domain A = 60% และ Domain B = 40% และจำนวนข้อสอบ = 10 ข้อ
-          จะได้ข้อจาก Domain A 6 ข้อ และ Domain B 4 ข้อ
         </p>
         <div className="editor-skill-grid">
           {domainRows.map((row, index) => (

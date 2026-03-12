@@ -44,7 +44,7 @@ export default function ExamDetailPage() {
 
   if (loading || !exam?.title) {
     return (
-      <section className="workspace-content">
+      <section className="workspace-content exam-detail-page">
         <header className="content-header">
           <h1>กำลังโหลดข้อสอบ</h1>
           <p>Loading...</p>
@@ -67,18 +67,18 @@ export default function ExamDetailPage() {
         </header>
 
         {userAttempts.length === 0 ? (
-          <article className="info-card">
+          <article className="info-card exam-history-empty-card">
             <p>ยังไม่มีประวัติการทำข้อสอบ</p>
           </article>
         ) : (
-          <div className="result-list">
+          <div className="result-list exam-history-list">
             {[...userAttempts].reverse().map((attempt, idx) => (
-              <article key={attempt.attemptId ?? idx} className="info-card result-card">
+              <article key={attempt.attemptId ?? idx} className="info-card result-card exam-history-card">
                 <div className="domain-result-head">
                   <h3>ครั้งที่ {userAttempts.length - idx}</h3>
                   <p>{new Date(attempt.date).toLocaleString("th-TH")}</p>
                 </div>
-                <p>
+                <p className="exam-history-score-row">
                   คะแนน: {attempt.correctCount}/{attempt.totalQuestions} ({attempt.scorePercent}%)
                 </p>
 
@@ -101,15 +101,15 @@ export default function ExamDetailPage() {
                 )}
 
                 {attempt.details?.length > 0 && (
-                  <details>
-                    <summary style={{ cursor: "pointer", marginTop: "0.75rem" }}>
+                  <details className="exam-history-details">
+                    <summary className="exam-history-summary">
                       ดูรายข้อ ({attempt.details.length} ข้อ)
                     </summary>
-                    <div style={{ marginTop: "0.5rem" }}>
+                    <div className="exam-history-details-body">
                       {attempt.details.map((item) => (
                         <div
                           key={item.question?.id ?? item.index}
-                          style={{ borderTop: "1px solid var(--border)", paddingTop: "0.5rem", marginTop: "0.5rem" }}
+                          className="exam-history-item"
                         >
                           <p>
                             <strong>ข้อ {item.index}:</strong> {item.question?.question}
@@ -137,7 +137,7 @@ export default function ExamDetailPage() {
   }
 
   return (
-    <section className="workspace-content">
+    <section className="workspace-content exam-detail-page">
       <header className="content-header editor-head">
         <div>
           <h1>รายละเอียดข้อสอบ</h1>
@@ -148,26 +148,29 @@ export default function ExamDetailPage() {
         </button>
       </header>
 
-      <article className="info-card">
-        <p>
-          <strong>ชื่อข้อสอบ:</strong> {exam.title}
-        </p>
-        <p>
-          <strong>ผู้สร้าง:</strong> {exam.creator ?? "-"}
-        </p>
-        <p>
+      <article className="info-card exam-detail-card">
+        <div className="exam-detail-meta-grid">
+          <p className="exam-meta-chip exam-meta-chip-title">
+            <strong>ชื่อข้อสอบ:</strong> {exam.title}
+          </p>
+          <p className="exam-meta-chip">
+            <strong>ผู้สร้าง:</strong> {exam.creator ?? "-"}
+          </p>
+          <p className="exam-meta-chip">
+            <strong>จำนวนข้อ:</strong> {exam.numberOfQuestions ?? "-"}
+          </p>
+          <p className="exam-meta-chip">
+            <strong>เวลา:</strong> {exam.defaultTime ?? "-"} นาที
+          </p>
+        </div>
+
+        <p className="exam-detail-description">
           <strong>รายละเอียด:</strong> {exam.description}
         </p>
-        <p>
-          <strong>จำนวนข้อ:</strong> {exam.numberOfQuestions ?? "-"}
-        </p>
-        <p>
-          <strong>เวลา:</strong> {exam.defaultTime ?? "-"} นาที
-        </p>
-        <p>
+        <p className="exam-detail-instructions">
           <strong>คำแนะนำ:</strong> {exam.instructions ?? "-"}
         </p>
-        <p>
+        <p className="exam-detail-attempt-note">
           <strong>จำนวนครั้งที่ทำได้:</strong>{" "}
           {maxAttempts === 0
             ? "ไม่จำกัด"
