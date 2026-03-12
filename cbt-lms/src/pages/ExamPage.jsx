@@ -46,39 +46,45 @@ export default function ExamPage() {
             + สร้างข้อสอบ
           </button>
         </div>
-      ) : null}
+      ) : (
+        <p className="section-label">รายการข้อสอบ</p>
+      )}
 
-      <div className="exam-grid">
-        {visibleExams.map((exam) => (
-          <article key={exam.id} className="exam-card">
-            <img src={exam.image} alt={exam.title} className="card-image" />
-            <div className="example-head">
-              <h3>{exam.title}</h3>
-              {canManageExam(exam) ? (
-                <div className="example-action-box">
-                  <StatusSelect
-                    value={exam.status ?? "active"}
-                    options={STATUS_OPTIONS}
-                    onChange={(status) => updateExamStatus(exam.id, status)}
-                  />
-                  <button
-                    type="button"
-                    className="gear-button"
-                    aria-label={`แก้ไข ${exam.title}`}
-                    onClick={() => handleOpenEditor(exam)}
-                  >
-                    ⚙
-                  </button>
-                </div>
-              ) : null}
-            </div>
-            <p>{exam.description}</p>
-            <button type="button" className="enter-button" onClick={() => handleEnterExam(exam)}>
-              ดูรายละเอียดข้อสอบ
-            </button>
-          </article>
-        ))}
-      </div>
+      {visibleExams.length > 0 ? (
+        <div className="exam-grid">
+          {visibleExams.map((exam) => (
+            <article key={exam.id} className="exam-card">
+              <img src={exam.image} alt={exam.title} className="card-image" />
+              <div className="example-head">
+                <h3>{exam.title}</h3>
+                {canManageExam(exam) ? (
+                  <div className="example-action-box">
+                    <StatusSelect
+                      value={exam.status ?? "active"}
+                      options={STATUS_OPTIONS}
+                      onChange={(status) => updateExamStatus(exam.id, status)}
+                    />
+                    <button
+                      type="button"
+                      className="gear-button"
+                      aria-label={`แก้ไข ${exam.title}`}
+                      onClick={() => handleOpenEditor(exam)}
+                    >
+                      ⚙
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+              <p>{exam.description}</p>
+              <button type="button" className="enter-button" onClick={() => handleEnterExam(exam)}>
+                ดูรายละเอียดข้อสอบ
+              </button>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="lobby-empty-hint">ยังไม่มีข้อสอบใด ๆ</p>
+      )}
     </section>
   );
 }

@@ -54,47 +54,51 @@ export default function ContentPage() {
         <p className="section-label">รายการคอร์ส</p>
       )}
 
-      <div className="example-grid">
-        {visibleExamples.map((example) => (
-          <article key={example.id} className="example-card">
-            <img src={example.image} alt={example.title} className="card-image" />
-            <div className="example-head">
-              <h3 className="example-title">{example.title}</h3>
-              <div className="example-action-box">
-                {canManageExample(example) ? (
-                  <StatusSelect
-                    value={example.status ?? "active"}
-                    options={STATUS_OPTIONS}
-                    onChange={(status) => updateContentStatus(example.id, status)}
-                  />
-                ) : null}
-                {canManageExample(example) ? (
-                  <button
-                    type="button"
-                    className="gear-button"
-                    aria-label={`จัดการ ${example.title}`}
-                    onClick={() => handleOpenEditor(example)}
-                  >
-                    ⚙
-                  </button>
-                ) : null}
+      {visibleExamples.length > 0 ? (
+        <div className="example-grid">
+          {visibleExamples.map((example) => (
+            <article key={example.id} className="example-card">
+              <img src={example.image} alt={example.title} className="card-image" />
+              <div className="example-head">
+                <h3 className="example-title">{example.title}</h3>
+                <div className="example-action-box">
+                  {canManageExample(example) ? (
+                    <StatusSelect
+                      value={example.status ?? "active"}
+                      options={STATUS_OPTIONS}
+                      onChange={(status) => updateContentStatus(example.id, status)}
+                    />
+                  ) : null}
+                  {canManageExample(example) ? (
+                    <button
+                      type="button"
+                      className="gear-button"
+                      aria-label={`จัดการ ${example.title}`}
+                      onClick={() => handleOpenEditor(example)}
+                    >
+                      ⚙
+                    </button>
+                  ) : null}
+                </div>
               </div>
-            </div>
-            {example.skills?.length ? (
-              <div className="skill-tags">
-                {example.skills.map((skill) => (
-                  <span key={`${example.id}-${skill}`} className="skill-tag">
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            ) : null}
-            <button type="button" className="enter-button" onClick={() => handleOpenDetail(example)}>
-              ดูรายละเอียด
-            </button>
-          </article>
-        ))}
-      </div>
+              {example.skills?.length ? (
+                <div className="skill-tags">
+                  {example.skills.map((skill) => (
+                    <span key={`${example.id}-${skill}`} className="skill-tag">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <button type="button" className="enter-button" onClick={() => handleOpenDetail(example)}>
+                ดูรายละเอียด
+              </button>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="lobby-empty-hint">ยังไม่มีบทเรียนใด ๆ</p>
+      )}
     </section>
   );
 }

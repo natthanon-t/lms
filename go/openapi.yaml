@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: CBT LMS Backend API
-  version: 1.1.0
+  version: 1.2.0
   description: OpenAPI spec generated from current Go Fiber backend routes.
 servers:
   - url: http://localhost:5020
@@ -172,6 +172,29 @@ paths:
         "500":
           $ref: "#/components/responses/ErrorResponse"
 
+  /api/auth/permissions:
+    get:
+      tags: [Auth]
+      summary: Get permissions for current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User permissions
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: boolean
+                example:
+                  user_manage: true
+                  content_manage: false
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
   /api/profile:
     patch:
       tags: [Profile]
@@ -300,6 +323,165 @@ paths:
                 $ref: "#/components/schemas/RoleOptionsResponse"
         "401":
           $ref: "#/components/responses/ErrorResponse"
+    post:
+      tags: [Admin Users]
+      summary: Create a new role (admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  example: manager
+                name:
+                  type: string
+                  example: Manager
+              required: [code, name]
+      responses:
+        "201":
+          description: Role created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: role created
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/role/{code}:
+    patch:
+      tags: [Admin Users]
+      summary: Update role name (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Role code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: New Manager Name
+              required: [name]
+      responses:
+        "200":
+          description: Role updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: role updated
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+    delete:
+      tags: [Admin Users]
+      summary: Delete a role (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Role code
+      responses:
+        "200":
+          description: Role deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: role deleted
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/role/{code}/permissions:
+    put:
+      tags: [Admin Users]
+      summary: Update permissions for a role (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Role code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                permissions:
+                  type: array
+                  items:
+                    type: string
+                  example: [user_manage, content_manage]
+              required: [permissions]
+      responses:
+        "200":
+          description: Permissions updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: permissions updated
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
 
   /api/users:
     get:
@@ -381,6 +563,65 @@ paths:
         "401":
           $ref: "#/components/responses/ErrorResponse"
         "403":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/users/default-password:
+    get:
+      tags: [Admin Users]
+      summary: Get default reset password (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Default password
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  password:
+                    type: string
+                    example: defaultPassword123
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+    put:
+      tags: [Admin Users]
+      summary: Update default reset password (admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                  example: newDefaultPassword456
+              required: [password]
+      responses:
+        "200":
+          description: Default password updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: default password updated
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
           $ref: "#/components/responses/ErrorResponse"
 
   /api/users/{username}:
@@ -465,6 +706,39 @@ paths:
         "500":
           $ref: "#/components/responses/ErrorResponse"
 
+  /api/users/{username}/profile:
+    get:
+      tags: [Profile]
+      summary: Get public user profile information
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User public profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username:
+                    type: string
+                  name:
+                    type: string
+                  avatar:
+                    type: string
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
   /api/admin/exam-attempts:
     get:
       tags: [Admin Exams]
@@ -525,6 +799,79 @@ paths:
         "401":
           $ref: "#/components/responses/ErrorResponse"
         "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/admin/analytics:
+    get:
+      tags: [Admin Exams]
+      summary: Get system analytics (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: System analytics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_users:
+                    type: integer
+                  total_courses:
+                    type: integer
+                  total_exams:
+                    type: integer
+                  total_exam_attempts:
+                    type: integer
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/admin/analytics/courses/{courseId}/learners:
+    get:
+      tags: [Admin Exams]
+      summary: Get learners for a specific course (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Course ID
+      responses:
+        "200":
+          description: Course learners
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  course_id:
+                    type: string
+                  learners:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        username:
+                          type: string
+                        name:
+                          type: string
+                        progress:
+                          type: number
+                          format: float
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
           $ref: "#/components/responses/ErrorResponse"
         "500":
           $ref: "#/components/responses/ErrorResponse"
@@ -864,6 +1211,52 @@ paths:
         "500":
           $ref: "#/components/responses/ErrorResponse"
 
+  /api/learning/courses/{courseId}/subtopics/{subtopicId}/time:
+    post:
+      tags: [Learning]
+      summary: Record time spent on a subtopic
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: subtopicId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                seconds:
+                  type: integer
+                  example: 3600
+              required: [seconds]
+      responses:
+        "200":
+          description: Time recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: time recorded
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
   /api/learning/courses/{courseId}/complete:
     post:
       tags: [Learning]
@@ -1008,6 +1401,45 @@ paths:
         "500":
           $ref: "#/components/responses/ErrorResponse"
 
+  /api/exams/{id}/full:
+    get:
+      tags: [Exams]
+      summary: Get full exam details with admin data (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Full exam detail with admin data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exam:
+                    $ref: "#/components/schemas/ExamDetail"
+                  admin_data:
+                    type: object
+                    properties:
+                      attempt_count:
+                        type: integer
+                      avg_score:
+                        type: number
+                        format: float
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
   /api/exams/{id}/status:
     patch:
       tags: [Exams]
@@ -1042,6 +1474,57 @@ paths:
         "401":
           $ref: "#/components/responses/ErrorResponse"
         "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/exams/me/attempts:
+    get:
+      tags: [Exams]
+      summary: Get all exam attempts for current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user's exam attempts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  attempts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ExamAttempt"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/exams/me/attempts/{id}:
+    get:
+      tags: [Exams]
+      summary: Get specific exam attempt details for current user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Attempt ID
+      responses:
+        "200":
+          description: Exam attempt details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExamAttempt"
+        "401":
           $ref: "#/components/responses/ErrorResponse"
         "404":
           $ref: "#/components/responses/ErrorResponse"
