@@ -5,12 +5,29 @@ import (
 	"backend/internal/data"
 	"database/sql"
 	"errors"
+	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
+
+var allowedAttachmentExts = map[string]bool{
+	".pdf":  true,
+	".doc":  true,
+	".docx": true,
+	".xls":  true,
+	".xlsx": true,
+	".ppt":  true,
+	".pptx": true,
+	".txt":  true,
+}
+
+const maxAttachmentBytes = 20 * 1024 * 1024 // 20 MB
 
 var validCourseStatuses = []string{"active", "inprogress", "inactive"}
 
@@ -313,6 +330,89 @@ func (h *Handler) SaveCourseImage(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot save course image")
 	}
 	return c.JSON(fiber.Map{"url": url})
+}
+
+// ── Course Attachments ────────────────────────────────────────────────────────
+
+func (h *Handler) GetCourseAttachments(c *fiber.Ctx) error {
+	id := strings.TrimSpace(c.Params("id"))
+	if id == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "course id is required")
+	}
+	attachments, err := data.GetCourseAttachments(id)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot get attachments")
+	}
+	return c.JSON(fiber.Map{"attachments": attachments})
+}
+
+func (h *Handler) UploadCourseAttachment(c *fiber.Ctx) error {
+	id := strings.TrimSpace(c.Params("id"))
+	if id == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "course id is required")
+	}
+	safeID := filepath.Base(filepath.Clean(id))
+	if safeID == "" || safeID == "." || safeID == "/" {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid course id")
+	}
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "file is required")
+	}
+	if file.Size > maxAttachmentBytes {
+		return fiber.NewError(fiber.StatusRequestEntityTooLarge, "file must not exceed 20 MB")
+	}
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	if !allowedAttachmentExts[ext] {
+		return fiber.NewError(fiber.StatusBadRequest, "unsupported file type; allowed: pdf, doc, docx, xls, xlsx, ppt, pptx, txt")
+	}
+
+	dir := filepath.Join("uploads", "courses", safeID, "attachments")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot create upload directory")
+	}
+
+	// Sanitize filename and prefix with timestamp to avoid collisions
+	baseName := strings.ReplaceAll(filepath.Base(file.Filename), " ", "_")
+	storedName := fmt.Sprintf("%d_%s", time.Now().UnixMilli(), baseName)
+	destPath := filepath.Join(dir, storedName)
+
+	if err := c.SaveFile(file, destPath); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot save file")
+	}
+
+	urlPath := "/" + filepath.ToSlash(destPath)
+	att, err := data.SaveCourseAttachment(id, storedName, file.Filename, urlPath)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot save attachment record")
+	}
+	return c.JSON(fiber.Map{"attachment": att})
+}
+
+func (h *Handler) DeleteCourseAttachment(c *fiber.Ctx) error {
+	id := strings.TrimSpace(c.Params("id"))
+	attIDStr := strings.TrimSpace(c.Params("attId"))
+	attID, err := strconv.ParseInt(attIDStr, 10, 64)
+	if err != nil || attID <= 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid attachment id")
+	}
+
+	att, err := data.GetCourseAttachment(attID, id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return fiber.NewError(fiber.StatusNotFound, "attachment not found")
+	}
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot get attachment")
+	}
+
+	// Remove file from disk (ignore if already missing)
+	_ = os.Remove("." + att.URLPath)
+
+	if err := data.DeleteCourseAttachment(attID, id); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot delete attachment")
+	}
+	return c.JSON(fiber.Map{"message": "attachment deleted"})
 }
 
 func (h *Handler) GetUserScores(c *fiber.Ctx) error {

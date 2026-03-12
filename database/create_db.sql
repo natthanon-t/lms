@@ -20,6 +20,7 @@ DROP TABLE IF EXISTS user_course_enrollments CASCADE;
 DROP TABLE IF EXISTS course_skill_rewards CASCADE;
 DROP TABLE IF EXISTS courses CASCADE;
 
+DROP TABLE IF EXISTS course_attachments CASCADE;
 DROP TABLE IF EXISTS course_content_images CASCADE;
 DROP TABLE IF EXISTS user_avatars CASCADE;
 DROP TABLE IF EXISTS user_score_events CASCADE;
@@ -188,6 +189,20 @@ CREATE TABLE course_content_images (
   CONSTRAINT fk_content_images_course
     FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 );
+
+-- ไฟล์แนบของ course (PDF, Word, ฯลฯ)
+CREATE TABLE course_attachments (
+  id           BIGSERIAL    PRIMARY KEY,
+  course_id    TEXT         NOT NULL,
+  stored_name  TEXT         NOT NULL,   -- ชื่อไฟล์ที่บันทึกบนดิสก์
+  orig_name    TEXT         NOT NULL,   -- ชื่อไฟล์ต้นฉบับสำหรับแสดงผล
+  url_path     TEXT         NOT NULL,   -- path สำหรับดาวน์โหลด เช่น /uploads/courses/xxx/attachments/yyy.pdf
+  uploaded_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  CONSTRAINT fk_course_attachments_course
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+);
+
+CREATE INDEX ix_course_attachments_course ON course_attachments(course_id);
 
 -- ทักษะและคะแนนที่ได้เมื่อเรียนจบ course นี้
 CREATE TABLE course_skill_rewards (

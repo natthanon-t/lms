@@ -847,3 +847,65 @@
   font-size: 0.8rem;
 }
 
+/* ── Course Attachments ────────────────────────────────────────────────────── */
+
+.attachment-list {
+  display: grid;
+  gap: 6px;
+}
+
+.attachment-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f8fbff;
+  border: 1px solid #dce8f7;
+  border-radius: 8px;
+  transition: background 0.12s;
+}
+
+.attachment-row:hover {
+  background: #eef4ff;
+}
+
+.attachment-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.attachment-name {
+  flex: 1;
+  font-size: 0.9rem;
+  color: #1a4da8;
+  font-weight: 500;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-name:hover {
+  text-decoration: underline;
+}
+
+.attachment-message {
+  margin: 0 0 8px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.attachment-message.is-success {
+  background: #edfff5;
+  border: 1px solid #7de0b0;
+  color: #1a7044;
+}
+
+.attachment-message.is-error {
+  background: #fff2f2;
+  border: 1px solid #f0a0a0;
+  color: #9a1f1f;
+}
+

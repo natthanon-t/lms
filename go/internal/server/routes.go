@@ -57,6 +57,7 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	// Courses, Exams & Leaderboard — GET is public (register before JWT middleware)
 	api.Get("/courses", publicLimiter, handler.ListCourses)
 	api.Get("/courses/:id/images", publicLimiter, handler.GetCourseImages)
+	api.Get("/courses/:id/attachments", publicLimiter, handler.GetCourseAttachments)
 	api.Get("/exams", publicLimiter, handler.ListExams)
 	api.Get("/exams/:id", publicLimiter, handler.GetExam)
 	api.Get("/learning/leaderboard", publicLimiter, handler.GetLeaderboard)
@@ -103,6 +104,8 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	courses.Patch("/:id/status", auth.RequirePermissions(auth.PermissionContentManage), handler.UpdateCourseStatus)
 	courses.Delete("/:id", auth.RequirePermissions(auth.PermissionContentManage), handler.DeleteCourse)
 	courses.Post("/:id/images", auth.RequirePermissions(auth.PermissionContentManage), handler.SaveCourseImage)
+	courses.Post("/:id/attachments", auth.RequirePermissions(auth.PermissionContentManage), handler.UploadCourseAttachment)
+	courses.Delete("/:id/attachments/:attId", auth.RequirePermissions(auth.PermissionContentManage), handler.DeleteCourseAttachment)
 
 	// Exams — per-route permission to avoid Fiber Use-middleware stacking across groups
 	exams := protected.Group("/exams")

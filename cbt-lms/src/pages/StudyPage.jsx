@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getStoredImages } from "../services/contentImagesStore";
-import { fetchCourseImagesApi } from "../services/mediaApiService";
+import { fetchCourseImagesApi, fetchCourseAttachmentsApi } from "../services/mediaApiService";
 import { recordSubtopicTimeApi } from "../services/courseApiService";
 import MarkdownContent from "../components/markdown/MarkdownContent";
 import TableOfContents from "../components/markdown/TableOfContents";
@@ -11,6 +11,12 @@ import { useAuth } from "../contexts/AuthContext";
 import { useAppData } from "../contexts/AppDataContext";
 
 const normalizeAnswer = (value) => String(value ?? "").trim().toLowerCase();
+
+function getAttachmentIcon(filename) {
+  const ext = String(filename ?? "").split(".").pop().toLowerCase();
+  const icons = { pdf: "📄", doc: "📝", docx: "📝", xls: "📊", xlsx: "📊", ppt: "📽️", pptx: "📽️", txt: "📃" };
+  return icons[ext] ?? "📎";
+}
 
 export default function StudyPage() {
   const { courseId } = useParams();
@@ -30,6 +36,7 @@ export default function StudyPage() {
 
   const [activeSubtopicId, setActiveSubtopicId] = useState(initialSubtopicId);
   const [contentImages, setContentImages] = useState(() => getStoredImages(draft?.sourceId ?? draft?.id ?? ""));
+  const [attachments, setAttachments] = useState([]);
   const timeSpentRef = useRef(progress?.timeSpent ?? {});
   const pendingSecondsRef = useRef(0);
   // lockedDisplaySeconds: null = unlocked, number = seconds spent so far (countdown display)
@@ -46,6 +53,9 @@ export default function StudyPage() {
             setContentImages((prev) => ({ ...prev, ...apiImages }));
           }
         })
+        .catch(() => {});
+      fetchCourseAttachmentsApi(draftCourseId)
+        .then(setAttachments)
         .catch(() => {});
     }
   }, [draft?.sourceId, draft?.id]);
@@ -305,6 +315,26 @@ export default function StudyPage() {
             onSelectHeading={selectSubtopic}
             completedHeadingIds={completedSubtopicIds}
           />
+          {attachments.length > 0 && (
+            <div className="study-attachments-panel">
+              <div className="study-attachments-head">📎 ไฟล์แนบ</div>
+              <div className="study-attachments-list">
+                {attachments.map((att) => (
+                  <a
+                    key={att.id}
+                    href={att.urlPath}
+                    target="_blank"
+                    rel="noreferrer"
+                    download={att.origName}
+                    className="study-attachment-item"
+                  >
+                    <span className="study-attachment-icon">{getAttachmentIcon(att.origName)}</span>
+                    <span className="study-attachment-name">{att.origName}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </section>

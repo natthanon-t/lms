@@ -2,6 +2,15 @@ package data
 
 import "time"
 
+type CourseAttachment struct {
+	ID         int64     `json:"id"`
+	CourseID   string    `json:"courseId"`
+	StoredName string    `json:"-"`
+	OrigName   string    `json:"origName"`
+	URLPath    string    `json:"urlPath"`
+	UploadedAt time.Time `json:"uploadedAt"`
+}
+
 type SkillReward struct {
 	Skill  string `json:"skill"`
 	Points int    `json:"points"`

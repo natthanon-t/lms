@@ -54,6 +54,17 @@ func EnsureExamSchema() error {
 		ALTER TABLE exams ADD COLUMN IF NOT EXISTS allowed_usernames TEXT[] NOT NULL DEFAULT '{}';
 		ALTER TABLE courses ADD COLUMN IF NOT EXISTS visibility TEXT NOT NULL DEFAULT 'public';
 		ALTER TABLE courses ADD COLUMN IF NOT EXISTS allowed_usernames TEXT[] NOT NULL DEFAULT '{}';
+		CREATE TABLE IF NOT EXISTS course_attachments (
+			id           BIGSERIAL    PRIMARY KEY,
+			course_id    TEXT         NOT NULL,
+			stored_name  TEXT         NOT NULL,
+			orig_name    TEXT         NOT NULL,
+			url_path     TEXT         NOT NULL,
+			uploaded_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+			CONSTRAINT fk_course_attachments_course
+				FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+		);
+		CREATE INDEX IF NOT EXISTS ix_course_attachments_course ON course_attachments(course_id);
 	`)
 	return err
 }

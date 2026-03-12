@@ -17,7 +17,13 @@ import {
 } from "../components/markdown/headingUtils";
 import { ensureCoverImage, fileToDataUrl } from "../services/imageService";
 import { getStoredImages, storeImage } from "../services/contentImagesStore";
-import { fetchCourseImagesApi, saveCourseImageApi } from "../services/mediaApiService";
+import {
+  fetchCourseImagesApi,
+  saveCourseImageApi,
+  fetchCourseAttachmentsApi,
+  uploadCourseAttachmentApi,
+  deleteCourseAttachmentApi,
+} from "../services/mediaApiService";
 import { normalizeExampleRecord, toCourseDraft } from "../services/courseService";
 import { useAuth } from "../contexts/AuthContext";
 import { useAppData } from "../contexts/AppDataContext";
@@ -73,6 +79,12 @@ function AllowedUsernameInput({ onAdd, users = {}, excluded = [] }) {
       </button>
     </div>
   );
+}
+
+function getAttachmentIcon(filename) {
+  const ext = String(filename ?? "").split(".").pop().toLowerCase();
+  const icons = { pdf: "📄", doc: "📝", docx: "📝", xls: "📊", xlsx: "📊", ppt: "📽️", pptx: "📽️", txt: "📃" };
+  return icons[ext] ?? "📎";
 }
 
 const getSkillRewards = (draft) => {
@@ -153,8 +165,14 @@ export default function EditorPage() {
           }
         })
         .catch(() => {});
+      fetchCourseAttachmentsApi(courseId)
+        .then(setAttachments)
+        .catch(() => {});
     }
   }, [draft.sourceId]);
+  const [attachments, setAttachments] = useState([]);
+  const [attachmentUploading, setAttachmentUploading] = useState(false);
+  const [attachmentMessage, setAttachmentMessage] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
@@ -455,6 +473,37 @@ export default function EditorPage() {
     onChangeDraft("skillRewards", nextRewards);
   };
 
+  const handleUploadAttachment = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!draft.sourceId) {
+      setAttachmentMessage("บันทึกคอร์สก่อนอัพโหลดไฟล์แนบ");
+      return;
+    }
+    setAttachmentUploading(true);
+    setAttachmentMessage("");
+    try {
+      const att = await uploadCourseAttachmentApi(draft.sourceId, file);
+      setAttachments((prev) => [att, ...prev]);
+      setAttachmentMessage("อัพโหลดไฟล์สำเร็จ");
+    } catch (err) {
+      setAttachmentMessage(err?.message ?? "อัพโหลดไม่สำเร็จ");
+    } finally {
+      setAttachmentUploading(false);
+    }
+  };
+
+  const handleDeleteAttachment = async (attId) => {
+    if (!draft.sourceId) return;
+    try {
+      await deleteCourseAttachmentApi(draft.sourceId, attId);
+      setAttachments((prev) => prev.filter((a) => a.id !== attId));
+    } catch (err) {
+      setAttachmentMessage(err?.message ?? "ลบไฟล์ไม่สำเร็จ");
+    }
+  };
+
   return (
     <section className="workspace-content">
       <header className="content-header editor-head">
@@ -614,6 +663,56 @@ export default function EditorPage() {
         ) : (
           <p className="toc-empty" style={{ padding: "12px 16px" }}>ยังไม่ได้เพิ่มแท็กทักษะ</p>
         )}
+      </div>
+
+      <div className="editor-skill-card">
+        <div className="editor-skill-head">
+          <h3>ไฟล์แนบ (PDF, Word, Excel, ฯลฯ)</h3>
+          <label className="create-content-button" style={{ cursor: "pointer" }}>
+            {attachmentUploading ? "กำลังอัพโหลด…" : "+ อัพโหลดไฟล์"}
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+              onChange={handleUploadAttachment}
+              disabled={attachmentUploading}
+              style={{ display: "none" }}
+            />
+          </label>
+        </div>
+        <div style={{ padding: "10px 16px 14px" }}>
+          {attachmentMessage && (
+            <p className={`attachment-message ${attachmentMessage.includes("สำเร็จ") ? "is-success" : "is-error"}`}>
+              {attachmentMessage}
+            </p>
+          )}
+          {attachments.length === 0 ? (
+            <p className="toc-empty" style={{ padding: 0 }}>ยังไม่มีไฟล์แนบ</p>
+          ) : (
+            <div className="attachment-list">
+              {attachments.map((att) => (
+                <div key={att.id} className="attachment-row">
+                  <span className="attachment-icon">{getAttachmentIcon(att.origName)}</span>
+                  <a
+                    href={att.urlPath}
+                    target="_blank"
+                    rel="noreferrer"
+                    download={att.origName}
+                    className="attachment-name"
+                  >
+                    {att.origName}
+                  </a>
+                  <button
+                    type="button"
+                    className="toc-delete-button"
+                    onClick={() => handleDeleteAttachment(att.id)}
+                  >
+                    ลบ
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="editor-toolbar">
