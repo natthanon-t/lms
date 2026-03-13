@@ -239,6 +239,32 @@
   border-bottom: 1px solid #1d2a3d;
 }
 
+.editor-subtopic-settings {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  color: #8aabdc;
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid #1d2a3d;
+}
+
+.editor-subtopic-settings label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.editor-subtopic-settings input[type="number"] {
+  background: #0b1118;
+  border: 1px solid #2a3a52;
+  border-radius: 6px;
+  color: #e9eef8;
+  padding: 3px 6px;
+  font-size: 0.82rem;
+}
+
 .editor-panel-body,
 .preview-panel-body {
   padding: 12px;

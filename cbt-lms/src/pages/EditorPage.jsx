@@ -208,6 +208,34 @@ export default function EditorPage() {
     [draft.content, onChangeDraft, selectedSubtopic],
   );
 
+  const updateSubtopicMinTime = useCallback(
+    (minutes) => {
+      if (!selectedSubtopic) return;
+      const value = Math.max(0, Math.round(Number(minutes) || 0));
+      const body = selectedSubtopicBody;
+      const hasMinTime = /^\s*-\s*\[MINTIME\]\s*\d+\s*$/im.test(body);
+
+      let nextBody;
+      if (value > 0 && hasMinTime) {
+        nextBody = body.replace(/^(\s*-\s*\[MINTIME\]\s*)\d+(\s*)$/im, `$1${value}$2`);
+      } else if (value > 0 && !hasMinTime) {
+        const hasScore = /^\s*-\s*\[SCORE\]\s*\d+\s*$/im.test(body);
+        if (hasScore) {
+          nextBody = body.replace(/^(\s*-\s*\[SCORE\]\s*\d+\s*)$/im, `$1\n- [MINTIME] ${value}`);
+        } else {
+          const spacer = body.endsWith("\n") || body.length === 0 ? "" : "\n";
+          nextBody = `${body}${spacer}- [MINTIME] ${value}\n`;
+        }
+      } else if (value === 0 && hasMinTime) {
+        nextBody = body.replace(/^\s*-\s*\[MINTIME\]\s*\d+\s*\n?/im, "");
+      } else {
+        return;
+      }
+      updateSelectedSubtopicBody(nextBody);
+    },
+    [selectedSubtopic, selectedSubtopicBody, updateSelectedSubtopicBody],
+  );
+
   const insertAtCursor = useCallback(
     (text) => {
       const view = editorViewRef.current;
@@ -763,6 +791,20 @@ export default function EditorPage() {
               Markdown Editor
               {selectedSubtopic ? `: ${selectedSubtopic.subText}` : ""}
             </h3>
+            {selectedSubtopic ? (
+              <div className="editor-subtopic-settings">
+                <label>
+                  ⏱ เวลาขั้นต่ำก่อนปลดล็อคคำถาม (นาที)
+                  <input
+                    type="number"
+                    min={0}
+                    value={selectedSubtopic.minTimeMinutes ?? 0}
+                    onChange={(e) => updateSubtopicMinTime(Number(e.target.value))}
+                    style={{ width: 70, marginLeft: 8 }}
+                  />
+                </label>
+              </div>
+            ) : null}
             <CodeMirror
               key={selectedSubtopic?.id ?? "no-subtopic"}
               value={selectedSubtopicBody}
@@ -896,14 +938,6 @@ export default function EditorPage() {
                 min={1}
                 value={subtopicScore}
                 onChange={(event) => setSubtopicScore(Number(event.target.value))}
-              />
-              <label htmlFor="subtopic-mintime-input">เวลาขั้นต่ำก่อนปลดล็อคคำถาม (นาที, 0 = ไม่ล็อค)</label>
-              <input
-                id="subtopic-mintime-input"
-                type="number"
-                min={0}
-                value={subtopicMinTime}
-                onChange={(event) => setSubtopicMinTime(Number(event.target.value))}
               />
               <div className="profile-action-row">
                 <button type="button" className="enter-button" onClick={handleInsertSubSectionFromModal}>

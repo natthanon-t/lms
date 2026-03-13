@@ -42,6 +42,28 @@ export default function StudyPage() {
   // lockedDisplaySeconds: null = unlocked, number = seconds spent so far (countdown display)
   const [lockedDisplaySeconds, setLockedDisplaySeconds] = useState(null);
 
+  // Sync timeSpentRef when backend progress loads (useRef only captures initial value)
+  useEffect(() => {
+    const loaded = progress?.timeSpent;
+    if (!loaded) return;
+    for (const [key, val] of Object.entries(loaded)) {
+      if ((timeSpentRef.current[key] ?? 0) < val) {
+        timeSpentRef.current[key] = val;
+      }
+    }
+    // Re-evaluate lock for current subtopic
+    const subtopicId = selectedSubtopic?.id;
+    if (subtopicId) {
+      const minTimeSecs = (selectedSubtopic?.minTimeMinutes ?? 0) * 60;
+      const current = timeSpentRef.current[subtopicId] ?? 0;
+      if (minTimeSecs > 0 && current < minTimeSecs) {
+        setLockedDisplaySeconds(current);
+      } else if (minTimeSecs > 0) {
+        setLockedDisplaySeconds(null);
+      }
+    }
+  }, [progress?.timeSpent, selectedSubtopic?.id, selectedSubtopic?.minTimeMinutes]);
+
   useEffect(() => {
     if (!draft) return;
     const draftCourseId = draft.sourceId ?? draft.id;
