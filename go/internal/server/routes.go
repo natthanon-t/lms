@@ -28,8 +28,8 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	api := app.Group("/api")
 
 	authGroup := api.Group("/auth")
-	authGroup.Use(limiter.New(limiter.Config{
-		Max:        10,
+	authSensitiveLimiter := limiter.New(limiter.Config{
+		Max:        cfg.RateLimitAuth,
 		Expiration: 1 * time.Minute,
 		KeyGenerator: func(c *fiber.Ctx) string {
 			return c.IP()
@@ -37,14 +37,14 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 		LimitReached: func(c *fiber.Ctx) error {
 			return fiber.NewError(fiber.StatusTooManyRequests, "too many requests, please try again later")
 		},
-	}))
-	authGroup.Post("/register", handler.Register)
-	authGroup.Post("/login", handler.Login)
+	})
+	authGroup.Post("/register", authSensitiveLimiter, handler.Register)
+	authGroup.Post("/login", authSensitiveLimiter, handler.Login)
 	authGroup.Post("/refresh", handler.Refresh)
 	authGroup.Post("/logout", handler.Logout)
 
 	publicLimiter := limiter.New(limiter.Config{
-		Max:        60,
+		Max:        cfg.RateLimitPublic,
 		Expiration: 1 * time.Minute,
 		KeyGenerator: func(c *fiber.Ctx) string {
 			return c.IP()

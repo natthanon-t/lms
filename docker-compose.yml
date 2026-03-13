@@ -65,6 +65,8 @@ services:
       APP_ADMIN_USERNAME: ${APP_ADMIN_USERNAME}
       APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD}
       EXAM_SEED_DIR: /app/exam
+      RATE_LIMIT_AUTH: ${RATE_LIMIT_AUTH:-200}
+      RATE_LIMIT_PUBLIC: ${RATE_LIMIT_PUBLIC:-1000}
     volumes:
       - ./cbt-lms/public/exam:/app/exam:ro
     ports:

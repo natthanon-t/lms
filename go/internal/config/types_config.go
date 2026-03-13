@@ -12,4 +12,6 @@ type AppConfig struct {
 	AdminPass            string
 	DefaultResetPassword string
 	ExamSeedDir          string
+	RateLimitAuth        int
+	RateLimitPublic      int
 }

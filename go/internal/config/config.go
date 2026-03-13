@@ -25,6 +25,8 @@ func LoadConfig() AppConfig {
 		AdminPass:            getStringEnv("APP_ADMIN_PASSWORD", "admin12345"),
 		DefaultResetPassword: getStringEnv("APP_DEFAULT_RESET_PASSWORD", "Demo@2026"),
 		ExamSeedDir:          getStringEnv("EXAM_SEED_DIR", "../cbt-lms/public/exam"),
+		RateLimitAuth:        getIntEnv("RATE_LIMIT_AUTH", 200),
+		RateLimitPublic:      getIntEnv("RATE_LIMIT_PUBLIC", 1000),
 	}
 }
 

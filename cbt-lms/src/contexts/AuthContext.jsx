@@ -102,8 +102,10 @@ export function AuthProvider({ children }) {
               try { localStorage.setItem(avatarStorageKey(username), dataUrl); } catch { /* ignore */ }
           })
           .catch(() => {});
-      } catch {
-        clearTokens();
+      } catch (err) {
+        if (err?.status === 401 || err?.status === 403) {
+          clearTokens();
+        }
       } finally {
         if (mounted) setAuthBootstrapped(true);
       }

@@ -11,7 +11,9 @@ const request = async (path, options = {}) => {
   const response = await fetch(`${API_BASE_URL}${path}`, options);
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload?.message ?? "request failed");
+    const err = new Error(payload?.message ?? "request failed");
+    err.status = response.status;
+    throw err;
   }
   return payload;
 };
