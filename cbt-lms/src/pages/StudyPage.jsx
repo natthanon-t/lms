@@ -41,6 +41,9 @@ export default function StudyPage() {
   const pendingSecondsRef = useRef(0);
   // lockedDisplaySeconds: null = unlocked, number = seconds spent so far (countdown display)
   const [lockedDisplaySeconds, setLockedDisplaySeconds] = useState(null);
+  const [answerInputs, setAnswerInputs] = useState({});
+  const subtopicPages = useMemo(() => draft ? getSubtopicPages(draft.content, draft.title) : [], [draft?.content, draft?.title]);
+  const selectedSubtopic = subtopicPages.find((subtopic) => subtopic.id === activeSubtopicId) ?? subtopicPages[0];
 
   // Sync timeSpentRef when backend progress loads (useRef only captures initial value)
   useEffect(() => {
@@ -81,9 +84,6 @@ export default function StudyPage() {
         .catch(() => {});
     }
   }, [draft?.sourceId, draft?.id]);
-  const [answerInputs, setAnswerInputs] = useState({});
-  const subtopicPages = useMemo(() => draft ? getSubtopicPages(draft.content, draft.title) : [], [draft?.content, draft?.title]);
-  const selectedSubtopic = subtopicPages.find((subtopic) => subtopic.id === activeSubtopicId) ?? subtopicPages[0];
   const selectedSubtopicAnswers = progress?.answers?.[selectedSubtopic?.id] ?? {};
   const selectedSubtopicCompleted = Boolean(progress?.completedSubtopics?.[selectedSubtopic?.id]);
   const completedSubtopicIds = useMemo(

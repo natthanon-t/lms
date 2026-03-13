@@ -1,20 +1,12 @@
 
 .workspace-shell {
   position: relative;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: 260px minmax(0, 1fr);
   height: calc(100vh - 84px);
 }
 
 .sidebar-hover-trigger {
-  display: block;
-  position: fixed;
-  left: 0;
-  top: 84px;
-  width: 4px;
-  height: calc(100vh - 84px);
-  z-index: 51;
-  background: rgba(75, 130, 255, 0.25);
-  transition: background 0.2s;
+  display: none;
 }
 
 .sidebar-hover-trigger:hover {
@@ -23,21 +15,19 @@
 
 .workspace-sidebar {
   width: 260px;
-  transform: translateX(-260px);
-  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) 0.12s;
-  position: fixed;
-  left: 0;
-  top: 84px;
+  position: relative;
+  left: auto;
+  top: auto;
   z-index: 50;
-  height: calc(100vh - 84px);
+  height: 100%;
   overflow: auto;
-  box-shadow: 4px 0 24px rgba(15, 23, 42, 0.14);
+  box-shadow: none;
+  border-right: 1px solid #d2dcf3;
 }
 
 .sidebar-hover-trigger:hover ~ .workspace-sidebar,
 .workspace-sidebar:hover {
-  transform: translateX(0);
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: none;
 }
 
 .workspace-content {
