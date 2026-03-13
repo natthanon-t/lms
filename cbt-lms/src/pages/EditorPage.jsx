@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import CodeMirror from "@uiw/react-codemirror";
 import { markdown as mdLang } from "@codemirror/lang-markdown";
 import MarkdownContent from "../components/markdown/MarkdownContent";
+import RichContentEditor from "../components/editor/RichContentEditor";
 import TableOfContents from "../components/markdown/TableOfContents";
 import {
   deleteHeadingById,
@@ -186,10 +187,16 @@ export default function EditorPage() {
   const [subtopicScore, setSubtopicScore] = useState(20);
   const [subtopicMinTime, setSubtopicMinTime] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
+  const [editorMode, setEditorMode] = useState("visual");
   const subtopicPages = useMemo(() => getSubtopicPages(draft.content, draft.title), [draft.content, draft.title]);
   const selectedSubtopic = subtopicPages.find((subtopic) => subtopic.id === activeSubtopicId) ?? subtopicPages[0];
   const selectedSubtopicBody = selectedSubtopic?.bodyMarkdown ?? "";
   const skillRewards = useMemo(() => getSkillRewards(draft), [draft]);
+
+  // Clear CodeMirror ref when switching to visual mode so insertAtCursor falls back
+  useEffect(() => {
+    if (editorMode === "visual") editorViewRef.current = null;
+  }, [editorMode]);
 
   const captureEditorView = useCallback((view) => {
     editorViewRef.current = view;
@@ -230,6 +237,30 @@ export default function EditorPage() {
         nextBody = body.replace(/^\s*-\s*\[MINTIME\]\s*\d+\s*\n?/im, "");
       } else {
         return;
+      }
+      updateSelectedSubtopicBody(nextBody);
+    },
+    [selectedSubtopic, selectedSubtopicBody, updateSelectedSubtopicBody],
+  );
+
+  const updateSubtopicScore = useCallback(
+    (score) => {
+      if (!selectedSubtopic) return;
+      const value = Math.max(0, Math.round(Number(score) || 0));
+      const body = selectedSubtopicBody;
+      const hasScore = /^\s*-\s*\[SCORE\]\s*\d+\s*$/im.test(body);
+
+      let nextBody;
+      if (hasScore) {
+        nextBody = body.replace(/^(\s*-\s*\[SCORE\]\s*)\d+(\s*)$/im, `$1${value}$2`);
+      } else {
+        const hasMinTime = /^\s*-\s*\[MINTIME\]\s*\d+\s*$/im.test(body);
+        if (hasMinTime) {
+          nextBody = body.replace(/^(\s*-\s*\[MINTIME\])/im, `- [SCORE] ${value}\n$1`);
+        } else {
+          const spacer = body.endsWith("\n") || body.length === 0 ? "" : "\n";
+          nextBody = `${body}${spacer}- [SCORE] ${value}\n`;
+        }
       }
       updateSelectedSubtopicBody(nextBody);
     },
@@ -277,14 +308,12 @@ export default function EditorPage() {
 
   const handleInsertSubSectionFromModal = () => {
     const normalizedTitle = String(subtopicTitle ?? "").trim();
-    const normalizedScore = Number(subtopicScore);
-    if (!normalizedTitle || !Number.isFinite(normalizedScore) || normalizedScore <= 0) {
-      setSaveMessage("กรุณากรอกชื่อหัวข้อย่อยและคะแนนให้ถูกต้อง");
+    if (!normalizedTitle) {
+      setSaveMessage("กรุณากรอกชื่อหัวข้อย่อย");
       return;
     }
 
-    const normalizedMinTime = Math.max(0, Math.round(Number(subtopicMinTime) || 0));
-    const subtopicBlock = `\n\n### ${normalizedTitle}\n\nใส่รายละเอียดหัวข้อย่อย\n\n- [SCORE] ${Math.round(normalizedScore)}\n${normalizedMinTime > 0 ? `- [MINTIME] ${normalizedMinTime}\n` : ""}`;
+    const subtopicBlock = `\n\n### ${normalizedTitle}\n\nใส่รายละเอียดหัวข้อย่อย\n\n- [SCORE] 20\n`;
     if (!selectedSubtopic?.mainText) {
       insertAtCursor(subtopicBlock);
       setSaveMessage("");
@@ -428,6 +457,25 @@ export default function EditorPage() {
       setSaveMessage("อัพโหลดรูปไม่สำเร็จ");
     }
   };
+
+  // Image upload callback for Visual Editor blocks
+  const handleUploadImageForBlock = useCallback(async (file) => {
+    if (!draft.sourceId) {
+      setSaveMessage("บันทึกคอร์สก่อนอัพโหลดรูป");
+      return null;
+    }
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      const url = await saveCourseImageApi(draft.sourceId, file.name, dataUrl);
+      const resolved = url || dataUrl;
+      const newImages = storeImage(draft.sourceId, file.name, resolved);
+      setContentImages(newImages);
+      return { filename: file.name, encodedFilename: encodeURIComponent(file.name) };
+    } catch {
+      setSaveMessage("อัพโหลดรูปไม่สำเร็จ");
+      return null;
+    }
+  }, [draft.sourceId]);
 
   const handleMoveMainBefore = (sourceHeadingId, targetHeadingId) => {
     const nextContent = moveMainSectionBefore(draft.content, sourceHeadingId, targetHeadingId);
@@ -750,25 +798,54 @@ export default function EditorPage() {
         <button type="button" onClick={insertSubSection}>
           เพิ่มหัวข้อย่อย
         </button>
-        <button type="button" onClick={insertVideoLink}>
-          แทรกวิดีโอ
-        </button>
-        <button type="button" onClick={insertQuestionTemplate}>
-          เพิ่มคำถามหัวข้อย่อย
-        </button>
+        {editorMode === "markdown" && (
+          <>
+            <button type="button" onClick={insertVideoLink}>
+              แทรกวิดีโอ
+            </button>
+            <button type="button" onClick={insertQuestionTemplate}>
+              เพิ่มคำถามหัวข้อย่อย
+            </button>
+          </>
+        )}
         <button type="button" onClick={() => setShowPreview((prev) => !prev)}>
           {showPreview ? "ซ่อน Preview" : "แสดง Preview"}
         </button>
-        <label>
-          อัพโหลดรูป
-          <input type="file" accept="image/*" onChange={handleUploadEditorImage} style={{ display: "none" }} />
-        </label>
+        {editorMode === "markdown" && (
+          <label>
+            อัพโหลดรูป
+            <input type="file" accept="image/*" onChange={handleUploadEditorImage} style={{ display: "none" }} />
+          </label>
+        )}
+        <div className="editor-mode-toggle">
+          <button
+            type="button"
+            className={editorMode === "visual" ? "active" : ""}
+            onClick={() => setEditorMode("visual")}
+          >
+            Visual
+          </button>
+          <button
+            type="button"
+            className={editorMode === "markdown" ? "active" : ""}
+            onClick={() => setEditorMode("markdown")}
+          >
+            Markdown
+          </button>
+        </div>
       </div>
 
-      <div className="editor-hint">
-        รูปแบบวิดีโอ: `[video: ชื่อวิดีโอ](ลิงก์ YouTube)` | รูปแบบคำถาม: `- [Q] คำถาม :: คำตอบ :: คะแนน` |
-        คะแนนหัวข้อ: `- [SCORE] 20` | ลากหัวข้อในสารบัญด้วยเมาส์เพื่อจัดเรียง
-      </div>
+      {editorMode === "markdown" && (
+        <div className="editor-hint">
+          รูปแบบวิดีโอ: `[video: ชื่อวิดีโอ](ลิงก์ YouTube)` | รูปแบบคำถาม: `- [Q] คำถาม :: คำตอบ :: คะแนน` |
+          คะแนนหัวข้อ: `- [SCORE] 20` | ลากหัวข้อในสารบัญด้วยเมาส์เพื่อจัดเรียง
+        </div>
+      )}
+      {editorMode === "visual" && (
+        <div className="editor-hint-visual">
+          เพิ่มเนื้อหาด้วยปุ่ม "+ เพิ่มเนื้อหา" ในพื้นที่แก้ไข | ลากหัวข้อในสารบัญด้วยเมาส์เพื่อจัดเรียง
+        </div>
+      )}
 
       <div className={`editor-split ${showPreview ? "preview-mode" : "editor-mode"}`}>
         <TableOfContents
@@ -785,7 +862,47 @@ export default function EditorPage() {
           onDeleteHeading={handleDeleteHeading}
         />
 
-        {!showPreview ? (
+        {!showPreview && editorMode === "visual" ? (
+          <div className="rich-editor-panel">
+            <h3>
+              Visual Editor
+              {selectedSubtopic ? `: ${selectedSubtopic.subText}` : ""}
+            </h3>
+            {selectedSubtopic ? (
+              <div className="rich-subtopic-settings">
+                <label>
+                  ⭐ คะแนนหัวข้อย่อย
+                  <input
+                    type="number"
+                    min={0}
+                    value={selectedSubtopic.baseScore ?? 0}
+                    onChange={(e) => updateSubtopicScore(Number(e.target.value))}
+                    style={{ width: 70, marginLeft: 8 }}
+                  />
+                </label>
+                <label>
+                  ⏱ เวลาขั้นต่ำก่อนปลดล็อคคำถาม (นาที)
+                  <input
+                    type="number"
+                    min={0}
+                    value={selectedSubtopic.minTimeMinutes ?? 0}
+                    onChange={(e) => updateSubtopicMinTime(Number(e.target.value))}
+                    style={{ width: 70, marginLeft: 8 }}
+                  />
+                </label>
+              </div>
+            ) : null}
+            <RichContentEditor
+              key={selectedSubtopic?.id ?? "no-subtopic"}
+              value={selectedSubtopicBody}
+              onChange={updateSelectedSubtopicBody}
+              images={contentImages}
+              onUploadImage={handleUploadImageForBlock}
+            />
+          </div>
+        ) : null}
+
+        {!showPreview && editorMode === "markdown" ? (
           <div className="editor-panel">
             <h3>
               Markdown Editor
@@ -793,6 +910,16 @@ export default function EditorPage() {
             </h3>
             {selectedSubtopic ? (
               <div className="editor-subtopic-settings">
+                <label>
+                  ⭐ คะแนนหัวข้อย่อย
+                  <input
+                    type="number"
+                    min={0}
+                    value={selectedSubtopic.baseScore ?? 0}
+                    onChange={(e) => updateSubtopicScore(Number(e.target.value))}
+                    style={{ width: 70, marginLeft: 8 }}
+                  />
+                </label>
                 <label>
                   ⏱ เวลาขั้นต่ำก่อนปลดล็อคคำถาม (นาที)
                   <input
@@ -930,14 +1057,6 @@ export default function EditorPage() {
                 value={subtopicTitle}
                 onChange={(event) => setSubtopicTitle(event.target.value)}
                 placeholder="หัวข้อย่อยใหม่"
-              />
-              <label htmlFor="subtopic-score-input">คะแนน</label>
-              <input
-                id="subtopic-score-input"
-                type="number"
-                min={1}
-                value={subtopicScore}
-                onChange={(event) => setSubtopicScore(Number(event.target.value))}
               />
               <div className="profile-action-row">
                 <button type="button" className="enter-button" onClick={handleInsertSubSectionFromModal}>

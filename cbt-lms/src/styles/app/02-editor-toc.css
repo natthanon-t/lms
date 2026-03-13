@@ -209,6 +209,7 @@
   display: grid;
   gap: 14px;
   grid-template-columns: 360px minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
 }
 
 .editor-split.preview-hidden,
@@ -223,7 +224,11 @@
   color: #e9eef8;
   border: 1px solid #1d2a3d;
   border-radius: 14px;
-  overflow: hidden;
+}
+
+.editor-panel h3:first-child,
+.preview-panel h3:first-child {
+  border-radius: 14px 14px 0 0;
 }
 
 .editor-panel h3,
@@ -549,7 +554,10 @@
   color: #e9eef8;
   border: 1px solid #1d2a3d;
   border-radius: 14px;
-  overflow: hidden;
+}
+
+.toc-panel h3:first-child {
+  border-radius: 14px 14px 0 0;
 }
 
 .toc-panel h3 {
