@@ -689,4 +689,702 @@ WHERE a.username = 'napa' AND a.exam_id = 'exam-itsec-01'
 ORDER BY a.started_at DESC
 LIMIT 1;
 
+-- ==========================================================
+-- ███  STRESS TEST DATA  (50 users, 110 courses, 3 exams)  ███
+-- ==========================================================
+
+-- === STRESS TEST USERS (50 คน) ===
+INSERT INTO users (name, username, employee_code, password_hash, role_code, status) VALUES
+  ('ทดสอบ คนที่หนึ่ง',    'st-user-001', 'ST-001', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่สอง',     'st-user-002', 'ST-002', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่สาม',     'st-user-003', 'ST-003', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่สี่',      'st-user-004', 'ST-004', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ห้า',     'st-user-005', 'ST-005', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่หก',      'st-user-006', 'ST-006', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่เจ็ด',    'st-user-007', 'ST-007', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่แปด',     'st-user-008', 'ST-008', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่เก้า',    'st-user-009', 'ST-009', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่สิบ',     'st-user-010', 'ST-010', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 11',     'st-user-011', 'ST-011', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 12',     'st-user-012', 'ST-012', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 13',     'st-user-013', 'ST-013', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 14',     'st-user-014', 'ST-014', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 15',     'st-user-015', 'ST-015', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 16',     'st-user-016', 'ST-016', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 17',     'st-user-017', 'ST-017', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 18',     'st-user-018', 'ST-018', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 19',     'st-user-019', 'ST-019', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 20',     'st-user-020', 'ST-020', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 21',     'st-user-021', 'ST-021', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 22',     'st-user-022', 'ST-022', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 23',     'st-user-023', 'ST-023', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 24',     'st-user-024', 'ST-024', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 25',     'st-user-025', 'ST-025', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 26',     'st-user-026', 'ST-026', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 27',     'st-user-027', 'ST-027', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 28',     'st-user-028', 'ST-028', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 29',     'st-user-029', 'ST-029', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 30',     'st-user-030', 'ST-030', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 31',     'st-user-031', 'ST-031', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 32',     'st-user-032', 'ST-032', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 33',     'st-user-033', 'ST-033', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 34',     'st-user-034', 'ST-034', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 35',     'st-user-035', 'ST-035', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 36',     'st-user-036', 'ST-036', crypt('Demo@2026', gen_salt('bf', 10)), 'instructor', 'active'),
+  ('ทดสอบ คนที่ 37',     'st-user-037', 'ST-037', crypt('Demo@2026', gen_salt('bf', 10)), 'instructor', 'active'),
+  ('ทดสอบ คนที่ 38',     'st-user-038', 'ST-038', crypt('Demo@2026', gen_salt('bf', 10)), 'instructor', 'active'),
+  ('ทดสอบ คนที่ 39',     'st-user-039', 'ST-039', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 40',     'st-user-040', 'ST-040', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 41',     'st-user-041', 'ST-041', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'inactive'),
+  ('ทดสอบ คนที่ 42',     'st-user-042', 'ST-042', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'inactive'),
+  ('ทดสอบ คนที่ 43',     'st-user-043', 'ST-043', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 44',     'st-user-044', 'ST-044', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 45',     'st-user-045', 'ST-045', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 46',     'st-user-046', 'ST-046', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 47',     'st-user-047', 'ST-047', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 48',     'st-user-048', 'ST-048', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 49',     'st-user-049', 'ST-049', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ทดสอบ คนที่ 50',     'st-user-050', 'ST-050', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active');
+
+-- === STRESS TEST LOGIN LOGS (กระจาย heatmap) ===
+INSERT INTO user_login_logs (user_id, logged_in_at)
+SELECT u.id, ts
+FROM users u
+CROSS JOIN (VALUES
+  (NOW() - INTERVAL '90 days'), (NOW() - INTERVAL '85 days'),
+  (NOW() - INTERVAL '80 days'), (NOW() - INTERVAL '75 days'),
+  (NOW() - INTERVAL '70 days'), (NOW() - INTERVAL '65 days'),
+  (NOW() - INTERVAL '60 days'), (NOW() - INTERVAL '55 days'),
+  (NOW() - INTERVAL '50 days'), (NOW() - INTERVAL '45 days'),
+  (NOW() - INTERVAL '40 days'), (NOW() - INTERVAL '35 days'),
+  (NOW() - INTERVAL '30 days'), (NOW() - INTERVAL '25 days'),
+  (NOW() - INTERVAL '20 days'), (NOW() - INTERVAL '15 days'),
+  (NOW() - INTERVAL '10 days'), (NOW() - INTERVAL '5 days'),
+  (NOW() - INTERVAL '3 days'),  (NOW() - INTERVAL '1 day')
+) AS t(ts)
+WHERE u.username LIKE 'st-user-0%' AND RIGHT(u.username, 2)::int <= 20;
+
+INSERT INTO user_login_logs (user_id, logged_in_at)
+SELECT u.id, ts
+FROM users u
+CROSS JOIN (VALUES
+  (NOW() - INTERVAL '30 days'), (NOW() - INTERVAL '20 days'),
+  (NOW() - INTERVAL '10 days'), (NOW() - INTERVAL '5 days'),
+  (NOW() - INTERVAL '2 days'),  (NOW() - INTERVAL '1 day')
+) AS t(ts)
+WHERE u.username LIKE 'st-user-0%' AND RIGHT(u.username, 2)::int BETWEEN 21 AND 40;
+
+INSERT INTO user_login_logs (user_id, logged_in_at)
+SELECT u.id, ts
+FROM users u
+CROSS JOIN (VALUES
+  (NOW() - INTERVAL '10 days'), (NOW() - INTERVAL '3 days')
+) AS t(ts)
+WHERE u.username LIKE 'st-user-0%' AND RIGHT(u.username, 2)::int BETWEEN 41 AND 50;
+
+-- === STRESS TEST COURSES (10 courses จาก instructors ทดสอบ top creators) ===
+INSERT INTO courses (id, title, creator, owner_username, status, description, image, content, skill_points, subtopic_completion_score, course_completion_score) VALUES
+  (
+    'st-course-01', 'Network Fundamentals', 'ทดสอบ คนที่ 36', 'st-user-036', 'active',
+    'เครือข่ายพื้นฐาน: OSI Model, TCP/IP, Subnetting',
+    'https://picsum.photos/seed/st-net/640/360',
+    E'# Network Fundamentals\n\n## OSI Model\nOSI Model มี 7 ชั้น ตั้งแต่ Physical จนถึง Application\n\n### osi-basics\n- [SCORE] 10\n- [Q] OSI Model มีกี่ชั้น :: 7 ชั้น :: 10\n\n## TCP/IP\nTCP/IP มี 4 ชั้น ซึ่งถือเป็นโมเดลที่ใช้จริงบน Internet\n\n### tcpip\n- [SCORE] 10\n- [Q] TCP/IP มีกี่ชั้น :: 4 ชั้น :: 10\n\n## Subnetting\nSubnetting ใช้แบ่ง network ออกเป็น subnet ย่อย\n\n### subnetting\n- [SCORE] 10\n- [Q] Subnet mask /24 มีกี่ host :: 254 :: 10',
+    10, 10, 60
+  ),
+  (
+    'st-course-02', 'Cloud Computing Basics', 'ทดสอบ คนที่ 36', 'st-user-036', 'active',
+    'พื้นฐาน Cloud: IaaS, PaaS, SaaS',
+    'https://picsum.photos/seed/st-cloud/640/360',
+    E'# Cloud Computing Basics\n\n## IaaS\nInfrastructure as a Service ให้เช่า VM, Storage, Network\n\n### iaas\n- [SCORE] 10\n- [Q] IaaS ย่อมาจากอะไร :: Infrastructure as a Service :: 10\n\n## PaaS\nPlatform as a Service ให้ runtime พร้อมใช้งาน\n\n### paas\n- [SCORE] 10\n- [Q] PaaS ย่อมาจากอะไร :: Platform as a Service :: 10\n\n## SaaS\nSoftware as a Service คือซอฟต์แวร์สำเร็จรูปบน cloud\n\n### saas\n- [SCORE] 10\n- [Q] Gmail จัดเป็น cloud model ใด :: SaaS :: 10',
+    10, 10, 50
+  ),
+  (
+    'st-course-03', 'Docker & Containers', 'ทดสอบ คนที่ 37', 'st-user-037', 'active',
+    'การใช้ Docker สร้าง container และ image',
+    'https://picsum.photos/seed/st-docker/640/360',
+    E'# Docker & Containers\n\n## Container vs VM\nContainer แชร์ kernel เดียวกัน เบากว่า VM มาก\n\n### container-vs-vm\n- [SCORE] 10\n- [Q] Container ต่างจาก VM อย่างไร :: แชร์ kernel เบากว่า :: 10\n\n## Dockerfile\nDockerfile ใช้สร้าง image โดยกำหนด base image, command, expose port\n\n### dockerfile\n- [SCORE] 10\n- [Q] คำสั่งกำหนด base image คือ :: FROM :: 10',
+    10, 10, 40
+  ),
+  (
+    'st-course-04', 'Git Version Control', 'ทดสอบ คนที่ 37', 'st-user-037', 'active',
+    'พื้นฐาน Git: branch, merge, rebase, conflict resolution',
+    'https://picsum.photos/seed/st-git/640/360',
+    E'# Git Version Control\n\n## Branch & Merge\nBranch ใช้แยกงาน Merge ใช้รวมงานกลับ\n\n### branch-merge\n- [SCORE] 10\n- [Q] คำสั่งสร้าง branch ใหม่ :: git branch :: 10\n\n## Rebase\nRebase ย้ายประวัติ commit ให้เรียงใหม่บน target branch\n\n### rebase\n- [SCORE] 10\n- [Q] Rebase ต่างจาก Merge อย่างไร :: ย้ายประวัติให้เรียงใหม่ :: 10',
+    10, 10, 40
+  ),
+  (
+    'st-course-05', 'SQL Fundamentals', 'ทดสอบ คนที่ 38', 'st-user-038', 'active',
+    'พื้นฐาน SQL: SELECT, JOIN, GROUP BY, Subquery',
+    'https://picsum.photos/seed/st-sql/640/360',
+    E'# SQL Fundamentals\n\n## SELECT & WHERE\nSELECT เลือกคอลัมน์ WHERE กรองข้อมูลตามเงื่อนไข\n\n### select-where\n- [SCORE] 10\n- [Q] คำสั่งกรองข้อมูลใน SQL คือ :: WHERE :: 10\n\n## JOIN\nJOIN ใช้เชื่อมตารางหลายตารางเข้าด้วยกัน\n\n### join-basics\n- [SCORE] 10\n- [Q] INNER JOIN แสดงข้อมูลแบบใด :: เฉพาะแถวที่ตรงกัน :: 10\n\n## GROUP BY\nGROUP BY รวมกลุ่มข้อมูลเพื่อใช้กับ aggregate function\n\n### group-by\n- [SCORE] 10\n- [Q] Aggregate function ที่นับจำนวนคือ :: COUNT :: 10',
+    10, 10, 60
+  ),
+  (
+    'st-course-06', 'Agile & Scrum', 'ทดสอบ คนที่ 38', 'st-user-038', 'active',
+    'Agile Methodology, Sprint, User Story, Retrospective',
+    'https://picsum.photos/seed/st-agile/640/360',
+    E'# Agile & Scrum\n\n## Sprint\nSprint คือช่วงเวลาทำงานคงที่ โดยปกติ 1-4 สัปดาห์\n\n### sprint\n- [SCORE] 10\n- [Q] Sprint ปกติยาวกี่สัปดาห์ :: 1-4 สัปดาห์ :: 10\n\n## Retrospective\nRetrospective สรุปสิ่งที่ดีและควรปรับปรุงหลังจบ Sprint\n\n### retro\n- [SCORE] 10\n- [Q] Retrospective จัดเมื่อไหร่ :: หลังจบ Sprint :: 10',
+    10, 10, 40
+  ),
+  (
+    'st-course-07', 'Python for Beginners', 'ทดสอบ คนที่ 36', 'st-user-036', 'active',
+    'พื้นฐาน Python: ตัวแปร, ฟังก์ชัน, loop, list comprehension',
+    'https://picsum.photos/seed/st-python/640/360',
+    E'# Python for Beginners\n\n## Variables & Types\nPython เป็น dynamically typed ไม่ต้องประกาศ type\n\n### var-types\n- [SCORE] 10\n- [Q] Python เป็น typed แบบใด :: dynamically typed :: 10\n\n## Functions\nFunction ใช้ def ตามด้วยชื่อและ parameter\n\n### functions\n- [SCORE] 10\n- [Q] คำสั่งสร้างฟังก์ชันใน Python :: def :: 10',
+    10, 10, 40
+  ),
+  (
+    'st-course-08', 'Cybersecurity Advanced', 'ทดสอบ คนที่ 37', 'st-user-037', 'active',
+    'การป้องกันภัยไซเบอร์ขั้นสูง: Zero Trust, SASE, XDR',
+    'https://picsum.photos/seed/st-cybadv/640/360',
+    E'# Cybersecurity Advanced\n\n## Zero Trust\nZero Trust หมายถึงไม่ไว้วางใจทุกเครื่องและทุกผู้ใช้โดยอัตโนมัติ\n\n### zero-trust\n- [SCORE] 15\n- [Q] หลักการ Zero Trust คืออะไร :: ไม่ไว้วางใจโดยอัตโนมัติ :: 10\n\n## XDR\nExtended Detection and Response รวม EDR, NDR, SIEM เข้าด้วยกัน\n\n### xdr\n- [SCORE] 15\n- [Q] XDR ย่อมาจากอะไร :: Extended Detection and Response :: 10',
+    10, 15, 50
+  ),
+  (
+    'st-course-09', 'Data Privacy & PDPA', 'ทดสอบ คนที่ 38', 'st-user-038', 'inactive',
+    'กฎหมายคุ้มครองข้อมูลส่วนบุคคล PDPA',
+    'https://picsum.photos/seed/st-pdpa/640/360',
+    E'# Data Privacy & PDPA\n\n## PDPA Overview\nPDPA คือ พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562\n\n### pdpa-overview\n- [SCORE] 10\n- [Q] PDPA ย่อมาจากอะไร :: Personal Data Protection Act :: 10\n\n## Data Subject Rights\nเจ้าของข้อมูลมีสิทธิ ขอเข้าถึง แก้ไข ลบ และคัดค้าน\n\n### data-rights\n- [SCORE] 10\n- [Q] สิทธิของเจ้าของข้อมูลมีอะไรบ้าง :: เข้าถึง แก้ไข ลบ คัดค้าน :: 10',
+    10, 10, 40
+  ),
+  (
+    'st-course-10', 'Presentation Skills', 'ทดสอบ คนที่ 36', 'st-user-036', 'inprogress',
+    'ทักษะนำเสนองาน: โครงสร้าง, การพูด, สไลด์',
+    'https://picsum.photos/seed/st-present/640/360',
+    E'# Presentation Skills\n\n## Storytelling\nเล่าเรื่องแบบมีโครงสร้าง: Opening, Body, Closing\n\n### storytelling\n- [SCORE] 10\n- [Q] โครงสร้างการนำเสนอมี 3 ส่วนคือ :: Opening Body Closing :: 10\n\n## Slide Design\nสไลด์ที่ดีไม่ควรมีข้อความมากเกิน ใช้ภาพและกราฟเสริม\n\n### slide-design\n- [SCORE] 10\n- [Q] สไลด์ที่ดีควรเป็นอย่างไร :: ข้อความน้อย ใช้ภาพเสริม :: 10',
+    10, 10, 40
+  );
+
+INSERT INTO course_skill_rewards (course_id, skill, points) VALUES
+  ('st-course-01', 'Networking',         50),
+  ('st-course-01', 'Infrastructure',     30),
+  ('st-course-02', 'Cloud',              50),
+  ('st-course-02', 'Infrastructure',     40),
+  ('st-course-03', 'DevOps',             50),
+  ('st-course-03', 'Container',          40),
+  ('st-course-04', 'Git',                50),
+  ('st-course-04', 'DevOps',             30),
+  ('st-course-05', 'SQL',                60),
+  ('st-course-05', 'Data Analysis',      40),
+  ('st-course-06', 'Agile',              50),
+  ('st-course-06', 'Project Management', 40),
+  ('st-course-07', 'Python',             60),
+  ('st-course-07', 'Programming',        40),
+  ('st-course-08', 'Cybersecurity',      60),
+  ('st-course-08', 'Threat Hunting',     40),
+  ('st-course-09', 'Data Privacy',       50),
+  ('st-course-09', 'Compliance',         30),
+  ('st-course-10', 'Communication',      40),
+  ('st-course-10', 'Presentation',       30);
+
+-- === STRESS TEST ENROLLMENTS (กระจาย users ลง courses ให้เยอะ) ===
+-- st-course-01 (35 learners — สูงสุด)
+INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at)
+SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-01',
+  NOW() - (120 - n) * INTERVAL '1 day',
+  CASE WHEN n <= 20 THEN NOW() - (90 - n) * INTERVAL '1 day' ELSE NULL END
+FROM generate_series(1, 35) AS n;
+
+-- st-course-02 (30 learners)
+INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at)
+SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-02',
+  NOW() - (100 - n) * INTERVAL '1 day',
+  CASE WHEN n <= 15 THEN NOW() - (70 - n) * INTERVAL '1 day' ELSE NULL END
+FROM generate_series(1, 30) AS n;
+
+-- st-course-03 (25 learners)
+INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at)
+SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-03',
+  NOW() - (90 - n) * INTERVAL '1 day',
+  CASE WHEN n <= 12 THEN NOW() - (60 - n) * INTERVAL '1 day' ELSE NULL END
+FROM generate_series(1, 25) AS n;
+
+-- st-course-04 (20 learners)
+INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at)
+SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-04',
+  NOW() - (80 - n) * INTERVAL '1 day',
+  CASE WHEN n <= 10 THEN NOW() - (50 - n) * INTERVAL '1 day' ELSE NULL END
+FROM generate_series(1, 20) AS n;
+
+-- st-course-05 (28 learners)
+INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at)
+SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-05',
+  NOW() - (110 - n) * INTERVAL '1 day',
+  CASE WHEN n <= 18 THEN NOW() - (80 - n) * INTERVAL '1 day' ELSE NULL END
+FROM generate_series(1, 28) AS n;
+
+-- st-course-06 (22 learners)
+INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at)
+SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-06',
+  NOW() - (70 - n) * INTERVAL '1 day',
+  CASE WHEN n <= 8 THEN NOW() - (40 - n) * INTERVAL '1 day' ELSE NULL END
+FROM generate_series(1, 22) AS n;
+
+-- st-course-07 (18 learners)
+INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at)
+SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-07',
+  NOW() - (60 - n) * INTERVAL '1 day',
+  CASE WHEN n <= 5 THEN NOW() - (30 - n) * INTERVAL '1 day' ELSE NULL END
+FROM generate_series(1, 18) AS n;
+
+-- st-course-08 (15 learners)
+INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at)
+SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-08',
+  NOW() - (50 - n) * INTERVAL '1 day',
+  CASE WHEN n <= 5 THEN NOW() - (25 - n) * INTERVAL '1 day' ELSE NULL END
+FROM generate_series(1, 15) AS n;
+
+-- original users ลง stress-test courses ด้วย
+INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at) VALUES
+  ('somchai',   'st-course-01', NOW() - INTERVAL '80 days',  NOW() - INTERVAL '60 days'),
+  ('somying',   'st-course-01', NOW() - INTERVAL '70 days',  NOW() - INTERVAL '55 days'),
+  ('anant',     'st-course-01', NOW() - INTERVAL '90 days',  NOW() - INTERVAL '70 days'),
+  ('kittichai', 'st-course-02', NOW() - INTERVAL '60 days',  NOW() - INTERVAL '40 days'),
+  ('wannee',    'st-course-02', NOW() - INTERVAL '50 days',  NULL),
+  ('wichai',    'st-course-03', NOW() - INTERVAL '40 days',  NULL),
+  ('pranom',    'st-course-05', NOW() - INTERVAL '45 days',  NOW() - INTERVAL '30 days'),
+  ('weerachai', 'st-course-05', NOW() - INTERVAL '50 days',  NOW() - INTERVAL '35 days'),
+  ('burin',     'st-course-07', NOW() - INTERVAL '20 days',  NULL),
+  ('pairot',    'st-course-06', NOW() - INTERVAL '15 days',  NULL);
+
+-- === STRESS TEST LEARNING PROGRESS (subtopic completions) ===
+-- completed learners ใน st-course-01 (3 subtopics: osi-basics, tcpip, subnetting)
+INSERT INTO learning_subtopic_progress (username, course_id, subtopic_id, completed_at)
+SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-01', sub.id,
+  NOW() - (90 - n) * INTERVAL '1 day' + sub.offset_hrs * INTERVAL '1 hour'
+FROM generate_series(1, 20) AS n
+CROSS JOIN (VALUES ('osi-basics', 0), ('tcpip', 2), ('subnetting', 4)) AS sub(id, offset_hrs);
+
+-- completed learners ใน st-course-02 (3 subtopics: iaas, paas, saas)
+INSERT INTO learning_subtopic_progress (username, course_id, subtopic_id, completed_at)
+SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-02', sub.id,
+  NOW() - (70 - n) * INTERVAL '1 day' + sub.offset_hrs * INTERVAL '1 hour'
+FROM generate_series(1, 15) AS n
+CROSS JOIN (VALUES ('iaas', 0), ('paas', 2), ('saas', 4)) AS sub(id, offset_hrs);
+
+-- completed learners ใน st-course-05 (3 subtopics: select-where, join-basics, group-by)
+INSERT INTO learning_subtopic_progress (username, course_id, subtopic_id, completed_at)
+SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-05', sub.id,
+  NOW() - (80 - n) * INTERVAL '1 day' + sub.offset_hrs * INTERVAL '1 hour'
+FROM generate_series(1, 18) AS n
+CROSS JOIN (VALUES ('select-where', 0), ('join-basics', 2), ('group-by', 4)) AS sub(id, offset_hrs);
+
+-- partial progress สำหรับ in-progress learners
+INSERT INTO learning_subtopic_progress (username, course_id, subtopic_id, completed_at)
+SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-01', 'osi-basics',
+  NOW() - (30 - n) * INTERVAL '1 day'
+FROM generate_series(21, 30) AS n;
+
+INSERT INTO learning_subtopic_progress (username, course_id, subtopic_id, completed_at)
+SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-03', sub.id,
+  NOW() - (60 - n) * INTERVAL '1 day' + sub.offset_hrs * INTERVAL '1 hour'
+FROM generate_series(1, 12) AS n
+CROSS JOIN (VALUES ('container-vs-vm', 0), ('dockerfile', 2)) AS sub(id, offset_hrs);
+
+-- === STRESS TEST SCORES (กระจายระดับ Lv1-Lv5) ===
+INSERT INTO user_scores (username, total) VALUES
+  ('st-user-001', 850),  -- Lv5
+  ('st-user-002', 780),  -- Lv5
+  ('st-user-003', 720),  -- Lv5
+  ('st-user-004', 600),  -- Lv4
+  ('st-user-005', 550),  -- Lv4
+  ('st-user-006', 480),  -- Lv4
+  ('st-user-007', 400),  -- Lv4
+  ('st-user-008', 350),  -- Lv4
+  ('st-user-009', 300),  -- Lv3
+  ('st-user-010', 280),  -- Lv3
+  ('st-user-011', 250),  -- Lv3
+  ('st-user-012', 220),  -- Lv3
+  ('st-user-013', 200),  -- Lv3
+  ('st-user-014', 180),  -- Lv3
+  ('st-user-015', 165),  -- Lv3
+  ('st-user-016', 150),  -- Lv3
+  ('st-user-017', 140),  -- Lv2
+  ('st-user-018', 130),  -- Lv2
+  ('st-user-019', 120),  -- Lv2
+  ('st-user-020', 110),  -- Lv2
+  ('st-user-021', 100),  -- Lv2
+  ('st-user-022',  95),  -- Lv2
+  ('st-user-023',  85),  -- Lv2
+  ('st-user-024',  75),  -- Lv2
+  ('st-user-025',  65),  -- Lv2
+  ('st-user-026',  55),  -- Lv2
+  ('st-user-027',  50),  -- Lv2
+  ('st-user-028',  45),  -- Lv1
+  ('st-user-029',  40),  -- Lv1
+  ('st-user-030',  35),  -- Lv1
+  ('st-user-031',  30),  -- Lv1
+  ('st-user-032',  25),  -- Lv1
+  ('st-user-033',  20),  -- Lv1
+  ('st-user-034',  15),  -- Lv1
+  ('st-user-035',  10),  -- Lv1
+  ('st-user-036', 420),  -- Lv4 (instructor)
+  ('st-user-037', 380),  -- Lv4 (instructor)
+  ('st-user-038', 350),  -- Lv4 (instructor)
+  ('st-user-039',   5),  -- Lv1
+  ('st-user-040',   3),  -- Lv1
+  ('st-user-043',  45),  -- Lv1
+  ('st-user-044',  40),  -- Lv1
+  ('st-user-045',  35),  -- Lv1
+  ('st-user-046',  30),  -- Lv1
+  ('st-user-047',  20),  -- Lv1
+  ('st-user-048',  15),  -- Lv1
+  ('st-user-049',  10),  -- Lv1
+  ('st-user-050',   5);  -- Lv1
+
+-- === STRESS TEST SKILL SCORES ===
+INSERT INTO user_skill_scores (username, skill, points) VALUES
+  ('st-user-001', 'Networking',     80), ('st-user-001', 'Cloud',          60), ('st-user-001', 'SQL',       70),
+  ('st-user-002', 'Networking',     70), ('st-user-002', 'DevOps',         60), ('st-user-002', 'Python',    50),
+  ('st-user-003', 'SQL',            80), ('st-user-003', 'Data Analysis',  60), ('st-user-003', 'Cloud',     40),
+  ('st-user-004', 'Networking',     60), ('st-user-004', 'Cybersecurity',  50),
+  ('st-user-005', 'Cloud',          60), ('st-user-005', 'DevOps',         40),
+  ('st-user-006', 'SQL',            50), ('st-user-006', 'Agile',          40),
+  ('st-user-007', 'Python',         50), ('st-user-007', 'Git',            30),
+  ('st-user-008', 'Networking',     40), ('st-user-008', 'Cloud',          30),
+  ('st-user-009', 'SQL',            40), ('st-user-009', 'Data Analysis',  25),
+  ('st-user-010', 'DevOps',         35), ('st-user-010', 'Container',      25),
+  ('st-user-036', 'Networking',     80), ('st-user-036', 'Cloud',          70), ('st-user-036', 'Python', 60),
+  ('st-user-037', 'DevOps',         80), ('st-user-037', 'Git',            60), ('st-user-037', 'Cybersecurity', 50),
+  ('st-user-038', 'SQL',            70), ('st-user-038', 'Data Privacy',   60), ('st-user-038', 'Agile', 50);
+
+-- === STRESS TEST SCORE EVENTS (ทดสอบ leaderboard ตามช่วงเวลา) ===
+INSERT INTO user_score_events (username, score, reason, course_id, earned_at)
+SELECT 'st-user-' || LPAD(n::text, 3, '0'),
+  (10 + (n % 5) * 5),
+  CASE WHEN n % 3 = 0 THEN 'course_complete' ELSE 'subtopic_complete' END,
+  'st-course-0' || (1 + (n % 8))::text,
+  NOW() - (n * 3) * INTERVAL '1 day'
+FROM generate_series(1, 50) AS n;
+
+-- เพิ่ม score events สำหรับ monthly completions chart (กระจาย ม.ค.-ธ.ค.)
+INSERT INTO user_score_events (username, score, reason, course_id, earned_at)
+SELECT 'st-user-' || LPAD(((m * 3 + s) % 50 + 1)::text, 3, '0'),
+  20,
+  'course_complete',
+  'st-course-0' || (1 + (m % 8))::text,
+  DATE_TRUNC('year', NOW()) + (m - 1) * INTERVAL '1 month' + s * INTERVAL '3 days'
+FROM generate_series(1, 12) AS m
+CROSS JOIN generate_series(1, 4) AS s;
+
+-- === STRESS TEST EXAMS (3 exams เพิ่ม) ===
+INSERT INTO exams (id, title, creator, owner_username, status, description, instructions, image, number_of_questions, default_time, max_attempts) VALUES
+  (
+    'st-exam-01',
+    'ข้อสอบ Network Fundamentals',
+    'ทดสอบ คนที่ 36',
+    'st-user-036',
+    'active',
+    'ทดสอบความเข้าใจเรื่องเครือข่ายพื้นฐาน OSI, TCP/IP',
+    'เลือกคำตอบที่ถูกต้อง มีเวลา 15 นาที',
+    'https://picsum.photos/seed/st-exam-net/640/360',
+    5, 15, 5
+  ),
+  (
+    'st-exam-02',
+    'ข้อสอบ Cloud Computing',
+    'ทดสอบ คนที่ 37',
+    'st-user-037',
+    'active',
+    'ทดสอบความเข้าใจ Cloud models: IaaS, PaaS, SaaS',
+    'เลือกคำตอบที่ถูกต้อง มีเวลา 15 นาที',
+    'https://picsum.photos/seed/st-exam-cloud/640/360',
+    5, 15, 3
+  ),
+  (
+    'st-exam-03',
+    'ข้อสอบ SQL & Database',
+    'ทดสอบ คนที่ 38',
+    'st-user-038',
+    'active',
+    'ทดสอบความเข้าใจพื้นฐาน SQL: SELECT, JOIN, GROUP BY',
+    'เลือกคำตอบที่ถูกต้อง มีเวลา 20 นาที',
+    'https://picsum.photos/seed/st-exam-sql/640/360',
+    5, 20, 0
+  );
+
+INSERT INTO exam_domain_percentages (exam_id, domain, percentage) VALUES
+  ('st-exam-01', 'Networking', 100),
+  ('st-exam-02', 'Cloud',      100),
+  ('st-exam-03', 'Database',   100);
+
+-- Questions for st-exam-01
+INSERT INTO exam_questions (id, exam_id, domain, question_type, question, choice_a, choice_b, choice_c, choice_d, answer_key, explanation) VALUES
+  ('st-eq-net-01', 'st-exam-01', 'Networking', 'multiple_choice',
+   'OSI Model มีกี่ชั้น (layer)?', '4 ชั้น', '5 ชั้น', '7 ชั้น', '9 ชั้น',
+   'C', 'OSI Model มี 7 ชั้น: Physical, Data Link, Network, Transport, Session, Presentation, Application'),
+  ('st-eq-net-02', 'st-exam-01', 'Networking', 'multiple_choice',
+   'TCP/IP Model มีกี่ชั้น?', '3 ชั้น', '4 ชั้น', '5 ชั้น', '7 ชั้น',
+   'B', 'TCP/IP มี 4 ชั้น: Network Access, Internet, Transport, Application'),
+  ('st-eq-net-03', 'st-exam-01', 'Networking', 'multiple_choice',
+   'Subnet mask /24 มี host ได้กี่ตัว?', '128', '254', '256', '512',
+   'B', '/24 = 256 addresses - 2 (network + broadcast) = 254 hosts'),
+  ('st-eq-net-04', 'st-exam-01', 'Networking', 'multiple_choice',
+   'HTTP ใช้ port มาตรฐานใด?', '21', '22', '80', '443',
+   'C', 'HTTP ใช้ port 80, HTTPS ใช้ port 443'),
+  ('st-eq-net-05', 'st-exam-01', 'Networking', 'multiple_choice',
+   'DNS ทำหน้าที่อะไร?', 'เข้ารหัสข้อมูล', 'แปลง domain เป็น IP', 'กรองเว็บ', 'ส่งอีเมล',
+   'B', 'DNS = Domain Name System แปลงชื่อ domain เป็น IP address');
+
+-- Questions for st-exam-02
+INSERT INTO exam_questions (id, exam_id, domain, question_type, question, choice_a, choice_b, choice_c, choice_d, answer_key, explanation) VALUES
+  ('st-eq-cloud-01', 'st-exam-02', 'Cloud', 'multiple_choice',
+   'IaaS ให้บริการอะไร?', 'ซอฟต์แวร์สำเร็จรูป', 'แพลตฟอร์มพัฒนา', 'โครงสร้างพื้นฐาน', 'ฐานข้อมูลเท่านั้น',
+   'C', 'IaaS = Infrastructure as a Service ให้ VM, Storage, Network'),
+  ('st-eq-cloud-02', 'st-exam-02', 'Cloud', 'multiple_choice',
+   'Gmail จัดเป็น Cloud model ใด?', 'IaaS', 'PaaS', 'SaaS', 'FaaS',
+   'C', 'Gmail เป็น SaaS: ซอฟต์แวร์พร้อมใช้งานผ่าน browser'),
+  ('st-eq-cloud-03', 'st-exam-02', 'Cloud', 'multiple_choice',
+   'PaaS เหมาะกับใคร?', 'End Users', 'Developers', 'Network Engineers', 'Auditors',
+   'B', 'PaaS ให้ runtime, middleware เหมาะสำหรับนักพัฒนา'),
+  ('st-eq-cloud-04', 'st-exam-02', 'Cloud', 'multiple_choice',
+   'ข้อใดเป็น Public Cloud Provider?', 'VMware', 'AWS', 'Docker', 'Kubernetes',
+   'B', 'AWS, Azure, GCP เป็น Public Cloud Provider ชั้นนำ'),
+  ('st-eq-cloud-05', 'st-exam-02', 'Cloud', 'multiple_choice',
+   'Hybrid Cloud คืออะไร?', 'ใช้เฉพาะ On-premise', 'ผสม Public + Private Cloud', 'ใช้เฉพาะ SaaS', 'Cloud สำรอง',
+   'B', 'Hybrid Cloud ผสมผสาน Public Cloud กับ Private Cloud/On-premises');
+
+-- Questions for st-exam-03
+INSERT INTO exam_questions (id, exam_id, domain, question_type, question, choice_a, choice_b, choice_c, choice_d, answer_key, explanation) VALUES
+  ('st-eq-sql-01', 'st-exam-03', 'Database', 'multiple_choice',
+   'คำสั่งใดใช้กรองข้อมูลใน SQL?', 'SELECT', 'WHERE', 'GROUP BY', 'ORDER BY',
+   'B', 'WHERE ใช้กำหนดเงื่อนไขกรองข้อมูลใน query'),
+  ('st-eq-sql-02', 'st-exam-03', 'Database', 'multiple_choice',
+   'INNER JOIN แสดงข้อมูลแบบใด?', 'ทุกแถวจากทั้งสองตาราง', 'เฉพาะแถวที่ตรงกัน', 'เฉพาะตารางซ้าย', 'เฉพาะตารางขวา',
+   'B', 'INNER JOIN คืนเฉพาะแถวที่ match กันทั้งสองตาราง'),
+  ('st-eq-sql-03', 'st-exam-03', 'Database', 'multiple_choice',
+   'Aggregate function ที่นับจำนวนคือ?', 'SUM', 'AVG', 'COUNT', 'MAX',
+   'C', 'COUNT ใช้นับจำนวน row ที่ตรงเงื่อนไข'),
+  ('st-eq-sql-04', 'st-exam-03', 'Database', 'multiple_choice',
+   'คำสั่งใดเรียงลำดับผลลัพธ์?', 'GROUP BY', 'HAVING', 'ORDER BY', 'LIMIT',
+   'C', 'ORDER BY เรียงลำดับผลลัพธ์ตามคอลัมน์ที่กำหนด'),
+  ('st-eq-sql-05', 'st-exam-03', 'Database', 'multiple_choice',
+   'PRIMARY KEY มีคุณสมบัติใด?', 'ซ้ำได้', 'ไม่ซ้ำและไม่เป็น NULL', 'เป็น NULL ได้', 'เก็บข้อมูลหลาย type',
+   'B', 'PRIMARY KEY ต้อง unique และ NOT NULL');
+
+-- === STRESS TEST EXAM ATTEMPTS (100+ attempts ข้ามสัปดาห์) ===
+
+-- สัปดาห์ปัจจุบัน: วันจันทร์-ศุกร์ ข้อสอบ st-exam-01 (กระจายทุกวัน)
+INSERT INTO exam_attempts (username, exam_id, correct_count, total_questions, score_percent, domain_stats, started_at, finished_at)
+SELECT
+  'st-user-' || LPAD(n::text, 3, '0'),
+  'st-exam-01',
+  CASE WHEN n % 4 = 0 THEN 5 WHEN n % 4 = 1 THEN 4 WHEN n % 4 = 2 THEN 3 ELSE 2 END,
+  5,
+  CASE WHEN n % 4 = 0 THEN 100.00 WHEN n % 4 = 1 THEN 80.00 WHEN n % 4 = 2 THEN 60.00 ELSE 40.00 END,
+  ('{"Networking":{"correct":' || CASE WHEN n % 4 = 0 THEN '5' WHEN n % 4 = 1 THEN '4' WHEN n % 4 = 2 THEN '3' ELSE '2' END || ',"total":5}}')::jsonb,
+  DATE_TRUNC('week', NOW()) + ((n - 1) % 5) * INTERVAL '1 day' + n * INTERVAL '30 minutes',
+  DATE_TRUNC('week', NOW()) + ((n - 1) % 5) * INTERVAL '1 day' + n * INTERVAL '30 minutes' + INTERVAL '12 minutes'
+FROM generate_series(1, 30) AS n;
+
+-- สัปดาห์ปัจจุบัน: st-exam-02 (Cloud)
+INSERT INTO exam_attempts (username, exam_id, correct_count, total_questions, score_percent, domain_stats, started_at, finished_at)
+SELECT
+  'st-user-' || LPAD(n::text, 3, '0'),
+  'st-exam-02',
+  CASE WHEN n % 3 = 0 THEN 5 WHEN n % 3 = 1 THEN 3 ELSE 2 END,
+  5,
+  CASE WHEN n % 3 = 0 THEN 100.00 WHEN n % 3 = 1 THEN 60.00 ELSE 40.00 END,
+  ('{"Cloud":{"correct":' || CASE WHEN n % 3 = 0 THEN '5' WHEN n % 3 = 1 THEN '3' ELSE '2' END || ',"total":5}}')::jsonb,
+  DATE_TRUNC('week', NOW()) + ((n - 1) % 5) * INTERVAL '1 day' + (n + 15) * INTERVAL '30 minutes',
+  DATE_TRUNC('week', NOW()) + ((n - 1) % 5) * INTERVAL '1 day' + (n + 15) * INTERVAL '30 minutes' + INTERVAL '14 minutes'
+FROM generate_series(1, 20) AS n;
+
+-- สัปดาห์ปัจจุบัน: st-exam-03 (SQL) + original exams
+INSERT INTO exam_attempts (username, exam_id, correct_count, total_questions, score_percent, domain_stats, started_at, finished_at)
+SELECT
+  'st-user-' || LPAD(n::text, 3, '0'),
+  'st-exam-03',
+  CASE WHEN n % 5 = 0 THEN 5 WHEN n % 5 = 1 THEN 4 WHEN n % 5 = 2 THEN 3 WHEN n % 5 = 3 THEN 2 ELSE 1 END,
+  5,
+  CASE WHEN n % 5 = 0 THEN 100.00 WHEN n % 5 = 1 THEN 80.00 WHEN n % 5 = 2 THEN 60.00 WHEN n % 5 = 3 THEN 40.00 ELSE 20.00 END,
+  ('{"Database":{"correct":' || CASE WHEN n % 5 = 0 THEN '5' WHEN n % 5 = 1 THEN '4' WHEN n % 5 = 2 THEN '3' WHEN n % 5 = 3 THEN '2' ELSE '1' END || ',"total":5}}')::jsonb,
+  DATE_TRUNC('week', NOW()) + ((n - 1) % 5) * INTERVAL '1 day' + (n + 30) * INTERVAL '30 minutes',
+  DATE_TRUNC('week', NOW()) + ((n - 1) % 5) * INTERVAL '1 day' + (n + 30) * INTERVAL '30 minutes' + INTERVAL '18 minutes'
+FROM generate_series(1, 25) AS n;
+
+-- attempts ย้อนหลัง (กระจาย 90 วัน — ทดสอบ exam history pagination)
+INSERT INTO exam_attempts (username, exam_id, correct_count, total_questions, score_percent, domain_stats, started_at, finished_at)
+SELECT
+  'st-user-' || LPAD(((n - 1) % 35 + 1)::text, 3, '0'),
+  CASE WHEN n % 5 IN (0,1) THEN 'st-exam-01' WHEN n % 5 IN (2,3) THEN 'st-exam-02' ELSE 'st-exam-03' END,
+  CASE WHEN n % 4 = 0 THEN 5 WHEN n % 4 = 1 THEN 4 WHEN n % 4 = 2 THEN 3 ELSE 1 END,
+  5,
+  CASE WHEN n % 4 = 0 THEN 100.00 WHEN n % 4 = 1 THEN 80.00 WHEN n % 4 = 2 THEN 60.00 ELSE 20.00 END,
+  (CASE
+    WHEN n % 5 IN (0,1) THEN '{"Networking":{"correct":' || CASE WHEN n % 4 = 0 THEN '5' WHEN n % 4 = 1 THEN '4' WHEN n % 4 = 2 THEN '3' ELSE '1' END || ',"total":5}}'
+    WHEN n % 5 IN (2,3) THEN '{"Cloud":{"correct":' || CASE WHEN n % 4 = 0 THEN '5' WHEN n % 4 = 1 THEN '4' WHEN n % 4 = 2 THEN '3' ELSE '1' END || ',"total":5}}'
+    ELSE '{"Database":{"correct":' || CASE WHEN n % 4 = 0 THEN '5' WHEN n % 4 = 1 THEN '4' WHEN n % 4 = 2 THEN '3' ELSE '1' END || ',"total":5}}'
+  END)::jsonb,
+  NOW() - n * INTERVAL '1 day' - (n % 8) * INTERVAL '1 hour',
+  NOW() - n * INTERVAL '1 day' - (n % 8) * INTERVAL '1 hour' + INTERVAL '15 minutes'
+FROM generate_series(1, 90) AS n;
+
+-- stress-test users สอบ original exams ด้วย
+INSERT INTO exam_attempts (username, exam_id, correct_count, total_questions, score_percent, domain_stats, started_at, finished_at)
+SELECT
+  'st-user-' || LPAD(n::text, 3, '0'),
+  'exam-itsec-01',
+  CASE WHEN n % 3 = 0 THEN 5 WHEN n % 3 = 1 THEN 4 ELSE 2 END,
+  5,
+  CASE WHEN n % 3 = 0 THEN 100.00 WHEN n % 3 = 1 THEN 80.00 ELSE 40.00 END,
+  ('{"Security":{"correct":' || CASE WHEN n % 3 = 0 THEN '5' WHEN n % 3 = 1 THEN '4' ELSE '2' END || ',"total":5}}')::jsonb,
+  NOW() - (n * 2) * INTERVAL '1 day',
+  NOW() - (n * 2) * INTERVAL '1 day' + INTERVAL '20 minutes'
+FROM generate_series(1, 30) AS n;
+
+INSERT INTO exam_attempts (username, exam_id, correct_count, total_questions, score_percent, domain_stats, started_at, finished_at)
+SELECT
+  'st-user-' || LPAD(n::text, 3, '0'),
+  'exam-timemgmt-01',
+  CASE WHEN n % 2 = 0 THEN 5 ELSE 3 END,
+  5,
+  CASE WHEN n % 2 = 0 THEN 100.00 ELSE 60.00 END,
+  ('{"Management":{"correct":' || CASE WHEN n % 2 = 0 THEN '5' ELSE '3' END || ',"total":5}}')::jsonb,
+  NOW() - (n * 2 + 1) * INTERVAL '1 day',
+  NOW() - (n * 2 + 1) * INTERVAL '1 day' + INTERVAL '13 minutes'
+FROM generate_series(1, 25) AS n;
+
+-- === STRESS TEST MONTHLY COMPLETIONS (เพิ่ม enrollments ที่ complete ในแต่ละเดือน) ===
+-- ใช้ st-course-06: สร้าง enrollments ที่จบแต่ละเดือนของปี
+INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at)
+SELECT
+  'st-user-' || LPAD(n::text, 3, '0'),
+  'st-course-06',
+  DATE_TRUNC('year', NOW()) + (n - 1) * INTERVAL '1 month',
+  DATE_TRUNC('year', NOW()) + (n - 1) * INTERVAL '1 month' + INTERVAL '10 days'
+FROM generate_series(23, 35) AS n  -- users 23-35 ในเดือน ม.ค-ม.ค+12 ไม่เกิน
+WHERE n <= 35
+  AND 'st-user-' || LPAD(n::text, 3, '0') NOT IN (
+    SELECT username FROM user_course_enrollments WHERE course_id = 'st-course-06'
+  );
+
+-- ==========================================================
+-- ███  BULK COURSES (100 more: st-course-011 ~ st-course-110)  ███
+-- ==========================================================
+
+DO $$
+DECLARE
+  titles TEXT[] := ARRAY[
+    'Linux Administration',        'Windows Server Management',   'DevOps Pipeline',
+    'API Design Patterns',         'React Frontend Development',  'Node.js Backend',
+    'Kubernetes Orchestration',    'Terraform Infrastructure',    'Ansible Automation',
+    'Prometheus Monitoring',       'GraphQL API',                 'TypeScript Advanced',
+    'MongoDB NoSQL',               'Redis Caching',               'RabbitMQ Messaging',
+    'Elasticsearch Analytics',     'CI/CD Best Practices',        'Microservices Architecture',
+    'Clean Code Principles',       'Design Patterns',             'UX/UI Foundations',
+    'Business Analysis',           'Data Engineering',            'Machine Learning Basics',
+    'IoT Fundamentals'
+  ];
+  descs TEXT[] := ARRAY[
+    'การบริหารจัดการระบบปฏิบัติการ Linux สำหรับ Server',
+    'การจัดการ Windows Server: Active Directory, Group Policy',
+    'ออกแบบ Pipeline สำหรับ Build, Test, Deploy อัตโนมัติ',
+    'หลักการออกแบบ RESTful API และ versioning',
+    'พัฒนา Single Page Application ด้วย React และ Hooks',
+    'สร้าง Backend API ด้วย Node.js, Express, middleware',
+    'จัดการ Container cluster ด้วย Kubernetes',
+    'สร้าง Infrastructure as Code ด้วย Terraform',
+    'Automate configuration management ด้วย Ansible',
+    'ติดตั้งและใช้ Prometheus + Grafana เพื่อ monitoring',
+    'ออกแบบ API ด้วย GraphQL: Query, Mutation, Subscription',
+    'TypeScript ขั้นสูง: Generics, Utility Types, Decorators',
+    'ฐานข้อมูล NoSQL ด้วย MongoDB: CRUD, Aggregation Pipeline',
+    'ใช้ Redis สำหรับ caching, session, pub/sub',
+    'ระบบ Message Queue ด้วย RabbitMQ: exchange, routing',
+    'ค้นหาและวิเคราะห์ข้อมูลด้วย Elasticsearch',
+    'แนวปฏิบัติ CI/CD: GitHub Actions, Jenkins, ArgoCD',
+    'ออกแบบระบบแบบ Microservices: decomposition, communication',
+    'เขียนโค้ดสะอาดตามหลัก SOLID และ DRY',
+    'รูปแบบการออกแบบซอฟต์แวร์: Singleton, Factory, Observer',
+    'พื้นฐานการออกแบบ UI/UX: wireframe, prototype, usability',
+    'วิเคราะห์ความต้องการธุรกิจและเขียน requirement',
+    'สร้าง Data Pipeline: ETL, data lake, data warehouse',
+    'เรียนรู้ Machine Learning เบื้องต้น: regression, classification',
+    'พื้นฐาน Internet of Things: sensor, protocol, edge computing'
+  ];
+  owners TEXT[] := ARRAY['st-user-036','st-user-037','st-user-038','pranom','weerachai'];
+  creators TEXT[] := ARRAY['ทดสอบ คนที่ 36','ทดสอบ คนที่ 37','ทดสอบ คนที่ 38','ปราณี สร้างสรรค์','วีระชัย บรรยาย'];
+  statuses TEXT[] := ARRAY['active','active','active','active','active','active','active','inprogress','inprogress','inactive'];
+  skills_a TEXT[] := ARRAY[
+    'Linux','Windows','DevOps','API Design','React',
+    'Node.js','Kubernetes','Terraform','Ansible','Monitoring',
+    'GraphQL','TypeScript','MongoDB','Redis','RabbitMQ',
+    'Elasticsearch','CI/CD','Microservices','Clean Code','Design Patterns',
+    'UX/UI','Business Analysis','Data Engineering','Machine Learning','IoT'
+  ];
+  skills_b TEXT[] := ARRAY[
+    'System Admin','System Admin','Automation','Backend','Frontend',
+    'Backend','Container','Infrastructure','Infrastructure','Observability',
+    'Backend','Frontend','Database','Database','Messaging',
+    'Data Analysis','Automation','Architecture','Software Engineering','Software Engineering',
+    'Design','Project Management','Data Analysis','AI','Embedded Systems'
+  ];
+  i INT; idx INT; oidx INT; sidx INT; vol INT;
+  c_title TEXT; c_id TEXT;
+BEGIN
+  FOR i IN 11..110 LOOP
+    idx  := ((i - 11) % 25) + 1;
+    oidx := ((i - 11) % 5) + 1;
+    sidx := ((i - 11) % 10) + 1;
+    vol  := (i - 11) / 25 + 1;
+    c_title := titles[idx] || CASE WHEN vol > 1 THEN ' Vol.' || vol ELSE '' END;
+    c_id := 'st-course-' || LPAD(i::text, 3, '0');
+
+    INSERT INTO courses (id, title, creator, owner_username, status, description, image, content, skill_points, subtopic_completion_score, course_completion_score)
+    VALUES (
+      c_id,
+      c_title,
+      creators[oidx],
+      owners[oidx],
+      statuses[sidx],
+      descs[idx],
+      'https://picsum.photos/seed/st-c' || i || '/640/360',
+      E'# ' || c_title
+        || E'\n\n## บทที่ 1\n' || descs[idx]
+        || E'\n\n### subtopic-a\n- [SCORE] 10\n- [Q] คำถามข้อ 1 ของ ' || c_title || E' :: คำตอบ 1 :: 10'
+        || E'\n\n## บทที่ 2\nเนื้อหาเชิงลึกของ ' || c_title
+        || E'\n\n### subtopic-b\n- [SCORE] 10\n- [Q] คำถามข้อ 2 ของ ' || c_title || ' :: คำตอบ 2 :: 10',
+      10, 10, 50
+    );
+
+    INSERT INTO course_skill_rewards (course_id, skill, points) VALUES
+      (c_id, skills_a[idx], 30 + (i % 30)),
+      (c_id, skills_b[idx], 20 + (i % 20));
+  END LOOP;
+END;
+$$;
+
+-- === BULK ENROLLMENTS สำหรับ 100 courses (st-course-011 ~ st-course-110) ===
+-- แต่ละ course มี 1-15 learners (จำนวนลดหลั่นตาม course id)
+INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at)
+SELECT
+  'st-user-' || LPAD(u::text, 3, '0'),
+  'st-course-' || LPAD(c::text, 3, '0'),
+  NOW() - (150 - c + u) * INTERVAL '1 day',
+  CASE
+    WHEN u <= GREATEST(1, (15 - (c - 11) % 10) / 2)
+    THEN NOW() - (100 - c + u) * INTERVAL '1 day'
+    ELSE NULL
+  END
+FROM generate_series(11, 110) AS c
+CROSS JOIN generate_series(1, 50) AS u
+WHERE u <= GREATEST(2, 15 - ((c - 11) % 13))
+  AND u NOT IN (36, 37, 38, 41, 42)  -- exclude instructors & inactive
+ON CONFLICT DO NOTHING;
+
+-- === BULK SUBTOPIC PROGRESS สำหรับ completed enrollments ===
+INSERT INTO learning_subtopic_progress (username, course_id, subtopic_id, completed_at)
+SELECT
+  e.username,
+  e.course_id,
+  sub.id,
+  e.completed_at - sub.offset_d * INTERVAL '1 day'
+FROM user_course_enrollments e
+CROSS JOIN (VALUES ('subtopic-a', 2), ('subtopic-b', 1)) AS sub(id, offset_d)
+WHERE e.course_id LIKE 'st-course-0%'
+  AND CAST(RIGHT(e.course_id, 3) AS INT) >= 11
+  AND e.completed_at IS NOT NULL
+ON CONFLICT DO NOTHING;
+
 COMMIT;
