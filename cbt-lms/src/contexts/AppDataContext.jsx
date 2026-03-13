@@ -244,7 +244,7 @@ export function AppDataProvider({ children }) {
     return { blocked: false, initialSubtopicId: firstIncomplete?.id ?? "" };
   };
 
-  const openExam = async (item) => {
+  const openExam = useCallback(async (item) => {
     try {
       const fullExam = await fetchExamApi(item.id ?? item.sourceId);
       if (!fullExam) throw new Error("exam not found");
@@ -256,7 +256,7 @@ export function AppDataProvider({ children }) {
     } catch {
       return { success: false, message: "ไม่สามารถโหลดรายละเอียดข้อสอบได้" };
     }
-  };
+  }, [currentUserKey, loadCurrentExamAttempts]);
 
   const handleSaveAttempt = useCallback(
     async (rawAnswers) => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useAppData } from "../contexts/AppDataContext";
@@ -11,24 +11,33 @@ export default function ExamDetailPage() {
   const [orderMode, setOrderMode] = useState("sequential");
   const [showHistory, setShowHistory] = useState(false);
   const [loading, setLoading] = useState(false);
+  const fetchedRef = useRef(null);
 
   const isLoggedIn = Boolean(currentUserKey);
   const canStartExam = isLoggedIn && canTakeExam;
 
-  // Load exam if not in context or doesn't match
+  // Load exam metadata (once per examId)
   useEffect(() => {
+    if (!examId || fetchedRef.current === examId) return;
     const alreadyLoaded = examDraft?.sourceId === examId || examDraft?.id === examId;
     if (!alreadyLoaded) {
       const fromBank = examBank.find((e) => e.id === examId);
       if (fromBank) {
+        fetchedRef.current = examId;
         setLoading(true);
         openExam(fromBank).then(() => setLoading(false));
       }
+    } else {
+      fetchedRef.current = examId;
     }
+  }, [examId, examDraft?.sourceId, examDraft?.id, examBank, openExam]);
+
+  // Load attempts (separate effect, re-runs on login)
+  useEffect(() => {
     if (examId && currentUserKey) {
       void loadCurrentExamAttempts(examId);
     }
-  }, [examId, currentUserKey, examDraft?.sourceId, examDraft?.id, examBank, openExam, loadCurrentExamAttempts]);
+  }, [examId, currentUserKey, loadCurrentExamAttempts]);
 
   const exam = examDraft;
   const userAttempts = currentExamAttempts;

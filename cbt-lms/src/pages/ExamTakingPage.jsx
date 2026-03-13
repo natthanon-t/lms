@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import ConfirmModal from "../components/ui/ConfirmModal";
 import { useAppData } from "../contexts/AppDataContext";
+import { fetchExamQuestionsApi } from "../services/examApiService";
 
 const shuffleArray = (items) => {
   const result = [...items];
@@ -111,9 +112,25 @@ export default function ExamTakingPage() {
   const orderMode = location.state?.orderMode ?? "sequential";
   const durationSeconds = (draft?.defaultTime ?? 0) * 60;
   const onSaveAttempt = handleSaveAttempt;
+
+  // Fetch questions on mount (not pre-loaded from ExamDetailPage)
+  const [questions, setQuestions] = useState([]);
+  const [loadingQuestions, setLoadingQuestions] = useState(true);
+  const fetchedRef = useRef(null);
+
+  useEffect(() => {
+    if (!examId || fetchedRef.current === examId) return;
+    fetchedRef.current = examId;
+    setLoadingQuestions(true);
+    fetchExamQuestionsApi(examId)
+      .then((qs) => setQuestions(qs))
+      .catch(() => setQuestions([]))
+      .finally(() => setLoadingQuestions(false));
+  }, [examId]);
+
   const selectedQuestions = useMemo(() => {
-    return pickQuestionsByDomainPercentage(draft.questions, draft.numberOfQuestions, draft.domainPercentages);
-  }, [draft.questions, draft.numberOfQuestions, draft.domainPercentages]);
+    return pickQuestionsByDomainPercentage(questions, draft.numberOfQuestions, draft.domainPercentages);
+  }, [questions, draft.numberOfQuestions, draft.domainPercentages]);
 
   const orderedQuestions = useMemo(() => {
     const base = Array.isArray(selectedQuestions) ? selectedQuestions : [];
@@ -219,12 +236,12 @@ export default function ExamTakingPage() {
 
   const currentQuestion = orderedQuestions[currentIndex];
 
-  if (submitting) {
+  if (loadingQuestions || submitting) {
     return (
       <section className="workspace-content">
         <header className="content-header">
           <h1>เข้าสอบ: {draft.title}</h1>
-          <p>กำลังตรวจข้อสอบ...</p>
+          <p>{submitting ? "กำลังตรวจข้อสอบ..." : "กำลังโหลดข้อสอบ..."}</p>
         </header>
       </section>
     );

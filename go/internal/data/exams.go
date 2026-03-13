@@ -231,28 +231,43 @@ func GetExamPublic(id string) (*PublicExam, error) {
 		}
 	}
 
-	e.Questions = []PublicExamQuestion{}
-	qRows, err := db.Query(`
-		SELECT id, exam_id, domain, COALESCE(question_type, 'multiple_choice'), question,
-		       choice_a, choice_b, choice_c, choice_d
-		FROM exam_questions WHERE exam_id = $1 ORDER BY id`, id)
-	if err == nil {
-		defer qRows.Close()
-		for qRows.Next() {
-			var q PublicExamQuestion
-			var choiceA, choiceB, choiceC, choiceD string
-			if err := qRows.Scan(
-				&q.ID, &q.ExamID, &q.Domain, &q.QuestionType, &q.Question,
-				&choiceA, &choiceB, &choiceC, &choiceD,
-			); err != nil {
-				continue
-			}
-			q.Choices = []string{choiceA, choiceB, choiceC, choiceD}
-			e.Questions = append(e.Questions, q)
-		}
+	return &e, nil
+}
+
+// GetExamQuestionsPublic returns only questions (without answer keys) for exam-taking.
+func GetExamQuestionsPublic(examID string) ([]PublicExamQuestion, error) {
+	// Verify exam exists
+	var exists bool
+	if err := db.QueryRow(`SELECT EXISTS(SELECT 1 FROM exams WHERE id = $1)`, examID).Scan(&exists); err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, sql.ErrNoRows
 	}
 
-	return &e, nil
+	rows, err := db.Query(`
+		SELECT id, exam_id, domain, COALESCE(question_type, 'multiple_choice'), question,
+		       choice_a, choice_b, choice_c, choice_d
+		FROM exam_questions WHERE exam_id = $1 ORDER BY id`, examID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	questions := make([]PublicExamQuestion, 0)
+	for rows.Next() {
+		var q PublicExamQuestion
+		var choiceA, choiceB, choiceC, choiceD string
+		if err := rows.Scan(
+			&q.ID, &q.ExamID, &q.Domain, &q.QuestionType, &q.Question,
+			&choiceA, &choiceB, &choiceC, &choiceD,
+		); err != nil {
+			continue
+		}
+		q.Choices = []string{choiceA, choiceB, choiceC, choiceD}
+		questions = append(questions, q)
+	}
+	return questions, rows.Err()
 }
 
 // ── Write ─────────────────────────────────────────────────────────────────────

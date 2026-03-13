@@ -76,23 +76,22 @@ type PublicExamQuestion struct {
 	Choices      []string `json:"choices"`
 }
 
-// PublicExam is returned by the public GET /exams/:id endpoint.
+// PublicExam is returned by the public GET /exams/:id endpoint (metadata only, no questions).
 type PublicExam struct {
-	ID                string               `json:"id"`
-	Title             string               `json:"title"`
-	Creator           string               `json:"creator"`
-	Status            string               `json:"status"`
-	Visibility        string               `json:"visibility"`
-	AllowedUsernames  []string             `json:"allowedUsernames"`
-	Description       string               `json:"description"`
-	Instructions      string               `json:"instructions"`
-	Image             string               `json:"image"`
-	NumberOfQuestions int                  `json:"numberOfQuestions"`
-	DefaultTime       int                  `json:"defaultTime"`
-	MaxAttempts       int                  `json:"maxAttempts"`
-	CreatedAt         time.Time            `json:"createdAt"`
-	DomainPercentages map[string]int       `json:"domainPercentages"`
-	Questions         []PublicExamQuestion `json:"questions"`
+	ID                string         `json:"id"`
+	Title             string         `json:"title"`
+	Creator           string         `json:"creator"`
+	Status            string         `json:"status"`
+	Visibility        string         `json:"visibility"`
+	AllowedUsernames  []string       `json:"allowedUsernames"`
+	Description       string         `json:"description"`
+	Instructions      string         `json:"instructions"`
+	Image             string         `json:"image"`
+	NumberOfQuestions int            `json:"numberOfQuestions"`
+	DefaultTime       int            `json:"defaultTime"`
+	MaxAttempts       int            `json:"maxAttempts"`
+	CreatedAt         time.Time      `json:"createdAt"`
+	DomainPercentages map[string]int `json:"domainPercentages"`
 }
 
 type ExamDomainStat struct {

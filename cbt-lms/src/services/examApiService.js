@@ -47,6 +47,13 @@ export const fetchExamApi = async (id) => {
   return payload?.exam ?? null;
 };
 
+export const fetchExamQuestionsApi = async (id) => {
+  const payload = await request(`/api/exams/${encodeURIComponent(id)}/questions`, {
+    headers: authHeaders(),
+  });
+  return Array.isArray(payload?.questions) ? payload.questions : [];
+};
+
 export const fetchExamFullApi = async (id) => {
   const payload = await request(`/api/exams/${encodeURIComponent(id)}/full`, {
     headers: authHeaders(),

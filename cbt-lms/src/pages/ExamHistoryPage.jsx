@@ -97,8 +97,8 @@ function AnswerModal({ attempt, fetchDetails, onClose }) {
                     <div className="exam-answer-choices">
                       {item.choices?.filter(Boolean).map((choice, ci) => {
                         const label = String.fromCharCode(65 + ci);
-                        const isSelected = item.selected === label;
-                        const isKey = item.answerKey === label;
+                        const isSelected = item.selected === choice;
+                        const isKey = item.answerKey === choice;
                         return (
                           <div
                             key={ci}
@@ -106,9 +106,9 @@ function AnswerModal({ attempt, fetchDetails, onClose }) {
                           >
                             <span className="choice-label">{label}</span>
                             {choice}
-                            {isKey && <span className="choice-tag">เฉลย</span>}
-                            {isSelected && !isKey && <span className="choice-tag choice-tag-wrong">เลือก</span>}
                             {isSelected && isKey && <span className="choice-tag">เลือก + เฉลย</span>}
+                            {isKey && !isSelected && <span className="choice-tag">เฉลย</span>}
+                            {isSelected && !isKey && <span className="choice-tag choice-tag-wrong">เลือก</span>}
                           </div>
                         );
                       })}
