@@ -2,9 +2,12 @@ import { authHeaders, request } from "./apiClient";
 
 // ── Courses ──────────────────────────────────────────────────────────────────
 
-export const fetchCoursesApi = async () => {
-  const payload = await request("/api/courses");
-  return Array.isArray(payload?.courses) ? payload.courses : [];
+export const fetchCoursesApi = async ({ page = 1, limit = 20 } = {}) => {
+  const payload = await request(`/api/courses?page=${page}&limit=${limit}`);
+  return {
+    courses: Array.isArray(payload?.courses) ? payload.courses : [],
+    pagination: payload?.pagination ?? { total: 0, page, limit, total_pages: 1 },
+  };
 };
 
 export const upsertCourseApi = async (course) =>

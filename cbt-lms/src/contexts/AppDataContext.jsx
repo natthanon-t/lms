@@ -60,7 +60,9 @@ export function AppDataProvider({ children }) {
   } = useAuth();
 
   const [examples, setExamples] = useState([]);
+  const [coursesPagination, setCoursesPagination] = useState({ total: 0, page: 1, limit: 20, total_pages: 1 });
   const [examBank, setExamBank] = useState([]);
+  const [examsPagination, setExamsPagination] = useState({ total: 0, page: 1, limit: 20, total_pages: 1 });
   const [learningProgress, setLearningProgress] = useState({});
   const [userSkillScores, setUserSkillScores] = useState({});
   const [userTotalScore, setUserTotalScore] = useState(0);
@@ -94,27 +96,27 @@ export function AppDataProvider({ children }) {
     setStudyDraft(toCourseDraft(course));
   }, []);
 
-  const loadExamples = useCallback(async () => {
-    if (examples.length > 0) return;
+  const loadExamples = useCallback(async (page = 1) => {
     try {
-      const apiCourses = await fetchCoursesApi();
+      const { courses: apiCourses, pagination } = await fetchCoursesApi({ page });
       const list = apiCourses.map(normalizeExampleRecord);
       setExamples(list);
-      syncPrimaryCourseDrafts(list[0]);
+      setCoursesPagination(pagination);
+      if (page === 1) syncPrimaryCourseDrafts(list[0]);
     } catch {
       // API unavailable
     }
-  }, [examples.length, syncPrimaryCourseDrafts]);
+  }, [syncPrimaryCourseDrafts]);
 
-  const loadExamCatalog = useCallback(async () => {
-    if (examBank.length > 0) return;
+  const loadExamCatalog = useCallback(async (page = 1) => {
     try {
-      const apiExams = await fetchExamsApi();
+      const { exams: apiExams, pagination } = await fetchExamsApi({ page });
       setExamBank(apiExams.map(normalizeExamRecord));
+      setExamsPagination(pagination);
     } catch {
       setExamBank([]);
     }
-  }, [examBank.length]);
+  }, []);
 
   const loadCurrentExamAttempts = useCallback(async (examId) => {
     if (!currentUserKey || !examId) {
@@ -561,8 +563,10 @@ export function AppDataProvider({ children }) {
   const value = {
     examples,
     setExamples,
+    coursesPagination,
     examBank,
     setExamBank,
+    examsPagination,
     learningProgress,
     setLearningProgress,
     userSkillScores,

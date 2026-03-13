@@ -7,7 +7,7 @@ import { useAppData } from "../contexts/AppDataContext";
 export default function ExamPage() {
   const navigate = useNavigate();
   const { currentUserKey, canManageExams, canViewAllExams } = useAuth();
-  const { examBank, openExam, openExamEditor, createExam, updateExamStatus } = useAppData();
+  const { examBank, examsPagination, loadExamCatalog, openExam, openExamEditor, createExam, updateExamStatus } = useAppData();
 
   const hasManageAccess = canManageExams;
   const canCreate = canManageExams;
@@ -16,6 +16,13 @@ export default function ExamPage() {
   const visibleExams = examBank.filter((exam) =>
     canViewItemByStatus({ item: exam, currentUserKey, hasManageAccess, hasViewAllAccess: canViewAllExams }),
   );
+
+  const { page: currentPage, total_pages: totalPages } = examsPagination;
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    void loadExamCatalog(newPage);
+  };
 
   const handleEnterExam = async (exam) => {
     const result = await openExam(exam);
@@ -84,6 +91,27 @@ export default function ExamPage() {
         </div>
       ) : (
         <p className="lobby-empty-hint">ยังไม่มีข้อสอบใด ๆ</p>
+      )}
+
+      {totalPages > 1 && (
+        <nav className="pagination-bar" aria-label="Exam pagination">
+          <button type="button" disabled={currentPage <= 1} onClick={() => handlePageChange(currentPage - 1)}>
+            ← ก่อนหน้า
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            <button
+              key={p}
+              type="button"
+              className={p === currentPage ? "active" : ""}
+              onClick={() => handlePageChange(p)}
+            >
+              {p}
+            </button>
+          ))}
+          <button type="button" disabled={currentPage >= totalPages} onClick={() => handlePageChange(currentPage + 1)}>
+            ถัดไป →
+          </button>
+        </nav>
       )}
     </section>
   );

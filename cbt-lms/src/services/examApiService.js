@@ -34,9 +34,12 @@ const normalizeAttempt = (attempt) => ({
 
 // ── Exams ─────────────────────────────────────────────────────────────────────
 
-export const fetchExamsApi = async () => {
-  const payload = await request("/api/exams");
-  return Array.isArray(payload?.exams) ? payload.exams : [];
+export const fetchExamsApi = async ({ page = 1, limit = 20 } = {}) => {
+  const payload = await request(`/api/exams?page=${page}&limit=${limit}`);
+  return {
+    exams: Array.isArray(payload?.exams) ? payload.exams : [],
+    pagination: payload?.pagination ?? { total: 0, page, limit, total_pages: 1 },
+  };
 };
 
 export const fetchExamApi = async (id) => {

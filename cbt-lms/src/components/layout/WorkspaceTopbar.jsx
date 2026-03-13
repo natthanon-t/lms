@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logoMark from "../../assets/logo.png";
 import { avatarStorageKey, getAvatarColor, getInitials } from "../../utils/avatar";
@@ -6,6 +6,10 @@ import { getLevel } from "../../utils/level";
 import { getCourseSkillRewards } from "../../services/skillRewardsService";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAppData } from "../../contexts/AppDataContext";
+import { fetchCoursesApi } from "../../services/courseApiService";
+import { fetchExamsApi } from "../../services/examApiService";
+import { normalizeExampleRecord } from "../../services/courseService";
+import { normalizeExamRecord } from "../../services/examService";
 
 export default function WorkspaceTopbar() {
   const navigate = useNavigate();
@@ -16,6 +20,40 @@ export default function WorkspaceTopbar() {
 
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [allSearchCourses, setAllSearchCourses] = useState(null);
+  const [allSearchExams, setAllSearchExams] = useState(null);
+
+  // Fetch all pages whenever the search modal opens
+  useEffect(() => {
+    if (!showSearchModal) return;
+    setAllSearchCourses(null);
+    setAllSearchExams(null);
+
+    const fetchAll = async (fetcher, normalize, setter) => {
+      try {
+        const first = await fetcher({ page: 1, limit: 100 });
+        const key = first.courses !== undefined ? "courses" : "exams";
+        let all = first[key];
+        const { total_pages } = first.pagination;
+        if (total_pages > 1) {
+          const rest = await Promise.all(
+            Array.from({ length: total_pages - 1 }, (_, i) =>
+              fetcher({ page: i + 2, limit: 100 }).then((r) => r[key]),
+            ),
+          );
+          all = [...all, ...rest.flat()];
+        }
+        setter(all.map(normalize));
+      } catch {
+        setter([]);
+      }
+    };
+
+    void Promise.all([
+      fetchAll(fetchCoursesApi, normalizeExampleRecord, setAllSearchCourses),
+      fetchAll(fetchExamsApi, normalizeExamRecord, setAllSearchExams),
+    ]);
+  }, [showSearchModal]);
 
   const handleLogoError = (event) => {
     if (event.currentTarget.dataset.fallbackApplied === "true") return;
@@ -33,13 +71,14 @@ export default function WorkspaceTopbar() {
   const level = useMemo(() => getLevel(totalScore), [totalScore]);
 
   const keyword = useMemo(() => searchQuery.trim().toLowerCase(), [searchQuery]);
+  const searchLoading = allSearchCourses === null || allSearchExams === null;
   const filteredExamples = useMemo(
-    () => examples.filter((ex) => !keyword || ex.title.toLowerCase().includes(keyword)),
-    [examples, keyword],
+    () => (allSearchCourses ?? examples).filter((ex) => !keyword || ex.title.toLowerCase().includes(keyword)),
+    [allSearchCourses, examples, keyword],
   );
   const filteredExams = useMemo(
-    () => examBank.filter((exam) => !keyword || exam.title.toLowerCase().includes(keyword)),
-    [examBank, keyword],
+    () => (allSearchExams ?? examBank).filter((exam) => !keyword || exam.title.toLowerCase().includes(keyword)),
+    [allSearchExams, examBank, keyword],
   );
 
   const handleEnterClass = async (example) => {
@@ -121,6 +160,10 @@ export default function WorkspaceTopbar() {
 
               {keyword && (
                 <div className="search-modal-results">
+                  {searchLoading ? (
+                    <p className="search-result-empty">กำลังโหลด...</p>
+                  ) : (
+                    <>
                   {filteredExamples.length > 0 && (
                     <div className="search-result-section">
                       <h4>เนื้อหา</h4>
@@ -185,6 +228,8 @@ export default function WorkspaceTopbar() {
 
                   {filteredExamples.length === 0 && filteredExams.length === 0 && (
                     <p className="search-result-empty">ไม่พบผลการค้นหา</p>
+                  )}
+                    </>
                   )}
                 </div>
               )}

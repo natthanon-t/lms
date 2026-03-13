@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import "./App.css";
 import LoginScreen from "./components/auth/LoginScreen";
@@ -49,12 +49,15 @@ export default function App() {
   } = useAppData();
 
   const location = useLocation();
+  const initialLoadDone = useRef(false);
 
-  // Load data based on current route (concurrent)
+  // Load initial page 1 data based on current route (once)
   useEffect(() => {
+    if (initialLoadDone.current) return;
     const path = location.pathname;
     const needsCourses = path === "/" || path.startsWith("/content");
     const needsExams = path === "/" || path.startsWith("/exam");
+    if (needsCourses || needsExams) initialLoadDone.current = true;
     if (needsCourses && needsExams) {
       void Promise.all([loadExamples(), loadExamCatalog()]);
     } else if (needsCourses) {

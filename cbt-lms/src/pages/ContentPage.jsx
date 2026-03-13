@@ -7,7 +7,7 @@ import { useAppData } from "../contexts/AppDataContext";
 export default function ContentPage() {
   const navigate = useNavigate();
   const { currentUserKey, canManageContent, canViewAllContent } = useAuth();
-  const { examples, openContentDetail, openContentEditor, createContent, updateContentStatus } = useAppData();
+  const { examples, coursesPagination, loadExamples, openContentDetail, openContentEditor, createContent, updateContentStatus } = useAppData();
 
   const hasManageAccess = canManageContent;
   const canCreate = canManageContent;
@@ -16,6 +16,13 @@ export default function ContentPage() {
   const visibleExamples = examples.filter((example) =>
     canViewItemByStatus({ item: example, currentUserKey, hasManageAccess, hasViewAllAccess: canViewAllContent }),
   );
+
+  const { page: currentPage, total_pages: totalPages } = coursesPagination;
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    void loadExamples(newPage);
+  };
 
   const handleOpenEditor = (example) => {
     const item = openContentEditor(example);
@@ -98,6 +105,27 @@ export default function ContentPage() {
         </div>
       ) : (
         <p className="lobby-empty-hint">ยังไม่มีบทเรียนใด ๆ</p>
+      )}
+
+      {totalPages > 1 && (
+        <nav className="pagination-bar" aria-label="Course pagination">
+          <button type="button" disabled={currentPage <= 1} onClick={() => handlePageChange(currentPage - 1)}>
+            ← ก่อนหน้า
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            <button
+              key={p}
+              type="button"
+              className={p === currentPage ? "active" : ""}
+              onClick={() => handlePageChange(p)}
+            >
+              {p}
+            </button>
+          ))}
+          <button type="button" disabled={currentPage >= totalPages} onClick={() => handlePageChange(currentPage + 1)}>
+            ถัดไป →
+          </button>
+        </nav>
       )}
     </section>
   );
