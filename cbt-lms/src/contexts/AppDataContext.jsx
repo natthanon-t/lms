@@ -265,8 +265,8 @@ export function AppDataProvider({ children }) {
         const payload = await saveExamAttemptApi(examDraft.sourceId, rawAnswers);
         void loadCurrentExamAttempts(examDraft.sourceId);
         return payload; // { attempt, details }
-      } catch {
-        return null;
+      } catch (error) {
+        return { error: true, message: error?.message ?? "เกิดข้อผิดพลาดในการเชื่อมต่อ" };
       }
     },
     [currentUserKey, examDraft.sourceId, loadCurrentExamAttempts],

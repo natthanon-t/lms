@@ -19,8 +19,6 @@ const formatTime = (seconds) => {
   return `${mm}:${ss}`;
 };
 
-const normalizeText = (text) => String(text ?? "").trim().toLowerCase();
-
 const allocateDomainCounts = (totalQuestions, domainPercentages) => {
   const domains = Object.entries(domainPercentages ?? {});
   if (!domains.length || totalQuestions <= 0) {
@@ -107,7 +105,7 @@ export default function ExamTakingPage() {
   const { examId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { examDraft, handleSaveAttempt } = useAppData();
+  const { examDraft, handleSaveAttempt, setAppAlert } = useAppData();
 
   const draft = examDraft;
   const orderMode = location.state?.orderMode ?? "sequential";
@@ -145,32 +143,11 @@ export default function ExamTakingPage() {
     }));
     const payload = await onSaveAttempt(rawAnswers);
 
-    if (!payload) {
-      // fallback: grade client-side if backend fails
-      const details = orderedQuestions.map((question, index) => {
-        const selected = answers[question.id] ?? null;
-        const isTextType = question.questionType === "text";
-        const isCorrect = isTextType ? null : normalizeText(selected) === normalizeText(question.answerKey);
-        return { index: index + 1, question, selected, isCorrect };
-      });
-      const gradedDetails = details.filter((item) => item.isCorrect !== null);
-      const correctCount = gradedDetails.filter((item) => item.isCorrect).length;
-      const gradedTotal = gradedDetails.length;
-      const scorePercent = gradedTotal > 0 ? Math.round((correctCount / gradedTotal) * 100) : 0;
-      const domainStatsMap = {};
-      details.forEach((item) => {
-        if (item.isCorrect === null) return;
-        const domain = item.question.domain || "-";
-        if (!domainStatsMap[domain]) domainStatsMap[domain] = { domain, total: 0, correct: 0 };
-        domainStatsMap[domain].total += 1;
-        if (item.isCorrect) domainStatsMap[domain].correct += 1;
-      });
-      const domainStats = Object.values(domainStatsMap)
-        .map((e) => ({ ...e, percent: e.total > 0 ? Math.round((e.correct / e.total) * 100) : 0 }))
-        .sort((a, b) => a.domain.localeCompare(b.domain));
-      navigate(`/exam/${examId}/result`, {
-        state: { result: { correctCount, totalQuestions, gradedTotal, scorePercent, details, domainStats }, examTitle: draft.title },
-        replace: true,
+    if (!payload || payload.error) {
+      setSubmitting(false);
+      setAppAlert({
+        title: "ส่งข้อสอบไม่สำเร็จ",
+        message: payload?.message ?? "เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง",
       });
       return;
     }

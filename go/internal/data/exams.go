@@ -65,6 +65,7 @@ func EnsureExamSchema() error {
 				FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 		);
 		CREATE INDEX IF NOT EXISTS ix_course_attachments_course ON course_attachments(course_id);
+		CREATE INDEX IF NOT EXISTS ix_exam_attempts_user_exam ON exam_attempts(username, exam_id);
 	`)
 	return err
 }
@@ -418,6 +419,21 @@ func DeleteExam(id, callerUsername string, isAdmin bool) error {
 	}
 	_, err = db.Exec(`DELETE FROM exams WHERE id = $1`, id)
 	return err
+}
+
+// ── Attempt helpers ──────────────────────────────────────────────────────────
+
+// CheckExamAttemptLimit returns the max_attempts for an exam and the user's current attempt count
+// in a single query. Returns sql.ErrNoRows if the exam does not exist.
+func CheckExamAttemptLimit(examID, username string) (maxAttempts int, currentCount int, err error) {
+	err = db.QueryRow(`
+		SELECT e.max_attempts, COUNT(ea.id)
+		FROM exams e
+		LEFT JOIN exam_attempts ea ON ea.exam_id = e.id AND ea.username = $2
+		WHERE e.id = $1
+		GROUP BY e.max_attempts`, examID, username,
+	).Scan(&maxAttempts, &currentCount)
+	return
 }
 
 // ── Attempts ──────────────────────────────────────────────────────────────────

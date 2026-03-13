@@ -363,7 +363,7 @@ CREATE TABLE exam_attempts (
     FOREIGN KEY (exam_id)  REFERENCES exams(id)       ON DELETE CASCADE
 );
 
-CREATE INDEX ix_exam_attempts_user ON exam_attempts(username);
+CREATE INDEX ix_exam_attempts_user_exam ON exam_attempts(username, exam_id);
 CREATE INDEX ix_exam_attempts_exam ON exam_attempts(exam_id);
 
 -- คำตอบในแต่ละครั้งที่ทำข้อสอบ

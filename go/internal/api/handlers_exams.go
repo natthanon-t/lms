@@ -28,7 +28,7 @@ func (h *Handler) GetExam(c *fiber.Ctx) error {
 	if id == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "exam id is required")
 	}
-	exam, err := data.GetExam(id)
+	exam, err := data.GetExamPublic(id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fiber.NewError(fiber.StatusNotFound, "exam not found")
@@ -203,6 +203,18 @@ func (h *Handler) SaveExamAttempt(c *fiber.Ctx) error {
 	examID := strings.TrimSpace(c.Params("id"))
 	if examID == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "exam id is required")
+	}
+
+	// Enforce max attempts limit on the backend
+	maxAttempts, attemptCount, err := data.CheckExamAttemptLimit(examID, username)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fiber.NewError(fiber.StatusNotFound, "exam not found")
+		}
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot check exam")
+	}
+	if maxAttempts > 0 && attemptCount >= maxAttempts {
+		return fiber.NewError(fiber.StatusForbidden, "maximum attempts reached")
 	}
 
 	var req examAttemptRequest
