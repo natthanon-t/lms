@@ -970,6 +970,27 @@ export default function EditorPage() {
               <div className="preview-body">
                 <MarkdownContent content={selectedSubtopic?.content ?? draft.content} images={contentImages} />
               </div>
+              {selectedSubtopic?.questions?.length > 0 && (
+                <div className="subtopic-quiz-shell">
+                  <div className="subtopic-quiz-head">
+                    <h3>Questions</h3>
+                    <p>ตัวอย่างคำถามของหัวข้อย่อยนี้</p>
+                  </div>
+                  <div className="subtopic-quiz">
+                    {selectedSubtopic.questions.map((question, index) => (
+                      <div key={question.id} className="quiz-question-card">
+                        <p className="quiz-question-text">
+                          <span className="question-points">+{question.points}</span>
+                          <strong>คำถาม {index + 1}: {question.question}</strong>
+                        </p>
+                        <p className="quiz-answer-label" style={{ color: "#6b8ab8", fontSize: "0.85rem" }}>
+                          คำตอบ: {question.answer}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ) : null}

@@ -49,20 +49,21 @@ export default function App() {
   } = useAppData();
 
   const location = useLocation();
-  const initialLoadDone = useRef(false);
+  const coursesLoaded = useRef(false);
+  const examsLoaded = useRef(false);
 
-  // Load initial page 1 data based on current route (once)
+  // Load data when navigating to routes that need it
   useEffect(() => {
-    if (initialLoadDone.current) return;
     const path = location.pathname;
-    const needsCourses = path === "/" || path.startsWith("/content");
-    const needsExams = path === "/" || path.startsWith("/exam");
-    if (needsCourses || needsExams) initialLoadDone.current = true;
-    if (needsCourses && needsExams) {
-      void Promise.all([loadExamples(), loadExamCatalog()]);
-    } else if (needsCourses) {
+    const needsCourses = path === "/" || path.startsWith("/content") || path.startsWith("/profile") || path.startsWith("/summary");
+    const needsExams = path === "/" || path.startsWith("/exam") || path.startsWith("/summary");
+
+    if (needsCourses && !coursesLoaded.current) {
+      coursesLoaded.current = true;
       void loadExamples();
-    } else if (needsExams) {
+    }
+    if (needsExams && !examsLoaded.current) {
+      examsLoaded.current = true;
       void loadExamCatalog();
     }
   }, [location.pathname, loadExamples, loadExamCatalog]);

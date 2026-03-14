@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import StatusSelect from "../components/StatusSelect";
 import { STATUS_OPTIONS, isItemOwner, canViewItemByStatus } from "../services/accessControlService";
@@ -18,6 +19,10 @@ export default function ExamPage() {
   );
 
   const { page: currentPage, total_pages: totalPages } = examsPagination;
+
+  useEffect(() => {
+    void loadExamCatalog();
+  }, [loadExamCatalog]);
 
   const handlePageChange = (newPage) => {
     if (newPage < 1 || newPage > totalPages) return;

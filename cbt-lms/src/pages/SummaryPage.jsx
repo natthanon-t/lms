@@ -287,7 +287,13 @@ function formatDate(iso) {
 // ── Main SummaryPage ──────────────────────────────────────────────────────────
 export default function SummaryPage() {
   const { users } = useAuth();
-  const { examples, examBank, userTotalScore } = useAppData();
+  const { examples, examBank, userTotalScore, loadExamples, loadExamCatalog } = useAppData();
+
+  useEffect(() => {
+    void loadExamples();
+    void loadExamCatalog();
+  }, [loadExamples, loadExamCatalog]);
+
   const lessonCount = examples.length;
   const examCount = examBank.length;
   const [analytics, setAnalytics] = useState(null);

@@ -51,6 +51,19 @@ const markdownStyles = {
     aspectRatio: "16 / 9",
     display: "block",
   },
+  videoFallback: {
+    padding: "8px 12px",
+    fontSize: 13,
+    color: "#94a3b8",
+    textAlign: "center",
+    background: "#0b1220",
+    borderTop: "1px solid #1f2a3a",
+  },
+  videoFallbackLink: {
+    color: "#60a5fa",
+    textDecoration: "underline",
+    margin: "0 4px",
+  },
 };
 
 export default markdownStyles;

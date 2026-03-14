@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import StatusSelect from "../components/StatusSelect";
 import { STATUS_OPTIONS, isItemOwner, canViewItemByStatus } from "../services/accessControlService";
@@ -8,6 +9,10 @@ export default function ContentPage() {
   const navigate = useNavigate();
   const { currentUserKey, canManageContent, canViewAllContent } = useAuth();
   const { examples, coursesPagination, loadExamples, openContentDetail, openContentEditor, createContent, updateContentStatus } = useAppData();
+
+  useEffect(() => {
+    void loadExamples();
+  }, [loadExamples]);
 
   const hasManageAccess = canManageContent;
   const canCreate = canManageContent;

@@ -46,6 +46,14 @@ const buildSharePointEmbedUrl = (url) => {
   return embedUrl.toString();
 };
 
+const isSharePointUrl = (href) => {
+  try {
+    return new URL(href).hostname.toLowerCase().includes("sharepoint.com");
+  } catch {
+    return false;
+  }
+};
+
 const toEmbedVideoUrl = (href) => {
   if (!href) {
     return null;
@@ -135,6 +143,7 @@ export default memo(function MarkdownContent({ content, images = {} }) {
           const embedUrl = isVideoLabel ? toEmbedVideoUrl(href) : null;
 
           if (embedUrl) {
+            const isSharePoint = isSharePointUrl(href);
             return (
               <div style={markdownStyles.videoWrap}>
                 <iframe
@@ -144,6 +153,15 @@ export default memo(function MarkdownContent({ content, images = {} }) {
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                   allowFullScreen
                 />
+                {isSharePoint && (
+                  <div style={markdownStyles.videoFallback}>
+                    หากวิดีโอไม่แสดง กรุณา
+                    <a href={href} target="_blank" rel="noreferrer noopener" style={markdownStyles.videoFallbackLink}>
+                      เปิดในแท็บใหม่
+                    </a>
+                    เพื่อเข้าสู่ระบบ แล้วกลับมารีเฟรชหน้านี้
+                  </div>
+                )}
               </div>
             );
           }

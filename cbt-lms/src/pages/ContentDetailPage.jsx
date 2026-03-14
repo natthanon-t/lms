@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import TableOfContents from "../components/markdown/TableOfContents";
 import { getSubtopicPages } from "../components/markdown/headingUtils";
@@ -11,7 +11,11 @@ export default function ContentDetailPage() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const { currentUserKey, canLearnContent } = useAuth();
-  const { examples, prepareStudy } = useAppData();
+  const { examples, prepareStudy, loadExamples } = useAppData();
+
+  useEffect(() => {
+    void loadExamples();
+  }, [loadExamples]);
 
   const contentItem = useMemo(() => {
     const found = examples.find((e) => e.id === courseId);

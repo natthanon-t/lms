@@ -117,12 +117,13 @@ const toRadarLabel = (value) => {
 
 export default function ProfilePage() {
   const { currentUser, currentUserKey: username } = useAuth();
-  const { examples, learningProgress, userSkillScores: skillScores, userTotalScore: totalScore, handleSaveName: onSaveName, handleSaveProfile: onSaveProfile, handleChangePassword: onChangePassword, loadUserScoresFromApi } = useAppData();
+  const { examples, learningProgress, userSkillScores: skillScores, userTotalScore: totalScore, handleSaveName: onSaveName, handleSaveProfile: onSaveProfile, handleChangePassword: onChangePassword, loadUserScoresFromApi, loadExamples } = useAppData();
   const currentUserProgress = (learningProgress[username] ?? {});
 
   useEffect(() => {
     if (username) void loadUserScoresFromApi();
-  }, [username, loadUserScoresFromApi]);
+    void loadExamples();
+  }, [username, loadUserScoresFromApi, loadExamples]);
   const [name, setName] = useState(currentUser.name);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [message, setMessage] = useState("");
@@ -141,6 +142,7 @@ export default function ProfilePage() {
     try { return localStorage.getItem(avatarKey(username)) ?? ""; } catch { return ""; }
   });
   const avatarInputRef = useRef(null);
+  const [showAllSkills, setShowAllSkills] = useState(false);
   const [loginActivityDates, setLoginActivityDates] = useState([]);
   useEffect(() => {
     fetchLoginDates().then(setLoginActivityDates).catch(() => {});
@@ -223,15 +225,8 @@ export default function ProfilePage() {
       };
     });
   }, [allSkills, safeExamples, userSkillScores]);
-  const acquiredSkillRows = useMemo(
-    () =>
-      skillRows
-        .filter((row) => row.currentPoints > 0)
-        .map((row) => ({
-          ...row,
-          powerScore: Math.max(0, Math.min(100, Math.round(row.currentPoints))),
-        }))
-        .sort((a, b) => b.powerScore - a.powerScore),
+  const sortedSkillRows = useMemo(
+    () => [...skillRows].sort((a, b) => b.currentPoints - a.currentPoints),
     [skillRows],
   );
 
@@ -744,32 +739,6 @@ export default function ProfilePage() {
 
         <article className="info-card profile-skills-panel">
           <h3 className="profile-panel-title">ทักษะ</h3>
-          <div className="acquired-skill-box">
-            <h4 className="acquired-skill-box-title">ทักษะที่ได้รับแล้ว</h4>
-            {acquiredSkillRows.length ? (
-              <div className="acquired-skill-grid">
-                {acquiredSkillRows.map((row) => (
-                  <div
-                    key={`power-${row.skill}`}
-                    className={`acquired-skill-item ${row.powerScore >= 70 ? "skill-tier-high" : row.powerScore >= 40 ? "skill-tier-mid" : "skill-tier-low"}`}
-                  >
-                    <div className="acquired-skill-header">
-                      <p className="skill-name">{row.skill}</p>
-                      <span className={`skill-tier-badge ${row.powerScore >= 70 ? "skill-tier-high" : row.powerScore >= 40 ? "skill-tier-mid" : "skill-tier-low"}`}>
-                        {row.powerScore >= 70 ? "เชี่ยวชาญ" : row.powerScore >= 40 ? "กำลังพัฒนา" : "เริ่มต้น"}
-                      </span>
-                    </div>
-                    <p className="skill-score">{row.powerScore} / 100</p>
-                    <div className="skill-progress power-progress">
-                      <span style={{ width: `${row.powerScore}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="toc-empty">ยังไม่มีทักษะที่ได้คะแนน</p>
-            )}
-          </div>
 
           <div className="radar-wrap">
             <svg viewBox={`0 0 ${RADAR_SIZE} ${RADAR_SIZE}`} className="skill-radar" aria-label="Skill radar chart">
@@ -806,7 +775,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="skill-grid">
-            {skillRows.map((row) => (
+            {(showAllSkills ? sortedSkillRows : sortedSkillRows.slice(0, 6)).map((row) => (
               <div key={row.skill} className="skill-item">
                 <p className="skill-name">{row.skill}</p>
                 <p className="skill-score">
@@ -818,6 +787,11 @@ export default function ProfilePage() {
               </div>
             ))}
           </div>
+          {sortedSkillRows.length > 6 && (
+            <button type="button" className="section-toggle-btn" onClick={() => setShowAllSkills((v) => !v)}>
+              {showAllSkills ? "ซ่อน ▲" : `ดูทั้งหมด (${sortedSkillRows.length}) ▼`}
+            </button>
+          )}
         </article>
       </section>
     </section>

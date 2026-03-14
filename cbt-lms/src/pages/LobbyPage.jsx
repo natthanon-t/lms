@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { canViewItemByStatus } from "../services/accessControlService";
 import { useAuth } from "../contexts/AuthContext";
@@ -31,7 +31,12 @@ const QUOTES = [
 export default function LobbyPage() {
   const navigate = useNavigate();
   const { currentUserKey, canManageContent, canViewAllContent, canManageExams, canViewAllExams, currentUser } = useAuth();
-  const { examples, examBank, openContentDetail, openExam, canManageExamItem, userSkillScores, learningProgress } = useAppData();
+  const { examples, examBank, loadExamples, loadExamCatalog, openContentDetail, openExam, canManageExamItem, userSkillScores, learningProgress } = useAppData();
+
+  useEffect(() => {
+    void loadExamples();
+    void loadExamCatalog();
+  }, [loadExamples, loadExamCatalog]);
 
   const dailyQuote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
 

@@ -7,7 +7,7 @@ export default function ExamDetailPage() {
   const { examId } = useParams();
   const navigate = useNavigate();
   const { currentUserKey, canTakeExam } = useAuth();
-  const { examDraft, currentExamAttempts, openExam, examBank, loadCurrentExamAttempts } = useAppData();
+  const { examDraft, currentExamAttempts, openExam, examBank, loadCurrentExamAttempts, loadExamCatalog } = useAppData();
   const [orderMode, setOrderMode] = useState("sequential");
   const [showHistory, setShowHistory] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -15,6 +15,10 @@ export default function ExamDetailPage() {
 
   const isLoggedIn = Boolean(currentUserKey);
   const canStartExam = isLoggedIn && canTakeExam;
+
+  useEffect(() => {
+    void loadExamCatalog();
+  }, [loadExamCatalog]);
 
   // Load exam metadata (once per examId)
   useEffect(() => {
