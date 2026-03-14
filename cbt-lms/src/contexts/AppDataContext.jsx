@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { CONTENT_STATUS_OPTIONS, EXAM_STATUS_OPTIONS, EMPTY_EXAM_DRAFT } from "../constants/appConfig";
 import {
   buildNewCourseRecord,
@@ -73,6 +73,13 @@ export function AppDataProvider({ children }) {
   const [currentExamAttempts, setCurrentExamAttempts] = useState([]);
   const [appAlert, setAppAlert] = useState(null);
 
+  // Cache timestamps — skip re-fetch within TTL (ms)
+  const CACHE_TTL = 30_000;
+  const coursesCachedAt = useRef(0);
+  const examsCachedAt = useRef(0);
+  const scoresCachedAt = useRef(0);
+  const attemptsCachedRef = useRef({ examId: null, at: 0 });
+
   const canManageContentItem = useCallback(
     (item) => canManageOwnedItem({ item, currentUser, currentUserKey, hasManageAccess: canManageContent }),
     [currentUser, currentUserKey, canManageContent],
@@ -96,46 +103,54 @@ export function AppDataProvider({ children }) {
     setStudyDraft(toCourseDraft(course));
   }, []);
 
-  const loadExamples = useCallback(async (page = 1) => {
+  const loadExamples = useCallback(async (page = 1, { force = false } = {}) => {
+    if (!force && page === 1 && examples.length > 0 && Date.now() - coursesCachedAt.current < CACHE_TTL) return;
     try {
       const { courses: apiCourses, pagination } = await fetchCoursesApi({ page });
       const list = apiCourses.map(normalizeExampleRecord);
       setExamples(list);
       setCoursesPagination(pagination);
+      coursesCachedAt.current = Date.now();
       if (page === 1) syncPrimaryCourseDrafts(list[0]);
     } catch {
       // API unavailable
     }
-  }, [syncPrimaryCourseDrafts]);
+  }, [syncPrimaryCourseDrafts, examples.length]);
 
-  const loadExamCatalog = useCallback(async (page = 1) => {
+  const loadExamCatalog = useCallback(async (page = 1, { force = false } = {}) => {
+    if (!force && page === 1 && examBank.length > 0 && Date.now() - examsCachedAt.current < CACHE_TTL) return;
     try {
       const { exams: apiExams, pagination } = await fetchExamsApi({ page });
       setExamBank(apiExams.map(normalizeExamRecord));
       setExamsPagination(pagination);
+      examsCachedAt.current = Date.now();
     } catch {
       setExamBank([]);
     }
-  }, []);
+  }, [examBank.length]);
 
-  const loadCurrentExamAttempts = useCallback(async (examId) => {
+  const loadCurrentExamAttempts = useCallback(async (examId, { force = false } = {}) => {
     if (!currentUserKey || !examId) {
       setCurrentExamAttempts([]);
       return;
     }
+    if (!force && attemptsCachedRef.current.examId === examId && Date.now() - attemptsCachedRef.current.at < CACHE_TTL) return;
     try {
       const attempts = await fetchExamAttemptsApi(examId);
       setCurrentExamAttempts(attempts);
+      attemptsCachedRef.current = { examId, at: Date.now() };
     } catch {
       setCurrentExamAttempts([]);
     }
   }, [currentUserKey]);
 
-  const loadUserScoresFromApi = useCallback(async () => {
+  const loadUserScoresFromApi = useCallback(async ({ force = false } = {}) => {
+    if (!force && Date.now() - scoresCachedAt.current < CACHE_TTL) return;
     try {
       const { total, skills } = await fetchUserScoresApi();
       setUserTotalScore(total);
       setUserSkillScores(skills);
+      scoresCachedAt.current = Date.now();
     } catch {
       // keep existing
     }
@@ -219,6 +234,7 @@ export function AppDataProvider({ children }) {
       });
       setExamDraft(toExamTakingDraft(saved));
       setExamEditorDraft(saved);
+      examsCachedAt.current = 0;
       return { success: true };
     } catch (error) {
       setAppAlert({
@@ -263,7 +279,7 @@ export function AppDataProvider({ children }) {
       if (!currentUserKey || !examDraft.sourceId) return null;
       try {
         const payload = await saveExamAttemptApi(examDraft.sourceId, rawAnswers);
-        void loadCurrentExamAttempts(examDraft.sourceId);
+        void loadCurrentExamAttempts(examDraft.sourceId, { force: true });
         return payload; // { attempt, details }
       } catch (error) {
         return { error: true, message: error?.message ?? "เกิดข้อผิดพลาดในการเชื่อมต่อ" };
@@ -303,6 +319,7 @@ export function AppDataProvider({ children }) {
       setExamples((prev) => [saved, ...prev]);
       setEditorDraft(toCourseDraft(saved));
       setStudyDraft(toCourseDraft(saved));
+      coursesCachedAt.current = 0;
       return { success: true, saved };
     } catch (error) {
       setAppAlert({
@@ -361,6 +378,7 @@ export function AppDataProvider({ children }) {
       return { success: false, message: error?.message ?? "ไม่สามารถลบเนื้อหาได้" };
     }
     setExamples((prev) => prev.filter((e) => e.id !== targetId));
+    coursesCachedAt.current = 0;
     return { success: true, message: "ลบเนื้อหาเรียบร้อย" };
   };
 
@@ -375,6 +393,7 @@ export function AppDataProvider({ children }) {
       // continue with local removal
     }
     setExamBank((prev) => prev.filter((e) => e.id !== targetId));
+    examsCachedAt.current = 0;
     return { success: true, message: "ลบข้อสอบเรียบร้อย" };
   };
 
@@ -388,6 +407,7 @@ export function AppDataProvider({ children }) {
         return prev.map((e) => (e.id === saved.id ? saved : e));
       });
       syncPrimaryCourseDrafts(saved);
+      coursesCachedAt.current = 0;
       return { success: true, message: "บันทึกเนื้อหาเรียบร้อยแล้ว" };
     } catch (error) {
       return { success: false, message: error?.message ?? "บันทึกไม่สำเร็จ" };
@@ -419,7 +439,7 @@ export function AppDataProvider({ children }) {
         const existing = learningProgress[currentUserKey]?.[courseId]?.completedSubtopics ?? {};
         const afterCompleted = { ...existing, [subtopicId]: true };
         if (subtopics.every((s) => afterCompleted[s.id])) {
-          void completeCourseApi(courseId).then(() => loadUserScoresFromApi()).catch(() => {});
+          void completeCourseApi(courseId).then(() => loadUserScoresFromApi({ force: true })).catch(() => {});
         }
       }
     }

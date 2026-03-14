@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import "./App.css";
 import LoginScreen from "./components/auth/LoginScreen";
@@ -49,23 +49,15 @@ export default function App() {
   } = useAppData();
 
   const location = useLocation();
-  const coursesLoaded = useRef(false);
-  const examsLoaded = useRef(false);
 
-  // Load data when navigating to routes that need it
+  // Load data when navigating to routes that need it (loaders self-cache with TTL)
   useEffect(() => {
     const path = location.pathname;
     const needsCourses = path === "/" || path.startsWith("/content") || path.startsWith("/profile") || path.startsWith("/summary");
     const needsExams = path === "/" || path.startsWith("/exam") || path.startsWith("/summary");
 
-    if (needsCourses && !coursesLoaded.current) {
-      coursesLoaded.current = true;
-      void loadExamples();
-    }
-    if (needsExams && !examsLoaded.current) {
-      examsLoaded.current = true;
-      void loadExamCatalog();
-    }
+    if (needsCourses) void loadExamples();
+    if (needsExams) void loadExamCatalog();
   }, [location.pathname, loadExamples, loadExamCatalog]);
 
   if (!authBootstrapped) {
