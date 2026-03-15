@@ -178,6 +178,26 @@ type PublicUserProfile struct {
 	SkillScores      map[string]int `json:"skillScores"`
 }
 
+type QnAQuestion struct {
+	ID         int64      `json:"id"`
+	CourseID   string     `json:"courseId"`
+	SubtopicID string     `json:"subtopicId"`
+	Username   string     `json:"username"`
+	Name       string     `json:"name"`
+	Question   string     `json:"question"`
+	CreatedAt  time.Time  `json:"createdAt"`
+	Replies    []QnAReply `json:"replies"`
+}
+
+type QnAReply struct {
+	ID         int64     `json:"id"`
+	QuestionID int64     `json:"questionId"`
+	Username   string    `json:"username"`
+	Name       string    `json:"name"`
+	Reply      string    `json:"reply"`
+	CreatedAt  time.Time `json:"createdAt"`
+}
+
 type AuthUser struct {
 	ID           int64     `json:"id"`
 	Name         string    `json:"name"`

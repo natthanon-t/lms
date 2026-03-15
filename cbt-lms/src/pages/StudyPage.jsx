@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getStoredImages } from "../services/contentImagesStore";
 import { fetchCourseImagesApi, fetchCourseAttachmentsApi } from "../services/mediaApiService";
-import { recordSubtopicTimeApi } from "../services/courseApiService";
+import { recordSubtopicTimeApi, fetchCourseQnAApi, postQnAQuestionApi, postQnAReplyApi } from "../services/courseApiService";
 import MarkdownContent from "../components/markdown/MarkdownContent";
 import TableOfContents from "../components/markdown/TableOfContents";
 import { getSubtopicPages } from "../components/markdown/headingUtils";
@@ -22,7 +22,7 @@ export default function StudyPage() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentUserKey } = useAuth();
+  const { currentUserKey, users: authUsers } = useAuth();
   const { examples, learningProgress, handleMarkSubtopicComplete, handleSubmitSubtopicAnswer } = useAppData();
 
   const contentItem = useMemo(() => {
@@ -42,6 +42,12 @@ export default function StudyPage() {
   // lockedDisplaySeconds: null = unlocked, number = seconds spent so far (countdown display)
   const [lockedDisplaySeconds, setLockedDisplaySeconds] = useState(null);
   const [answerInputs, setAnswerInputs] = useState({});
+  const [qnaItems, setQnaItems] = useState([]);
+  const [qnaInput, setQnaInput] = useState("");
+  const [replyInputs, setReplyInputs] = useState({});
+  const [expandedQnaId, setExpandedQnaId] = useState(null);
+  const [tocTab, setTocTab] = useState("toc"); // "toc" | "qna"
+  const [qnaFilter, setQnaFilter] = useState("all"); // "all" | "answered" | "unanswered"
   const subtopicPages = useMemo(() => draft ? getSubtopicPages(draft.content, draft.title) : [], [draft?.content, draft?.title]);
   const selectedSubtopic = subtopicPages.find((subtopic) => subtopic.id === activeSubtopicId) ?? subtopicPages[0];
 
@@ -81,6 +87,27 @@ export default function StudyPage() {
         .catch(() => {});
       fetchCourseAttachmentsApi(draftCourseId)
         .then(setAttachments)
+        .catch(() => {});
+      fetchCourseQnAApi(draftCourseId)
+        .then((questions) =>
+          setQnaItems(
+            questions.map((q) => ({
+              id: q.id,
+              subtopicId: q.subtopicId ?? "",
+              question: q.question,
+              username: q.username,
+              name: q.name || q.username,
+              postedAt: new Date(q.createdAt).toLocaleString("th-TH"),
+              replies: (q.replies ?? []).map((r) => ({
+                id: r.id,
+                text: r.reply,
+                username: r.username,
+                name: r.name || r.username,
+                postedAt: new Date(r.createdAt).toLocaleString("th-TH"),
+              })),
+            })),
+          ),
+        )
         .catch(() => {});
     }
   }, [draft?.sourceId, draft?.id]);
@@ -186,6 +213,90 @@ export default function StudyPage() {
       typedAnswer,
       isCorrect,
     });
+  };
+
+  const handlePostQuestion = () => {
+    const text = qnaInput.trim();
+    if (!text) return;
+    const courseSourceId = draft?.sourceId ?? draft?.id;
+    const subtopicId = selectedSubtopic?.id ?? "";
+    // Optimistic update
+    const tempId = `temp-${Date.now()}`;
+    const currentName = authUsers[currentUserKey]?.name ?? currentUserKey;
+    setQnaItems((prev) => [
+      ...prev,
+      {
+        id: tempId,
+        subtopicId,
+        question: text,
+        username: currentUserKey,
+        name: currentName,
+        postedAt: new Date().toLocaleString("th-TH"),
+        replies: [],
+      },
+    ]);
+    setQnaInput("");
+    // Send to backend, replace temp with real data
+    postQnAQuestionApi(courseSourceId, subtopicId, text)
+      .then((res) => {
+        if (res?.question) {
+          const q = res.question;
+          setQnaItems((prev) =>
+            prev.map((item) =>
+              item.id === tempId
+                ? { ...item, id: q.id, name: q.name || item.name, postedAt: new Date(q.createdAt).toLocaleString("th-TH") }
+                : item,
+            ),
+          );
+        }
+      })
+      .catch(() => {});
+  };
+
+  const handlePostReply = (qnaId) => {
+    const text = (replyInputs[qnaId] ?? "").trim();
+    if (!text) return;
+    const isTempQuestion = typeof qnaId === "string" && qnaId.startsWith("temp-");
+    const tempId = `temp-r-${Date.now()}`;
+    // Optimistic update
+    setQnaItems((prev) =>
+      prev.map((item) =>
+        item.id === qnaId
+          ? {
+              ...item,
+              replies: [
+                ...item.replies,
+                { id: tempId, text, username: currentUserKey, name: authUsers[currentUserKey]?.name ?? currentUserKey, postedAt: new Date().toLocaleString("th-TH") },
+              ],
+            }
+          : item,
+      ),
+    );
+    setReplyInputs((prev) => ({ ...prev, [qnaId]: "" }));
+    // Skip API call if the question hasn't been saved yet (temp ID)
+    if (isTempQuestion) return;
+    // Send to backend
+    postQnAReplyApi(qnaId, text)
+      .then((res) => {
+        if (res?.reply) {
+          const r = res.reply;
+          setQnaItems((prev) =>
+            prev.map((item) =>
+              item.id === qnaId
+                ? {
+                    ...item,
+                    replies: item.replies.map((rep) =>
+                      rep.id === tempId
+                        ? { ...rep, id: r.id, name: r.name || rep.name, postedAt: new Date(r.createdAt).toLocaleString("th-TH") }
+                        : rep,
+                    ),
+                  }
+                : item,
+            ),
+          );
+        }
+      })
+      .catch(() => {});
   };
 
   const handleCompleteSubtopic = () => {
@@ -328,33 +439,245 @@ export default function StudyPage() {
               ) : null}
             </div>
           ) : null}
+        <div className="qna-shell">
+          <div className="qna-head">
+            <div className="qna-head-icon">💬</div>
+            <div className="qna-head-text">
+              <h3>ถามตอบ</h3>
+              <p>มีข้อสงสัยในเนื้อหาหัวข้อนี้? ถามได้เลย</p>
+            </div>
+          </div>
+
+          <div className="qna-form">
+            <textarea
+              className="qna-textarea"
+              value={qnaInput}
+              onChange={(e) => setQnaInput(e.target.value)}
+              placeholder="พิมพ์คำถามของคุณที่นี่..."
+              rows={3}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handlePostQuestion();
+              }}
+            />
+            <div className="qna-form-footer">
+              <span className="qna-hint">Ctrl+Enter เพื่อส่ง</span>
+              <button type="button" className="qna-submit-btn" onClick={handlePostQuestion} disabled={!qnaInput.trim()}>
+                ส่งคำถาม
+              </button>
+            </div>
+          </div>
+
+          {qnaItems.filter((q) => q.subtopicId === (selectedSubtopic?.id ?? "")).length === 0 ? (
+            <p className="qna-empty">ยังไม่มีคำถามในหัวข้อนี้ เป็นคนแรกที่ถาม!</p>
+          ) : (
+            <div className="qna-list">
+              {qnaItems
+                .filter((q) => q.subtopicId === (selectedSubtopic?.id ?? ""))
+                .map((item) => (
+                  <div key={item.id} className="qna-item">
+                    <div className="qna-item-header">
+                      <div className="qna-avatar">👤</div>
+                      <div className="qna-item-meta">
+                        <span className="qna-item-user">{item.name ?? item.username ?? "คุณ"}</span>
+                        <span className="qna-item-time">{item.postedAt}</span>
+                      </div>
+                    </div>
+                    <p className="qna-item-text">{item.question}</p>
+                    <div className="qna-item-actions">
+                      <button
+                        type="button"
+                        className="qna-reply-toggle"
+                        onClick={() => setExpandedQnaId((prev) => (prev === item.id ? null : item.id))}
+                      >
+                        💬 {item.replies.length > 0 ? `ตอบกลับ (${item.replies.length})` : "ตอบกลับ"}
+                      </button>
+                    </div>
+
+                    {expandedQnaId === item.id && (
+                      <div className="qna-replies">
+                        {item.replies.map((reply) => (
+                          <div key={reply.id} className="qna-reply">
+                            <div className="qna-item-header">
+                              <div className="qna-avatar qna-avatar-reply">🧑‍🏫</div>
+                              <div className="qna-item-meta">
+                                <span className="qna-item-user">{reply.name ?? reply.username ?? "ผู้สอน"}</span>
+                                <span className="qna-item-time">{reply.postedAt}</span>
+                              </div>
+                            </div>
+                            <p className="qna-item-text">{reply.text}</p>
+                          </div>
+                        ))}
+                        <div className="qna-reply-form">
+                          <textarea
+                            className="qna-textarea qna-textarea-sm"
+                            value={replyInputs[item.id] ?? ""}
+                            onChange={(e) =>
+                              setReplyInputs((prev) => ({ ...prev, [item.id]: e.target.value }))
+                            }
+                            placeholder="พิมพ์คำตอบ..."
+                            rows={2}
+                          />
+                          <button
+                            type="button"
+                            className="qna-submit-btn qna-submit-btn-sm"
+                            onClick={() => handlePostReply(item.id)}
+                            disabled={!(replyInputs[item.id] ?? "").trim()}
+                          >
+                            ส่ง
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
         </div>
 
         <div className="study-toc-sticky">
-          <TableOfContents
-            content={draft.content}
-            activeHeadingId={selectedSubtopic?.id ?? ""}
-            onSelectHeading={selectSubtopic}
-            completedHeadingIds={completedSubtopicIds}
-          />
-          {attachments.length > 0 && (
-            <div className="study-attachments-panel">
-              <div className="study-attachments-head">📎 ไฟล์แนบ</div>
-              <div className="study-attachments-list">
-                {attachments.map((att) => (
-                  <a
-                    key={att.id}
-                    href={att.urlPath}
-                    target="_blank"
-                    rel="noreferrer"
-                    download={att.origName}
-                    className="study-attachment-item"
+          <div className="toc-tab-bar">
+            <button
+              type="button"
+              className={`toc-tab-btn${tocTab === "toc" ? " active" : ""}`}
+              onClick={() => setTocTab("toc")}
+            >
+              สารบัญหัวข้อ
+            </button>
+            <button
+              type="button"
+              className={`toc-tab-btn${tocTab === "qna" ? " active" : ""}`}
+              onClick={() => setTocTab("qna")}
+            >
+              💬 ถามตอบ
+              {qnaItems.length > 0 && <span className="toc-tab-badge">{qnaItems.length}</span>}
+            </button>
+          </div>
+
+          {tocTab === "toc" ? (
+            <>
+              <TableOfContents
+                content={draft.content}
+                activeHeadingId={selectedSubtopic?.id ?? ""}
+                onSelectHeading={selectSubtopic}
+                completedHeadingIds={completedSubtopicIds}
+              />
+              {attachments.length > 0 && (
+                <div className="study-attachments-panel">
+                  <div className="study-attachments-head">📎 ไฟล์แนบ</div>
+                  <div className="study-attachments-list">
+                    {attachments.map((att) => (
+                      <a
+                        key={att.id}
+                        href={att.urlPath}
+                        target="_blank"
+                        rel="noreferrer"
+                        download={att.origName}
+                        className="study-attachment-item"
+                      >
+                        <span className="study-attachment-icon">{getAttachmentIcon(att.origName)}</span>
+                        <span className="study-attachment-name">{att.origName}</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="toc-qna-panel">
+              <div className="toc-qna-filter-bar">
+                {[
+                  { key: "all", label: "ทั้งหมด" },
+                  { key: "unanswered", label: "ยังไม่ตอบ" },
+                  { key: "answered", label: "ตอบแล้ว" },
+                ].map(({ key, label }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`toc-qna-filter-btn${qnaFilter === key ? " active" : ""}`}
+                    onClick={() => setQnaFilter(key)}
                   >
-                    <span className="study-attachment-icon">{getAttachmentIcon(att.origName)}</span>
-                    <span className="study-attachment-name">{att.origName}</span>
-                  </a>
+                    {label}
+                    <span className="toc-qna-filter-count">
+                      {key === "all" ? qnaItems.length
+                        : key === "answered" ? qnaItems.filter((q) => q.replies.length > 0).length
+                        : qnaItems.filter((q) => q.replies.length === 0).length}
+                    </span>
+                  </button>
                 ))}
               </div>
+              {qnaItems.length === 0 ? (
+                <p className="toc-qna-empty">ยังไม่มีคำถามในคอร์สนี้</p>
+              ) : (() => {
+                const filtered = qnaItems.filter((q) =>
+                  qnaFilter === "answered" ? q.replies.length > 0
+                  : qnaFilter === "unanswered" ? q.replies.length === 0
+                  : true
+                );
+                return filtered.length === 0 ? (
+                  <p className="toc-qna-empty">
+                    {qnaFilter === "answered" ? "ยังไม่มีคำถามที่ตอบแล้ว" : "ไม่มีคำถามที่ยังไม่ตอบ"}
+                  </p>
+                ) : (
+                <div className="toc-qna-list">
+                  {filtered.map((item) => {
+                    const subtopic = subtopicPages.find((s) => s.id === item.subtopicId);
+                    const subtopicLabel = subtopic
+                      ? `${subtopic.mainText}${subtopic.subText ? ` / ${subtopic.subText}` : ""}`
+                      : "—";
+                    const isExpanded = expandedQnaId === item.id;
+                    return (
+                      <div key={item.id} className={`toc-qna-item${isExpanded ? " toc-qna-item-open" : ""}`}>
+                        <div className="toc-qna-subtopic-tag">{subtopicLabel}</div>
+                        <p className="toc-qna-question">{item.question}</p>
+                        <div className="toc-qna-meta">
+                          <span>{item.postedAt}</span>
+                          {item.replies.length > 0 && (
+                            <span className="toc-qna-replied-badge">✓ ตอบแล้ว {item.replies.length}</span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          className="toc-qna-reply-btn"
+                          onClick={() => setExpandedQnaId((prev) => (prev === item.id ? null : item.id))}
+                        >
+                          {isExpanded ? "ซ่อน" : item.replies.length > 0 ? "ดู/ตอบ" : "ตอบคำถาม"}
+                        </button>
+                        {isExpanded && (
+                          <div className="toc-qna-reply-area">
+                            {item.replies.map((reply) => (
+                              <div key={reply.id} className="toc-qna-reply-bubble">
+                                <span className="toc-qna-reply-label">🧑‍🏫 {reply.name ?? reply.username ?? "ผู้สอน"}</span>
+                                <p>{reply.text}</p>
+                              </div>
+                            ))}
+                            <div className="toc-qna-reply-form">
+                              <textarea
+                                className="qna-textarea qna-textarea-sm"
+                                value={replyInputs[item.id] ?? ""}
+                                onChange={(e) =>
+                                  setReplyInputs((prev) => ({ ...prev, [item.id]: e.target.value }))
+                                }
+                                placeholder="พิมพ์คำตอบ..."
+                                rows={2}
+                              />
+                              <button
+                                type="button"
+                                className="qna-submit-btn qna-submit-btn-sm"
+                                onClick={() => handlePostReply(item.id)}
+                                disabled={!(replyInputs[item.id] ?? "").trim()}
+                              >
+                                ส่ง
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                );
+              })()}
             </div>
           )}
         </div>

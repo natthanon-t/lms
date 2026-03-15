@@ -61,6 +61,7 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	api.Get("/exams", publicLimiter, handler.ListExams)
 	api.Get("/exams/:id", publicLimiter, handler.GetExam)
 	api.Get("/learning/leaderboard", publicLimiter, handler.GetLeaderboard)
+	api.Get("/courses/:courseId/qna", publicLimiter, handler.GetCourseQnA)
 	api.Get("/users/:username/profile", publicLimiter, handler.GetUserPublicProfile)
 
 	protected := api.Group("")
@@ -127,4 +128,6 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	learning.Post("/courses/:courseId/subtopics/:subtopicId/answer", auth.RequirePermissions(auth.PermissionContentLearn), handler.SubmitSubtopicAnswer)
 	learning.Post("/courses/:courseId/subtopics/:subtopicId/time", auth.RequirePermissions(auth.PermissionContentLearn), handler.RecordSubtopicTime)
 	learning.Post("/courses/:courseId/complete", auth.RequirePermissions(auth.PermissionContentLearn), handler.CompleteCourse)
+	learning.Post("/courses/:courseId/qna", auth.RequirePermissions(auth.PermissionContentLearn), handler.PostQnAQuestion)
+	learning.Post("/qna/:questionId/reply", handler.PostQnAReply)
 }

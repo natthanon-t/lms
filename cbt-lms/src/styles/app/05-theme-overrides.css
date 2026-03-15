@@ -258,7 +258,8 @@
 .editor-panel,
 .preview-panel,
 .toc-panel,
-.subtopic-quiz-shell {
+.subtopic-quiz-shell,
+.qna-shell {
   background: var(--surface);
   color: var(--foreground);
   border-color: var(--border);

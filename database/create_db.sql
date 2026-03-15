@@ -13,6 +13,8 @@ DROP TABLE IF EXISTS exam_domain_percentages CASCADE;
 DROP TABLE IF EXISTS exam_questions CASCADE;
 DROP TABLE IF EXISTS exams CASCADE;
 
+DROP TABLE IF EXISTS qna_replies CASCADE;
+DROP TABLE IF EXISTS qna_questions CASCADE;
 DROP TABLE IF EXISTS learning_subtopic_answers CASCADE;
 DROP TABLE IF EXISTS learning_subtopic_progress CASCADE;
 DROP TABLE IF EXISTS user_course_enrollments CASCADE;
@@ -285,6 +287,42 @@ CREATE TABLE learning_subtopic_time (
 );
 
 CREATE INDEX ix_subtopic_time_user ON learning_subtopic_time(username);
+
+-- ==========================================================
+-- Q&A (ถามตอบ)
+-- ==========================================================
+
+-- คำถามในระบบถามตอบ
+CREATE TABLE qna_questions (
+  id          BIGSERIAL    PRIMARY KEY,
+  course_id   TEXT         NOT NULL,
+  subtopic_id TEXT         NOT NULL DEFAULT '',
+  username    TEXT         NOT NULL,
+  question    TEXT         NOT NULL,
+  created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  CONSTRAINT fk_qna_questions_course
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+  CONSTRAINT fk_qna_questions_user
+    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
+);
+
+CREATE INDEX ix_qna_questions_course ON qna_questions(course_id);
+CREATE INDEX ix_qna_questions_user   ON qna_questions(username);
+
+-- คำตอบ/ตอบกลับในระบบถามตอบ
+CREATE TABLE qna_replies (
+  id          BIGSERIAL    PRIMARY KEY,
+  question_id BIGINT       NOT NULL,
+  username    TEXT         NOT NULL,
+  reply       TEXT         NOT NULL,
+  created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  CONSTRAINT fk_qna_replies_question
+    FOREIGN KEY (question_id) REFERENCES qna_questions(id) ON DELETE CASCADE,
+  CONSTRAINT fk_qna_replies_user
+    FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
+);
+
+CREATE INDEX ix_qna_replies_question ON qna_replies(question_id);
 
 -- ==========================================================
 -- EXAMS (ข้อสอบ)

@@ -415,6 +415,67 @@ func (h *Handler) DeleteCourseAttachment(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "attachment deleted"})
 }
 
+// ── Q&A ───────────────────────────────────────────────────────────────────────
+
+func (h *Handler) GetCourseQnA(c *fiber.Ctx) error {
+	courseID := strings.TrimSpace(c.Params("courseId"))
+	if courseID == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "courseId is required")
+	}
+	questions, err := data.GetCourseQnA(courseID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot get Q&A")
+	}
+	return c.JSON(fiber.Map{"questions": questions})
+}
+
+func (h *Handler) PostQnAQuestion(c *fiber.Ctx) error {
+	username, err := auth.CurrentUsername(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
+	}
+	courseID := strings.TrimSpace(c.Params("courseId"))
+	if courseID == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "courseId is required")
+	}
+	var req qnaQuestionRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	if strings.TrimSpace(req.Question) == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "question is required")
+	}
+	q, err := data.CreateQnAQuestion(courseID, strings.TrimSpace(req.SubtopicID), username, strings.TrimSpace(req.Question))
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot create question")
+	}
+	return c.JSON(fiber.Map{"question": q})
+}
+
+func (h *Handler) PostQnAReply(c *fiber.Ctx) error {
+	username, err := auth.CurrentUsername(c)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
+	}
+	questionIDStr := strings.TrimSpace(c.Params("questionId"))
+	questionID, err := strconv.ParseInt(questionIDStr, 10, 64)
+	if err != nil || questionID <= 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid questionId")
+	}
+	var req qnaReplyRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	}
+	if strings.TrimSpace(req.Reply) == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "reply is required")
+	}
+	r, err := data.CreateQnAReply(questionID, username, strings.TrimSpace(req.Reply))
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot create reply")
+	}
+	return c.JSON(fiber.Map{"reply": r})
+}
+
 func (h *Handler) GetUserScores(c *fiber.Ctx) error {
 	username, err := auth.CurrentUsername(c)
 	if err != nil {

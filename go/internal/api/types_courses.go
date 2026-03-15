@@ -40,6 +40,15 @@ type courseImageRequest struct {
 	DataURL  string `json:"data_url"`
 }
 
+type qnaQuestionRequest struct {
+	SubtopicID string `json:"subtopicId"`
+	Question   string `json:"question"`
+}
+
+type qnaReplyRequest struct {
+	Reply string `json:"reply"`
+}
+
 type avatarRequest struct {
 	DataURL string `json:"data_url"`
 }
