@@ -2214,3 +2214,360 @@ th:hover .perm-delete-btn {
   }
 }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   Summary Tab Bar + Instructor "คอร์สของฉัน" tab
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.summary-tab-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #dce8f7;
+  margin-bottom: 18px;
+}
+
+.summary-tab-btn {
+  padding: 10px 22px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #6b8ab8;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.summary-tab-btn:hover {
+  color: #2f66da;
+}
+
+.summary-tab-btn.active {
+  color: #2f66da;
+  border-bottom-color: #2f66da;
+}
+
+.summary-tab-badge {
+  background: #2f66da;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  line-height: 1.2;
+}
+
+/* ── Course Search ─────────────────────────────────────────────────────────── */
+
+.my-course-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.my-course-search-input {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  border: 1px solid #d5e0f7;
+  border-radius: 10px;
+  background: #fff;
+  color: #16315d;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.my-course-search-input::placeholder {
+  color: #94a3b8;
+}
+
+.my-course-search-input:focus {
+  border-color: #2f66da;
+  box-shadow: 0 0 0 3px rgba(47, 102, 218, 0.1);
+}
+
+.my-course-search-count {
+  font-size: 0.8rem;
+  color: #6b8ab8;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+/* ── My Course Cards ───────────────────────────────────────────────────────── */
+
+.my-course-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.my-course-card {
+  background: #ffffff;
+  border: 1px solid #d5e0f7;
+  border-radius: 14px;
+  padding: 18px 20px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+
+.my-course-card:hover {
+  border-color: #93b4f0;
+  box-shadow: 0 2px 12px rgba(47, 102, 218, 0.1);
+  transform: translateY(-1px);
+}
+
+.my-course-card-active {
+  border-color: #2f66da;
+  box-shadow: 0 0 0 2px rgba(47, 102, 218, 0.15), 0 2px 12px rgba(47, 102, 218, 0.1);
+}
+
+.my-course-card-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.my-course-card-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #16315d;
+  line-height: 1.3;
+  flex: 1;
+  min-width: 0;
+}
+
+.my-course-mine-badge {
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #2f66da, #1b4fa8);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 8px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.my-course-card-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.my-course-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.my-course-stat-value {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #16315d;
+  line-height: 1;
+}
+
+.my-course-stat-label {
+  font-size: 0.7rem;
+  color: #6b8ab8;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.my-course-completion-bar {
+  height: 6px;
+  background: #eef3ff;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.my-course-completion-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1f8d4e, #34d399);
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.my-course-completion-legend {
+  display: flex;
+  gap: 12px;
+  font-size: 0.75rem;
+  color: #6b8ab8;
+}
+
+.my-course-completion-legend .legend-completed { color: #1f8d4e; }
+.my-course-completion-legend .legend-in-progress { color: #2f66da; }
+.my-course-completion-legend .legend-not-started { color: #94a3b8; }
+
+/* ── Hard Questions List ────────────────────────────────────────────────────── */
+
+.hard-question-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.hard-question-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.hard-question-rank {
+  flex-shrink: 0;
+}
+
+.hard-question-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  min-width: 48px;
+  text-align: center;
+}
+
+.hard-question-badge.badge-danger {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.hard-question-badge.badge-warn {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+.hard-question-badge.badge-ok {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.hard-question-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.hard-question-text {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #16315d;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.hard-question-sub {
+  font-size: 0.78rem;
+  color: #6b8ab8;
+  margin-top: 2px;
+  display: block;
+}
+
+/* ── Unanswered Q&A ─────────────────────────────────────────────────────────── */
+
+.unanswered-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.unanswered-qna-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.unanswered-qna-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #f8faff;
+  border: 1px solid #e2ecfa;
+  border-left: 4px solid #2f66da;
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+.unanswered-qna-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.unanswered-qna-subtopic {
+  display: inline-block;
+  background: #eef3ff;
+  color: #2f66da;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+}
+
+.unanswered-qna-text {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #16315d;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.unanswered-qna-meta {
+  font-size: 0.76rem;
+  color: #6b8ab8;
+  margin-top: 3px;
+  display: block;
+}
+
+.unanswered-qna-btn {
+  flex-shrink: 0;
+  padding: 8px 18px;
+  background: linear-gradient(135deg, #2f66da, #1b4fa8);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.unanswered-qna-btn:hover {
+  opacity: 0.88;
+}
+
+@media (max-width: 860px) {
+  .my-course-cards {
+    grid-template-columns: 1fr;
+  }
+  .my-course-card-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+}
+

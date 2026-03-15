@@ -1089,6 +1089,15 @@
   transform: translateY(-1px);
 }
 
+.qna-item-highlight {
+  animation: qna-highlight-pulse 1.5s ease-out;
+}
+
+@keyframes qna-highlight-pulse {
+  0%   { background: #fef9c3; box-shadow: 0 0 0 4px rgba(234, 179, 8, 0.3); }
+  100% { background: #fff;    box-shadow: none; }
+}
+
 .qna-item-header {
   display: flex;
   align-items: center;

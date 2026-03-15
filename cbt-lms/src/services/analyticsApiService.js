@@ -7,3 +7,16 @@ export const fetchCourseLearnerApi = async (courseId) =>
   request(`/api/admin/analytics/courses/${encodeURIComponent(courseId)}/learners`, {
     headers: authHeaders(),
   });
+
+export const fetchCourseStatsApi = async (scope) => {
+  const qs = scope === "my" ? "?scope=my" : "";
+  const payload = await request(`/api/admin/analytics/course-stats${qs}`, {
+    headers: authHeaders(),
+  });
+  return Array.isArray(payload?.courses) ? payload.courses : [];
+};
+
+export const fetchCourseDetailAnalyticsApi = async (courseId) =>
+  request(`/api/admin/analytics/courses/${encodeURIComponent(courseId)}/detail`, {
+    headers: authHeaders(),
+  });

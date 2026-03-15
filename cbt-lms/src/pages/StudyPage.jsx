@@ -32,6 +32,7 @@ export default function StudyPage() {
 
   const draft = useMemo(() => contentItem ? toCourseDraft(contentItem) : null, [contentItem]);
   const initialSubtopicId = location.state?.initialSubtopicId ?? "";
+  const highlightQnaId = location.state?.highlightQnaId ?? null;
   const progress = (learningProgress[currentUserKey] ?? {})[courseId] ?? {};
 
   const [activeSubtopicId, setActiveSubtopicId] = useState(initialSubtopicId);
@@ -46,6 +47,7 @@ export default function StudyPage() {
   const [qnaInput, setQnaInput] = useState("");
   const [replyInputs, setReplyInputs] = useState({});
   const [expandedQnaId, setExpandedQnaId] = useState(null);
+  const [highlightedQnaId, setHighlightedQnaId] = useState(null);
   const [tocTab, setTocTab] = useState("toc"); // "toc" | "qna"
   const [qnaFilter, setQnaFilter] = useState("all"); // "all" | "answered" | "unanswered"
   const subtopicPages = useMemo(() => draft ? getSubtopicPages(draft.content, draft.title) : [], [draft?.content, draft?.title]);
@@ -111,6 +113,22 @@ export default function StudyPage() {
         .catch(() => {});
     }
   }, [draft?.sourceId, draft?.id]);
+
+  // Auto-scroll & highlight when navigating from SummaryPage "ไปตอบ"
+  useEffect(() => {
+    if (!highlightQnaId || qnaItems.length === 0) return;
+    const target = qnaItems.find((q) => q.id === highlightQnaId);
+    if (!target) return;
+    setExpandedQnaId(highlightQnaId);
+    setHighlightedQnaId(highlightQnaId);
+    const timer1 = setTimeout(() => {
+      const el = document.querySelector(`[data-qna-id="${highlightQnaId}"]`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 200);
+    const timer2 = setTimeout(() => setHighlightedQnaId(null), 2000);
+    return () => { clearTimeout(timer1); clearTimeout(timer2); };
+  }, [highlightQnaId, qnaItems]);
+
   const selectedSubtopicAnswers = progress?.answers?.[selectedSubtopic?.id] ?? {};
   const selectedSubtopicCompleted = Boolean(progress?.completedSubtopics?.[selectedSubtopic?.id]);
   const completedSubtopicIds = useMemo(
@@ -474,7 +492,7 @@ export default function StudyPage() {
               {qnaItems
                 .filter((q) => q.subtopicId === (selectedSubtopic?.id ?? ""))
                 .map((item) => (
-                  <div key={item.id} className="qna-item">
+                  <div key={item.id} data-qna-id={item.id} className={`qna-item${highlightedQnaId === item.id ? " qna-item-highlight" : ""}`}>
                     <div className="qna-item-header">
                       <div className="qna-avatar">👤</div>
                       <div className="qna-item-meta">

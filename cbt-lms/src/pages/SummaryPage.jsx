@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
-import { fetchAnalyticsApi, fetchCourseLearnerApi } from "../services/analyticsApiService";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { fetchAnalyticsApi, fetchCourseLearnerApi, fetchCourseStatsApi, fetchCourseDetailAnalyticsApi } from "../services/analyticsApiService";
 import { useAuth } from "../contexts/AuthContext";
 import { useAppData } from "../contexts/AppDataContext";
 
@@ -284,9 +285,39 @@ function formatDate(iso) {
   return isNaN(d) ? "—" : d.toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" });
 }
 
+
+// ── Instructor: Avg Time per Subtopic chart ─────────────────────────────────
+function SubtopicTimeChart({ data }) {
+  const W = 600, BAR_H = 28, GAP = 10, ML = 140, MR = 60, MT = 10;
+  const PW = W - ML - MR;
+  if (!data?.length) return <p className="chart-empty">ไม่มีข้อมูล</p>;
+  const H = MT + data.length * (BAR_H + GAP) - GAP + 10;
+  const maxVal = Math.max(...data.map((d) => d.avgMinutes), 1);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%">
+      {data.map((item, i) => {
+        const y = MT + i * (BAR_H + GAP);
+        const bw = (item.avgMinutes / maxVal) * PW;
+        const pct = item.avgMinutes / maxVal;
+        const fill = pct > 0.7 ? "#ef4444" : pct > 0.4 ? "#f59e0b" : "#1f8d4e";
+        return (
+          <g key={item.name}>
+            <text x={ML - 8} y={y + BAR_H / 2 + 4} textAnchor="end" fontSize="11" fill="#1a2f57">{item.name}</text>
+            <rect x={ML} y={y} width={bw} height={BAR_H} rx="6" fill={fill} opacity="0.85">
+              <title>{item.name}: เฉลี่ย {item.avgMinutes} นาที ({item.learners} คน)</title>
+            </rect>
+            <text x={ML + bw + 6} y={y + BAR_H / 2 + 4} fontSize="11" fill="#45608f" fontWeight="600">{item.avgMinutes} นาที</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 // ── Main SummaryPage ──────────────────────────────────────────────────────────
 export default function SummaryPage() {
-  const { users } = useAuth();
+  const navigate = useNavigate();
+  const { users, currentUserKey } = useAuth();
   const { examples, examBank, userTotalScore, loadExamples, loadExamCatalog } = useAppData();
 
   useEffect(() => {
@@ -296,6 +327,10 @@ export default function SummaryPage() {
 
   const lessonCount = examples.length;
   const examCount = examBank.length;
+  const [summaryTab, setSummaryTab] = useState("org"); // "org" | "my" | "all"
+  const [selectedMyCourseId, setSelectedMyCourseId] = useState("");
+  const [courseSearch, setCourseSearch] = useState("");
+  const courseDetailRef = useRef(null);
   const [analytics, setAnalytics] = useState(null);
   const [learners, setLearners] = useState([]);
   const [selectedCourseId, setSelectedCourseId] = useState("");
@@ -324,6 +359,42 @@ export default function SummaryPage() {
   }, [selectedCourseId]);
 
   const safeExamples = Array.isArray(examples) ? examples : [];
+
+  // Instructor: courses owned by current user (for badge count on tab)
+  const myCourses = useMemo(
+    () => safeExamples.filter((c) => c.ownerUsername === currentUserKey),
+    [safeExamples, currentUserKey],
+  );
+
+  // Course stats from API
+  const [allCourseStats, setAllCourseStats] = useState([]);
+  const [myCourseStats, setMyCourseStats] = useState([]);
+  const [courseDetail, setCourseDetail] = useState(null); // { subtopicTime, hardQuestions, unansweredQna }
+
+  const loadCourseStats = useCallback(() => {
+    fetchCourseStatsApi("all").then(setAllCourseStats).catch(() => {});
+    fetchCourseStatsApi("my").then(setMyCourseStats).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    loadCourseStats();
+  }, [loadCourseStats]);
+
+  useEffect(() => {
+    if (!selectedMyCourseId) { setCourseDetail(null); return; }
+    fetchCourseDetailAnalyticsApi(selectedMyCourseId)
+      .then((data) => setCourseDetail(data))
+      .catch(() => setCourseDetail(null));
+  }, [selectedMyCourseId]);
+
+  const filteredAllCourseStats = useMemo(() => {
+    const keyword = courseSearch.trim().toLowerCase();
+    return keyword ? allCourseStats.filter((c) => c.title.toLowerCase().includes(keyword)) : allCourseStats;
+  }, [allCourseStats, courseSearch]);
+
+  const selectedMyCourse = allCourseStats.find((c) => c.id === selectedMyCourseId)
+    ?? myCourseStats.find((c) => c.id === selectedMyCourseId)
+    ?? null;
 
   const learnerCount = useMemo(
     () =>
@@ -439,11 +510,41 @@ export default function SummaryPage() {
           <h1>สรุปผล</h1>
           <p>ภาพรวมเพื่อวางแผนพัฒนาพนักงานขององค์กร</p>
         </div>
-        <button type="button" className="enter-button summary-export-button" onClick={handleExportCsv}>
-          Export CSV
-        </button>
+        {summaryTab === "org" && (
+          <button type="button" className="enter-button summary-export-button" onClick={handleExportCsv}>
+            Export CSV
+          </button>
+        )}
       </header>
 
+      <div className="summary-tab-bar">
+        <button
+          type="button"
+          className={`summary-tab-btn${summaryTab === "org" ? " active" : ""}`}
+          onClick={() => { setSummaryTab("org"); setSelectedMyCourseId(""); setCourseSearch(""); }}
+        >
+          ภาพรวมองค์กร
+        </button>
+        <button
+          type="button"
+          className={`summary-tab-btn${summaryTab === "my" ? " active" : ""}`}
+          onClick={() => { setSummaryTab("my"); setSelectedMyCourseId(""); setCourseSearch(""); }}
+        >
+          คอร์สของฉัน
+          {myCourses.length > 0 && <span className="summary-tab-badge">{myCourses.length}</span>}
+        </button>
+        <button
+          type="button"
+          className={`summary-tab-btn${summaryTab === "all" ? " active" : ""}`}
+          onClick={() => { setSummaryTab("all"); setSelectedMyCourseId(""); setCourseSearch(""); }}
+        >
+          คอร์สทั้งหมด
+          {safeExamples.length > 0 && <span className="summary-tab-badge">{safeExamples.length}</span>}
+        </button>
+      </div>
+
+      {summaryTab === "org" ? (
+      <>
       <div className="metric-grid">
         <article className="metric-card"><h3>บทเรียนทั้งหมด</h3><p>{lessonCount}</p></article>
         <article className="metric-card"><h3>ข้อสอบทั้งหมด</h3><p>{examCount}</p></article>
@@ -584,6 +685,139 @@ export default function SummaryPage() {
           })()
         ) : null}
       </div>
+      </>
+      ) : (
+      /* ── "คอร์สของฉัน" or "คอร์สทั้งหมด" tab ─────────────────────── */
+      <div className="my-courses-tab">
+        {(() => {
+          const courseList = summaryTab === "my" ? myCourseStats : filteredAllCourseStats;
+          const emptyLabel = summaryTab === "my"
+            ? "คุณยังไม่มีคอร์สที่สร้าง"
+            : courseSearch.trim() ? "ไม่พบคอร์สที่ค้นหา" : "ยังไม่มีคอร์สในระบบ";
+
+          return (
+            <>
+              {summaryTab === "all" && (
+                <div className="my-course-search-bar">
+                  <input
+                    type="text"
+                    className="my-course-search-input"
+                    placeholder="ค้นหาคอร์ส..."
+                    value={courseSearch}
+                    onChange={(e) => { setCourseSearch(e.target.value); setSelectedMyCourseId(""); }}
+                  />
+                  {courseSearch && (
+                    <span className="my-course-search-count">{filteredAllCourseStats.length} / {allCourseStats.length} คอร์ส</span>
+                  )}
+                </div>
+              )}
+
+              {courseList.length === 0 ? (
+                <p className="chart-card-sub" style={{ textAlign: "center", padding: 32 }}>
+                  {emptyLabel}
+                </p>
+              ) : (
+                <div className="my-course-cards">
+                  {courseList.map((course) => {
+                    const completionRate = course.learners > 0 ? Math.round((course.completed / course.learners) * 100) : 0;
+                    const isMine = summaryTab === "all" && myCourses.some((c) => c.id === course.id);
+                    return (
+                      <div
+                        key={course.id}
+                        className={`my-course-card${selectedMyCourseId === course.id ? " my-course-card-active" : ""}`}
+                        onClick={() => {
+                          setSelectedMyCourseId((prev) => {
+                            const next = prev === course.id ? "" : course.id;
+                            if (next) setTimeout(() => courseDetailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+                            return next;
+                          });
+                        }}
+                      >
+                        <div className="my-course-card-title-row">
+                          <h4 className="my-course-card-title">{course.title}</h4>
+                          {isMine && <span className="my-course-mine-badge">ของฉัน</span>}
+                        </div>
+                        <div className="my-course-card-stats">
+                          <div className="my-course-stat">
+                            <span className="my-course-stat-value">{course.learners}</span>
+                            <span className="my-course-stat-label">ผู้เรียน</span>
+                          </div>
+                          <div className="my-course-stat">
+                            <span className="my-course-stat-value" style={{ color: "#1f8d4e" }}>{completionRate}%</span>
+                            <span className="my-course-stat-label">เรียนจบ</span>
+                          </div>
+                          <div className="my-course-stat">
+                            <span className="my-course-stat-value" style={{ color: "#2f66da" }}>{course.avgScore}</span>
+                            <span className="my-course-stat-label">คะแนนเฉลี่ย</span>
+                          </div>
+                          <div className="my-course-stat">
+                            <span className="my-course-stat-value" style={{ color: course.qnaUnanswered > 0 ? "#ef4444" : "#1f8d4e" }}>
+                              {course.qnaUnanswered}
+                            </span>
+                            <span className="my-course-stat-label">Q&A รอตอบ</span>
+                          </div>
+                        </div>
+                        <div className="my-course-completion-bar">
+                          <div className="my-course-completion-fill" style={{ width: `${completionRate}%` }} />
+                        </div>
+                        <div className="my-course-completion-legend">
+                          <span className="legend-completed">{course.completed} จบ</span>
+                          <span className="legend-in-progress">{course.inProgress} กำลังเรียน</span>
+                          <span className="legend-not-started">{course.notStarted} ยังไม่เริ่ม</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* ── Detail section when a course is selected ── */}
+              {selectedMyCourse && courseDetail && (
+                <>
+                  <div ref={courseDetailRef} className="summary-section-head" style={{ marginTop: 28 }}>
+                    <span>รายละเอียด — {selectedMyCourse.title}</span>
+                  </div>
+
+                  <div className="summary-chart-grid">
+                    <div className="chart-card chart-card-accent-yellow">
+                      <h3 className="chart-card-title">เวลาเฉลี่ยต่อหัวข้อย่อย</h3>
+                      <p className="chart-card-sub">หัวข้อที่ผู้เรียนใช้เวลามากที่สุด อาจต้องปรับเนื้อหา</p>
+                      <SubtopicTimeChart data={courseDetail.subtopicTime} />
+                    </div>
+
+                    <div className="chart-card chart-card-accent-blue">
+                      <h3 className="chart-card-title">
+                        คำถามที่ยังไม่ตอบ
+                        {(courseDetail.unansweredQna?.length ?? 0) > 0 && (
+                          <span className="unanswered-count-badge">{courseDetail.unansweredQna.length}</span>
+                        )}
+                      </h3>
+                      <p className="chart-card-sub">คำถามจากผู้เรียนที่รอการตอบกลับ</p>
+                      {(!courseDetail.unansweredQna || courseDetail.unansweredQna.length === 0) ? (
+                        <p className="chart-empty" style={{ color: "#1f8d4e" }}>ตอบครบหมดแล้ว!</p>
+                      ) : (
+                        <div className="unanswered-qna-list">
+                          {courseDetail.unansweredQna.map((q) => (
+                            <div key={q.id} className="unanswered-qna-item">
+                              <div className="unanswered-qna-left">
+                                <span className="unanswered-qna-subtopic">{q.subtopicId}</span>
+                                <p className="unanswered-qna-text">{q.question}</p>
+                                <span className="unanswered-qna-meta">ถามโดย {q.asker} · {new Date(q.createdAt).toLocaleString("th-TH")}</span>
+                              </div>
+                              <button type="button" className="unanswered-qna-btn" onClick={() => navigate(`/content/${selectedMyCourseId}/study`, { state: { initialSubtopicId: q.subtopicId, highlightQnaId: q.id } })}>ไปตอบ</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </>
+          );
+        })()}
+      </div>
+      )}
     </section>
   );
 }
