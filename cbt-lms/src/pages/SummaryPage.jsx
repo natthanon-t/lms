@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchAnalyticsApi, fetchCourseLearnerApi, fetchCourseStatsApi, fetchCourseDetailAnalyticsApi } from "../services/analyticsApiService";
+import { fetchAnalyticsApi, fetchCourseLearnerApi, fetchCourseStatsApi, fetchCourseDetailAnalyticsApi, fetchExamStatsApi, fetchExamDetailAnalyticsApi } from "../services/analyticsApiService";
 import { useAuth } from "../contexts/AuthContext";
 import { useAppData } from "../contexts/AppDataContext";
 
@@ -314,6 +314,33 @@ function SubtopicTimeChart({ data }) {
   );
 }
 
+// ── Exam: Domain Avg Score chart ─────────────────────────────────────────────
+function DomainScoreChart({ data }) {
+  const W = 600, BAR_H = 28, GAP = 10, ML = 140, MR = 60, MT = 10;
+  const PW = W - ML - MR;
+  if (!data?.length) return <p className="chart-empty">ไม่มีข้อมูล</p>;
+  const H = MT + data.length * (BAR_H + GAP) - GAP + 10;
+  const maxVal = 100; // percentage scale
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%">
+      {data.map((item, i) => {
+        const y = MT + i * (BAR_H + GAP);
+        const bw = (item.avgScore / maxVal) * PW;
+        const fill = item.avgScore >= 70 ? "#1f8d4e" : item.avgScore >= 40 ? "#f59e0b" : "#ef4444";
+        return (
+          <g key={item.domain}>
+            <text x={ML - 8} y={y + BAR_H / 2 + 4} textAnchor="end" fontSize="11" fill="#1a2f57">{item.domain}</text>
+            <rect x={ML} y={y} width={bw} height={BAR_H} rx="6" fill={fill} opacity="0.85">
+              <title>{item.domain}: เฉลี่ย {item.avgScore}% ({item.total} คำตอบ)</title>
+            </rect>
+            <text x={ML + bw + 6} y={y + BAR_H / 2 + 4} fontSize="11" fill="#45608f" fontWeight="600">{item.avgScore}%</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 // ── Main SummaryPage ──────────────────────────────────────────────────────────
 export default function SummaryPage() {
   const navigate = useNavigate();
@@ -327,7 +354,7 @@ export default function SummaryPage() {
 
   const lessonCount = examples.length;
   const examCount = examBank.length;
-  const [summaryTab, setSummaryTab] = useState("org"); // "org" | "my" | "all"
+  const [summaryTab, setSummaryTab] = useState("org"); // "org" | "my" | "all" | "myExam" | "allExam"
   const [selectedMyCourseId, setSelectedMyCourseId] = useState("");
   const [courseSearch, setCourseSearch] = useState("");
   const courseDetailRef = useRef(null);
@@ -371,14 +398,28 @@ export default function SummaryPage() {
   const [myCourseStats, setMyCourseStats] = useState([]);
   const [courseDetail, setCourseDetail] = useState(null); // { subtopicTime, hardQuestions, unansweredQna }
 
+  // Exam stats from API
+  const [allExamStats, setAllExamStats] = useState([]);
+  const [myExamStats, setMyExamStats] = useState([]);
+  const [selectedExamId, setSelectedExamId] = useState("");
+  const [examDetail, setExamDetail] = useState(null);
+  const [examSearch, setExamSearch] = useState("");
+  const examDetailRef = useRef(null);
+
   const loadCourseStats = useCallback(() => {
     fetchCourseStatsApi("all").then(setAllCourseStats).catch(() => {});
     fetchCourseStatsApi("my").then(setMyCourseStats).catch(() => {});
   }, []);
 
+  const loadExamStats = useCallback(() => {
+    fetchExamStatsApi("all").then(setAllExamStats).catch(() => {});
+    fetchExamStatsApi("my").then(setMyExamStats).catch(() => {});
+  }, []);
+
   useEffect(() => {
     loadCourseStats();
-  }, [loadCourseStats]);
+    loadExamStats();
+  }, [loadCourseStats, loadExamStats]);
 
   useEffect(() => {
     if (!selectedMyCourseId) { setCourseDetail(null); return; }
@@ -387,10 +428,31 @@ export default function SummaryPage() {
       .catch(() => setCourseDetail(null));
   }, [selectedMyCourseId]);
 
+  useEffect(() => {
+    if (!selectedExamId) { setExamDetail(null); return; }
+    fetchExamDetailAnalyticsApi(selectedExamId)
+      .then((data) => setExamDetail(data))
+      .catch(() => setExamDetail(null));
+  }, [selectedExamId]);
+
   const filteredAllCourseStats = useMemo(() => {
     const keyword = courseSearch.trim().toLowerCase();
     return keyword ? allCourseStats.filter((c) => c.title.toLowerCase().includes(keyword)) : allCourseStats;
   }, [allCourseStats, courseSearch]);
+
+  const filteredAllExamStats = useMemo(() => {
+    const keyword = examSearch.trim().toLowerCase();
+    return keyword ? allExamStats.filter((e) => e.title.toLowerCase().includes(keyword)) : allExamStats;
+  }, [allExamStats, examSearch]);
+
+  const myExams = useMemo(
+    () => (Array.isArray(examBank) ? examBank : []).filter((e) => e.ownerUsername === currentUserKey),
+    [examBank, currentUserKey],
+  );
+
+  const selectedExam = allExamStats.find((e) => e.id === selectedExamId)
+    ?? myExamStats.find((e) => e.id === selectedExamId)
+    ?? null;
 
   const selectedMyCourse = allCourseStats.find((c) => c.id === selectedMyCourseId)
     ?? myCourseStats.find((c) => c.id === selectedMyCourseId)
@@ -521,14 +583,14 @@ export default function SummaryPage() {
         <button
           type="button"
           className={`summary-tab-btn${summaryTab === "org" ? " active" : ""}`}
-          onClick={() => { setSummaryTab("org"); setSelectedMyCourseId(""); setCourseSearch(""); }}
+          onClick={() => { setSummaryTab("org"); setSelectedMyCourseId(""); setCourseSearch(""); setSelectedExamId(""); setExamSearch(""); }}
         >
           ภาพรวมองค์กร
         </button>
         <button
           type="button"
           className={`summary-tab-btn${summaryTab === "my" ? " active" : ""}`}
-          onClick={() => { setSummaryTab("my"); setSelectedMyCourseId(""); setCourseSearch(""); }}
+          onClick={() => { setSummaryTab("my"); setSelectedMyCourseId(""); setCourseSearch(""); setSelectedExamId(""); setExamSearch(""); }}
         >
           คอร์สของฉัน
           {myCourses.length > 0 && <span className="summary-tab-badge">{myCourses.length}</span>}
@@ -536,14 +598,154 @@ export default function SummaryPage() {
         <button
           type="button"
           className={`summary-tab-btn${summaryTab === "all" ? " active" : ""}`}
-          onClick={() => { setSummaryTab("all"); setSelectedMyCourseId(""); setCourseSearch(""); }}
+          onClick={() => { setSummaryTab("all"); setSelectedMyCourseId(""); setCourseSearch(""); setSelectedExamId(""); setExamSearch(""); }}
         >
           คอร์สทั้งหมด
           {safeExamples.length > 0 && <span className="summary-tab-badge">{safeExamples.length}</span>}
         </button>
+        <button
+          type="button"
+          className={`summary-tab-btn${summaryTab === "myExam" ? " active" : ""}`}
+          onClick={() => { setSummaryTab("myExam"); setSelectedMyCourseId(""); setCourseSearch(""); setSelectedExamId(""); setExamSearch(""); }}
+        >
+          ข้อสอบของฉัน
+          {myExams.length > 0 && <span className="summary-tab-badge">{myExams.length}</span>}
+        </button>
+        <button
+          type="button"
+          className={`summary-tab-btn${summaryTab === "allExam" ? " active" : ""}`}
+          onClick={() => { setSummaryTab("allExam"); setSelectedMyCourseId(""); setCourseSearch(""); setSelectedExamId(""); setExamSearch(""); }}
+        >
+          ข้อสอบทั้งหมด
+          {(Array.isArray(examBank) ? examBank.length : 0) > 0 && <span className="summary-tab-badge">{examBank.length}</span>}
+        </button>
       </div>
 
-      {summaryTab === "org" ? (
+      {(summaryTab === "myExam" || summaryTab === "allExam") ? (
+      /* ── "ข้อสอบของฉัน" or "ข้อสอบทั้งหมด" tab ─────────────────────── */
+      <div className="my-courses-tab">
+        {(() => {
+          const examList = summaryTab === "myExam" ? myExamStats : filteredAllExamStats;
+          const emptyLabel = summaryTab === "myExam"
+            ? "คุณยังไม่มีข้อสอบที่สร้าง"
+            : examSearch.trim() ? "ไม่พบข้อสอบที่ค้นหา" : "ยังไม่มีข้อสอบในระบบ";
+
+          return (
+            <>
+              {summaryTab === "allExam" && (
+                <div className="my-course-search-bar">
+                  <input
+                    type="text"
+                    className="my-course-search-input"
+                    placeholder="ค้นหาข้อสอบ..."
+                    value={examSearch}
+                    onChange={(e) => { setExamSearch(e.target.value); setSelectedExamId(""); }}
+                  />
+                  {examSearch && (
+                    <span className="my-course-search-count">{filteredAllExamStats.length} / {allExamStats.length} ข้อสอบ</span>
+                  )}
+                </div>
+              )}
+
+              {examList.length === 0 ? (
+                <p className="chart-card-sub" style={{ textAlign: "center", padding: 32 }}>
+                  {emptyLabel}
+                </p>
+              ) : (
+                <div className="my-course-cards">
+                  {examList.map((exam) => {
+                    const isMine = summaryTab === "allExam" && myExams.some((e) => e.id === exam.id);
+                    return (
+                      <div
+                        key={exam.id}
+                        className={`my-course-card${selectedExamId === exam.id ? " my-course-card-active" : ""}`}
+                        onClick={() => {
+                          setSelectedExamId((prev) => {
+                            const next = prev === exam.id ? "" : exam.id;
+                            if (next) setTimeout(() => examDetailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+                            return next;
+                          });
+                        }}
+                      >
+                        <div className="my-course-card-title-row">
+                          <h4 className="my-course-card-title">{exam.title}</h4>
+                          {isMine && <span className="my-course-mine-badge">ของฉัน</span>}
+                        </div>
+                        <div className="my-course-card-stats">
+                          <div className="my-course-stat">
+                            <span className="my-course-stat-value">{exam.testTakers}</span>
+                            <span className="my-course-stat-label">ผู้สอบ</span>
+                          </div>
+                          <div className="my-course-stat">
+                            <span className="my-course-stat-value" style={{ color: "#2f66da" }}>{exam.attempts}</span>
+                            <span className="my-course-stat-label">ครั้งที่สอบ</span>
+                          </div>
+                          <div className="my-course-stat">
+                            <span className="my-course-stat-value" style={{ color: "#f59e0b" }}>{exam.avgScore}</span>
+                            <span className="my-course-stat-label">คะแนนเฉลี่ย</span>
+                          </div>
+                          <div className="my-course-stat">
+                            <span className="my-course-stat-value" style={{ color: exam.passRate >= 60 ? "#1f8d4e" : "#ef4444" }}>
+                              {exam.passRate}%
+                            </span>
+                            <span className="my-course-stat-label">อัตราผ่าน</span>
+                          </div>
+                        </div>
+                        <div className="my-course-completion-bar">
+                          <div className="my-course-completion-fill" style={{ width: `${Math.min(exam.passRate, 100)}%`, background: exam.passRate >= 60 ? "#1f8d4e" : "#ef4444" }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* ── Detail section when an exam is selected ── */}
+              {selectedExam && examDetail && (
+                <>
+                  <div ref={examDetailRef} className="summary-section-head" style={{ marginTop: 28 }}>
+                    <span>รายละเอียด — {selectedExam.title}</span>
+                  </div>
+
+                  <div className="summary-chart-grid">
+                    <div className="chart-card chart-card-accent-yellow">
+                      <h3 className="chart-card-title">คะแนนเฉลี่ยแยก Domain</h3>
+                      <p className="chart-card-sub">อัตราการตอบถูกเฉลี่ยในแต่ละ Domain</p>
+                      <DomainScoreChart data={examDetail.domainAvgScores} />
+                    </div>
+
+                    <div className="chart-card chart-card-accent-blue">
+                      <h3 className="chart-card-title">
+                        คำถามที่ตอบผิดบ่อยสุด
+                        {(examDetail.hardQuestions?.length ?? 0) > 0 && (
+                          <span className="unanswered-count-badge">{examDetail.hardQuestions.length}</span>
+                        )}
+                      </h3>
+                      <p className="chart-card-sub">คำถามที่มีอัตราตอบถูกต่ำสุด (ตอบ ≥ 2 ครั้ง)</p>
+                      {(!examDetail.hardQuestions || examDetail.hardQuestions.length === 0) ? (
+                        <p className="chart-empty">ยังไม่มีข้อมูลเพียงพอ</p>
+                      ) : (
+                        <div className="unanswered-qna-list">
+                          {examDetail.hardQuestions.map((q) => (
+                            <div key={q.questionId} className="unanswered-qna-item">
+                              <div className="unanswered-qna-left">
+                                {q.domain && <span className="unanswered-qna-subtopic">{q.domain}</span>}
+                                <p className="unanswered-qna-text">{q.question}</p>
+                                <span className="unanswered-qna-meta">ตอบถูก {q.correctRate}% · ตอบแล้ว {q.attempts} ครั้ง</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </>
+          );
+        })()}
+      </div>
+      ) : summaryTab === "org" ? (
       <>
       <div className="metric-grid">
         <article className="metric-card"><h3>บทเรียนทั้งหมด</h3><p>{lessonCount}</p></article>

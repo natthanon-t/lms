@@ -101,6 +101,8 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	adminExams.Get("/analytics/courses/:courseId/learners", auth.RequirePermissions(auth.PermissionSystemReport), handler.GetCourseLearners)
 	adminExams.Get("/analytics/course-stats", auth.RequirePermissions(auth.PermissionContentManage), handler.GetCourseStats)
 	adminExams.Get("/analytics/courses/:courseId/detail", auth.RequirePermissions(auth.PermissionContentManage), handler.GetCourseDetailAnalytics)
+	adminExams.Get("/analytics/exam-stats", auth.RequirePermissions(auth.PermissionExamManage), handler.GetExamStats)
+	adminExams.Get("/analytics/exams/:examId/detail", auth.RequirePermissions(auth.PermissionExamManage), handler.GetExamDetailAnalytics)
 
 	courses := protected.Group("/courses")
 	courses.Post("", auth.RequirePermissions(auth.PermissionContentManage), handler.UpsertCourse)

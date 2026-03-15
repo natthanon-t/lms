@@ -49,6 +49,43 @@ func (h *Handler) GetCourseStats(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"courses": stats})
 }
 
+// GetExamStats returns per-exam stats.
+// ?scope=my → only exams owned by the current user; otherwise all exams.
+func (h *Handler) GetExamStats(c *fiber.Ctx) error {
+	owner := ""
+	if c.Query("scope") == "my" {
+		username, err := auth.CurrentUsername(c)
+		if err != nil {
+			return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
+		}
+		owner = username
+	}
+	stats, err := data.GetAllExamStats(owner)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot get exam stats")
+	}
+	if stats == nil {
+		stats = []data.ExamInstructorStats{}
+	}
+	return c.JSON(fiber.Map{"exams": stats})
+}
+
+// GetExamDetailAnalytics returns domain scores and hard questions for an exam.
+func (h *Handler) GetExamDetailAnalytics(c *fiber.Ctx) error {
+	examID := strings.TrimSpace(c.Params("examId"))
+	if examID == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "exam id is required")
+	}
+	detail, err := data.GetExamDetailAnalytics(examID)
+	if err != nil {
+		return c.JSON(data.ExamDetailAnalytics{
+			DomainAvgScores: []data.DomainAvgScore{},
+			HardQuestions:   []data.HardExamQuestion{},
+		})
+	}
+	return c.JSON(detail)
+}
+
 // GetCourseDetailAnalytics returns subtopic time, hard questions, and unanswered Q&A for a course.
 func (h *Handler) GetCourseDetailAnalytics(c *fiber.Ctx) error {
 	courseID := strings.TrimSpace(c.Params("courseId"))
