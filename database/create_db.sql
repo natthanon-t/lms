@@ -15,6 +15,7 @@ DROP TABLE IF EXISTS exams CASCADE;
 
 DROP TABLE IF EXISTS qna_replies CASCADE;
 DROP TABLE IF EXISTS qna_questions CASCADE;
+DROP TABLE IF EXISTS learning_subtopic_time CASCADE;
 DROP TABLE IF EXISTS learning_subtopic_answers CASCADE;
 DROP TABLE IF EXISTS learning_subtopic_progress CASCADE;
 DROP TABLE IF EXISTS user_course_enrollments CASCADE;
@@ -233,7 +234,6 @@ CREATE TABLE user_course_enrollments (
     FOREIGN KEY (course_id) REFERENCES courses(id)    ON DELETE CASCADE
 );
 
-CREATE INDEX ix_enrollments_user       ON user_course_enrollments(username);
 CREATE INDEX ix_enrollments_course     ON user_course_enrollments(course_id);
 CREATE INDEX ix_enrollments_incomplete ON user_course_enrollments(username)    -- 🟡 partial index: in-progress courses
   WHERE completed_at IS NULL;
@@ -251,7 +251,6 @@ CREATE TABLE learning_subtopic_progress (
     FOREIGN KEY (course_id) REFERENCES courses(id)    ON DELETE CASCADE
 );
 
-CREATE INDEX ix_subtopic_progress_user        ON learning_subtopic_progress(username);
 CREATE INDEX ix_subtopic_progress_user_course ON learning_subtopic_progress(username, course_id);  -- 🔴 composite: progress ใน course
 
 -- คำตอบของผู้ใช้ต่อคำถามในแต่ละ subtopic
@@ -270,7 +269,7 @@ CREATE TABLE learning_subtopic_answers (
     FOREIGN KEY (course_id) REFERENCES courses(id)    ON DELETE CASCADE
 );
 
-CREATE INDEX ix_subtopic_answers_user ON learning_subtopic_answers(username);
+CREATE INDEX ix_subtopic_answers_course ON learning_subtopic_answers(course_id);  -- 🟡 analytics: GROUP BY course_id
 
 -- เวลา (วินาที) ที่ผู้ใช้อยู่ในแต่ละ subtopic
 CREATE TABLE learning_subtopic_time (
@@ -286,7 +285,7 @@ CREATE TABLE learning_subtopic_time (
     FOREIGN KEY (course_id) REFERENCES courses(id)    ON DELETE CASCADE
 );
 
-CREATE INDEX ix_subtopic_time_user ON learning_subtopic_time(username);
+CREATE INDEX ix_subtopic_time_course ON learning_subtopic_time(course_id);  -- 🟡 analytics: WHERE course_id = ? GROUP BY subtopic_id
 
 -- ==========================================================
 -- Q&A (ถามตอบ)
@@ -349,7 +348,8 @@ CREATE TABLE exams (
     FOREIGN KEY (owner_username) REFERENCES users(username) ON DELETE SET NULL
 );
 
-CREATE INDEX ix_exams_owner ON exams(owner_username);
+CREATE INDEX ix_exams_owner  ON exams(owner_username);
+CREATE INDEX ix_exams_status ON exams(status) WHERE status = 'active';  -- 🟡 partial index: browse active exams
 
 -- สัดส่วนของแต่ละ domain ที่จะสุ่มออกข้อสอบ
 CREATE TABLE exam_domain_percentages (
