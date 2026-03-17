@@ -84,7 +84,7 @@ export default function UserManagementPage() {
     () =>
       allRows
         .filter((row) => {
-          const rolePass = roleFilter === "all" || getRoleKey(row.role) === roleFilter;
+          const rolePass = roleFilter === "all" || row.role === roleFilter;
           const statusPass = statusFilter === "all" || row.status === statusFilter;
           const searchPass =
             !keyword ||

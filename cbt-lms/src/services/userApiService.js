@@ -4,8 +4,20 @@ const authRequest = (path, options = {}) =>
   request(path, { ...options, headers: { ...authHeaders(), ...(options.headers ?? {}) } });
 
 export const listUsersAdmin = async () => {
-  const payload = await authRequest("/api/users", { method: "GET" });
-  return Array.isArray(payload?.users) ? payload.users : [];
+  const first = await authRequest("/api/users?page=1&limit=100", { method: "GET" });
+  let all = Array.isArray(first?.users) ? first.users : [];
+  const totalPages = first?.pagination?.total_pages ?? 1;
+  if (totalPages > 1) {
+    const rest = await Promise.all(
+      Array.from({ length: totalPages - 1 }, (_, i) =>
+        authRequest(`/api/users?page=${i + 2}&limit=100`, { method: "GET" }).then(
+          (r) => (Array.isArray(r?.users) ? r.users : []),
+        ),
+      ),
+    );
+    all = [...all, ...rest.flat()];
+  }
+  return all;
 };
 
 export const createRoleAdmin = async ({ code, name }) =>
