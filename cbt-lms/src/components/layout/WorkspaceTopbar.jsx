@@ -14,7 +14,7 @@ import { normalizeExamRecord } from "../../services/examService";
 export default function WorkspaceTopbar() {
   const navigate = useNavigate();
   const { currentUser, currentUserKey } = useAuth();
-  const { examples, examBank, openContentDetail, openExam, userTotalScore } = useAppData();
+  const { examples, setExamples, examBank, setExamBank, openContentDetail, openExam, userTotalScore } = useAppData();
 
   const totalScore = userTotalScore ?? 0;
 
@@ -84,6 +84,13 @@ export default function WorkspaceTopbar() {
   const handleEnterClass = async (example) => {
     const result = openContentDetail(example);
     if (result?.blocked) return;
+    // Ensure the selected course exists in the shared examples list so
+    // ContentDetailPage can find it (search fetches all pages but the
+    // context may only hold page 1).
+    setExamples((prev) => {
+      if (prev.some((e) => e.id === example.id)) return prev;
+      return [...prev, example];
+    });
     navigate(`/content/${example.id}`);
     setShowSearchModal(false);
   };
@@ -91,6 +98,12 @@ export default function WorkspaceTopbar() {
   const handleEnterExam = async (exam) => {
     const result = await openExam(exam);
     if (result?.success) {
+      // Ensure the selected exam exists in the shared examBank list so
+      // ExamDetailPage can find it on direct navigation or refresh.
+      setExamBank((prev) => {
+        if (prev.some((e) => e.id === exam.id)) return prev;
+        return [...prev, exam];
+      });
       navigate(`/exam/${exam.id}`);
     }
     setShowSearchModal(false);

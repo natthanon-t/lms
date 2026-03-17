@@ -106,14 +106,14 @@ export default function UserManagementPage() {
 
   const handleCreateUser = async () => {
     const normalizedEmployeeCode = String(newEmployeeCode ?? "").trim().toUpperCase();
-    if (!employeeCodePattern.test(normalizedEmployeeCode)) {
+    if (normalizedEmployeeCode && !employeeCodePattern.test(normalizedEmployeeCode)) {
       setMessage("รหัสพนักงานต้องเป็นรูปแบบ 2026-XX-XXXX");
       return;
     }
     const result = await onCreateUser?.({
       name: newUserName,
       username: newUsername,
-      employeeCode: normalizedEmployeeCode,
+      employeeCode: normalizedEmployeeCode || "",
       role: newRole,
       status: newStatus,
       password: newPassword,
@@ -159,11 +159,11 @@ export default function UserManagementPage() {
 
     if (!isSelfEdit) {
       const normalizedEmployeeCode = String(editingEmployeeCode ?? "").trim().toUpperCase();
-      if (!employeeCodePattern.test(normalizedEmployeeCode)) {
+      if (normalizedEmployeeCode && !employeeCodePattern.test(normalizedEmployeeCode)) {
         setMessage("รหัสพนักงานต้องเป็นรูปแบบ 2026-XX-XXXX");
         return;
       }
-      payload.employee_code = normalizedEmployeeCode;
+      payload.employee_code = normalizedEmployeeCode || "";
     }
 
     const result = await onUpdateUserProfile?.(editingUsername, payload);
