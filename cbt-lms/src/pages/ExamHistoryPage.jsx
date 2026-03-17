@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getPageNumbers } from "../utils/pagination";
 import {
@@ -42,17 +42,29 @@ export default function ExamHistoryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [stats, setStats] = useState({ total: 0, passCount: 0, avgScore: 0 });
+  const [examTitles, setExamTitles] = useState([]);
 
-  const loadAttempts = useCallback(async (page) => {
+  // Debounce search input
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debounceRef = useRef(null);
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedSearch(search.trim()), 400);
+    return () => clearTimeout(debounceRef.current);
+  }, [search]);
+
+  const loadAttempts = useCallback(async (page, searchVal, examTitleVal) => {
     setLoading(true);
     try {
+      const params = { page, search: searchVal, examTitle: examTitleVal };
       if (mode === "management") {
-        const res = await fetchAllExamAttemptsAdminApi({ page });
+        const res = await fetchAllExamAttemptsAdminApi(params);
         setAttempts(res.attempts);
         setTotalPages(res.pagination.total_pages);
         if (res.stats) setStats(res.stats);
+        if (res.examTitles) setExamTitles(res.examTitles);
       } else {
-        const res = await fetchMyExamAttemptsApi({ page });
+        const res = await fetchMyExamAttemptsApi(params);
         setAttempts(
           res.attempts.map((attempt) => ({
             id: String(attempt.id),
@@ -69,6 +81,7 @@ export default function ExamHistoryPage() {
         );
         setTotalPages(res.pagination.total_pages);
         if (res.stats) setStats(res.stats);
+        if (res.examTitles) setExamTitles(res.examTitles);
       }
     } catch {
       setAttempts([]);
@@ -77,36 +90,16 @@ export default function ExamHistoryPage() {
     }
   }, [mode]);
 
+  // Re-fetch when filters or page change
   useEffect(() => {
     setCurrentPage(1);
-    void loadAttempts(1);
-  }, [loadAttempts]);
+    void loadAttempts(1, debouncedSearch, filterExam);
+  }, [loadAttempts, debouncedSearch, filterExam]);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
-    void loadAttempts(page);
+    void loadAttempts(page, debouncedSearch, filterExam);
   };
-
-  const examTitles = useMemo(() => {
-    const titles = [...new Set(attempts.map((a) => a.examTitle).filter(Boolean))];
-    return titles.sort();
-  }, [attempts]);
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return attempts.filter((attempt) => {
-      if (filterExam && attempt.examTitle !== filterExam) {
-        return false;
-      }
-      if (mode === "management" && q) {
-        return attempt.name?.toLowerCase().includes(q) || attempt.employeeCode?.includes(q);
-      }
-      if (mode !== "management" && q) {
-        return attempt.examTitle?.toLowerCase().includes(q);
-      }
-      return true;
-    });
-  }, [attempts, filterExam, mode, search]);
 
   const totalColumns = mode === "management" ? 9 : 7;
 
@@ -164,10 +157,10 @@ export default function ExamHistoryPage() {
           <tbody>
             {loading ? (
               <tr><td colSpan={totalColumns} style={{ textAlign: "center", color: "#6b8ab8", padding: "24px" }}>กำลังโหลด…</td></tr>
-            ) : filtered.length === 0 ? (
+            ) : attempts.length === 0 ? (
               <tr><td colSpan={totalColumns} style={{ textAlign: "center", color: "#6b8ab8", padding: "24px" }}>ไม่พบข้อมูล</td></tr>
             ) : (
-              filtered.map((row, index) => (
+              attempts.map((row, index) => (
                 <tr key={`${row.id}-${index}`}>
                   <td>{(currentPage - 1) * 20 + index + 1}</td>
                   {mode === "management" ? <td>{row.employeeCode || "—"}</td> : null}

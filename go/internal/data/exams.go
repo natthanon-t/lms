@@ -640,23 +640,44 @@ func GetMyExamAttemptDetails(username string, attemptID int64) ([]ExamAttemptAns
 	return GetExamAttemptDetails(attemptID)
 }
 
+// ExamAttemptFilter holds optional filter parameters for exam attempt queries.
+type ExamAttemptFilter struct {
+	Search    string // search by name or employee code (admin) or exam title (self)
+	ExamTitle string // exact exam title filter
+}
+
 // GetMyAllExamAttempts returns paginated exam attempts for a user across all exams, with exam title.
-func GetMyAllExamAttempts(username string, limit, offset int) ([]AdminExamAttempt, int, error) {
+func GetMyAllExamAttempts(username string, limit, offset int, f ExamAttemptFilter) ([]AdminExamAttempt, int, error) {
+	where := `WHERE ea.username = $1`
+	args := []any{username}
+	idx := 2
+	if f.Search != "" {
+		where += fmt.Sprintf(` AND e.title ILIKE $%d`, idx)
+		args = append(args, "%"+f.Search+"%")
+		idx++
+	}
+	if f.ExamTitle != "" {
+		where += fmt.Sprintf(` AND e.title = $%d`, idx)
+		args = append(args, f.ExamTitle)
+		idx++
+	}
+
 	var total int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM exam_attempts WHERE username = $1`, username).Scan(&total); err != nil {
+	if err := db.QueryRow(`SELECT COUNT(*) FROM exam_attempts ea JOIN exams e ON e.id = ea.exam_id `+where, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	rows, err := db.Query(`
+	query := fmt.Sprintf(`
 		SELECT ea.id, ea.exam_id, ea.correct_count, ea.total_questions, ea.score_percent::float8,
 		       ea.started_at, ea.finished_at, e.title
 		FROM exam_attempts ea
 		JOIN exams e ON e.id = ea.exam_id
-		WHERE ea.username = $1
+		%s
 		ORDER BY ea.started_at DESC
-		LIMIT $2 OFFSET $3`,
-		username, limit, offset,
-	)
+		LIMIT $%d OFFSET $%d`, where, idx, idx+1)
+	args = append(args, limit, offset)
+
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -769,13 +790,28 @@ func GradeAndSaveExamAttempt(examID, username string, rawAnswers []struct{ Quest
 }
 
 // GetAllExamAttemptsAdmin returns paginated exam attempts across all users for admin view.
-func GetAllExamAttemptsAdmin(limit, offset int) ([]AdminExamAttempt, int, error) {
+func GetAllExamAttemptsAdmin(limit, offset int, f ExamAttemptFilter) ([]AdminExamAttempt, int, error) {
+	where := `WHERE 1=1`
+	args := []any{}
+	idx := 1
+	if f.Search != "" {
+		where += fmt.Sprintf(` AND (u.name ILIKE $%d OR u.employee_code ILIKE $%d)`, idx, idx)
+		args = append(args, "%"+f.Search+"%")
+		idx++
+	}
+	if f.ExamTitle != "" {
+		where += fmt.Sprintf(` AND e.title = $%d`, idx)
+		args = append(args, f.ExamTitle)
+		idx++
+	}
+
 	var total int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM exam_attempts`).Scan(&total); err != nil {
+	countQuery := `SELECT COUNT(*) FROM exam_attempts ea JOIN users u ON u.username = ea.username JOIN exams e ON e.id = ea.exam_id ` + where
+	if err := db.QueryRow(countQuery, args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	rows, err := db.Query(`
+	query := fmt.Sprintf(`
 		SELECT ea.id, ea.username, u.name, u.employee_code,
 		       ea.exam_id, e.title,
 		       ea.correct_count, ea.total_questions, ea.score_percent::float8,
@@ -783,8 +819,12 @@ func GetAllExamAttemptsAdmin(limit, offset int) ([]AdminExamAttempt, int, error)
 		FROM exam_attempts ea
 		JOIN users u ON u.username = ea.username
 		JOIN exams e ON e.id = ea.exam_id
+		%s
 		ORDER BY COALESCE(ea.finished_at, ea.started_at) DESC
-		LIMIT $1 OFFSET $2`, limit, offset)
+		LIMIT $%d OFFSET $%d`, where, idx, idx+1)
+	args = append(args, limit, offset)
+
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -810,27 +850,79 @@ func GetAllExamAttemptsAdmin(limit, offset int) ([]AdminExamAttempt, int, error)
 	return attempts, total, rows.Err()
 }
 
-// GetExamAttemptStatsAdmin returns aggregate statistics for all exam attempts.
-func GetExamAttemptStatsAdmin() (ExamAttemptAggregateStats, error) {
+// GetExamAttemptStatsAdmin returns aggregate statistics for all exam attempts (with optional filters).
+func GetExamAttemptStatsAdmin(f ExamAttemptFilter) (ExamAttemptAggregateStats, error) {
+	where := `WHERE 1=1`
+	args := []any{}
+	idx := 1
+	if f.Search != "" {
+		where += fmt.Sprintf(` AND (u.name ILIKE $%d OR u.employee_code ILIKE $%d)`, idx, idx)
+		args = append(args, "%"+f.Search+"%")
+		idx++
+	}
+	if f.ExamTitle != "" {
+		where += fmt.Sprintf(` AND e.title = $%d`, idx)
+		args = append(args, f.ExamTitle)
+		idx++
+	}
 	var s ExamAttemptAggregateStats
 	err := db.QueryRow(`
 		SELECT COUNT(*),
-		       COUNT(*) FILTER (WHERE score_percent >= 70),
-		       COALESCE(AVG(score_percent), 0)::float8
-		FROM exam_attempts`).Scan(&s.Total, &s.PassCount, &s.AvgScore)
+		       COUNT(*) FILTER (WHERE ea.score_percent >= 70),
+		       COALESCE(AVG(ea.score_percent), 0)::float8
+		FROM exam_attempts ea
+		JOIN users u ON u.username = ea.username
+		JOIN exams e ON e.id = ea.exam_id `+where, args...).Scan(&s.Total, &s.PassCount, &s.AvgScore)
 	return s, err
 }
 
-// GetMyExamAttemptStats returns aggregate statistics for a specific user's exam attempts.
-func GetMyExamAttemptStats(username string) (ExamAttemptAggregateStats, error) {
+// GetMyExamAttemptStats returns aggregate statistics for a specific user's exam attempts (with optional filters).
+func GetMyExamAttemptStats(username string, f ExamAttemptFilter) (ExamAttemptAggregateStats, error) {
+	where := `WHERE ea.username = $1`
+	args := []any{username}
+	idx := 2
+	if f.Search != "" {
+		where += fmt.Sprintf(` AND e.title ILIKE $%d`, idx)
+		args = append(args, "%"+f.Search+"%")
+		idx++
+	}
+	if f.ExamTitle != "" {
+		where += fmt.Sprintf(` AND e.title = $%d`, idx)
+		args = append(args, f.ExamTitle)
+		idx++
+	}
 	var s ExamAttemptAggregateStats
 	err := db.QueryRow(`
 		SELECT COUNT(*),
-		       COUNT(*) FILTER (WHERE score_percent >= 70),
-		       COALESCE(AVG(score_percent), 0)::float8
-		FROM exam_attempts
-		WHERE username = $1`, username).Scan(&s.Total, &s.PassCount, &s.AvgScore)
+		       COUNT(*) FILTER (WHERE ea.score_percent >= 70),
+		       COALESCE(AVG(ea.score_percent), 0)::float8
+		FROM exam_attempts ea
+		JOIN exams e ON e.id = ea.exam_id `+where, args...).Scan(&s.Total, &s.PassCount, &s.AvgScore)
 	return s, err
+}
+
+// GetExamAttemptDistinctTitles returns all distinct exam titles that have attempts (optionally for a specific user).
+func GetExamAttemptDistinctTitles(username string) ([]string, error) {
+	query := `SELECT DISTINCT e.title FROM exam_attempts ea JOIN exams e ON e.id = ea.exam_id`
+	args := []any{}
+	if username != "" {
+		query += ` WHERE ea.username = $1`
+		args = append(args, username)
+	}
+	query += ` ORDER BY e.title`
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var titles []string
+	for rows.Next() {
+		var t string
+		if err := rows.Scan(&t); err == nil {
+			titles = append(titles, t)
+		}
+	}
+	return titles, rows.Err()
 }
 
 // ── Seeding ───────────────────────────────────────────────────────────────────

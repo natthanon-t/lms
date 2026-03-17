@@ -258,15 +258,21 @@ func (h *Handler) GetMyExamAttempts(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
 	}
 	limit, offset, page := parsePage(c)
-	attempts, total, err := data.GetMyAllExamAttempts(username, limit, offset)
+	f := data.ExamAttemptFilter{
+		Search:    strings.TrimSpace(c.Query("search")),
+		ExamTitle: strings.TrimSpace(c.Query("exam_title")),
+	}
+	attempts, total, err := data.GetMyAllExamAttempts(username, limit, offset, f)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot get attempts")
 	}
-	stats, _ := data.GetMyExamAttemptStats(username)
+	stats, _ := data.GetMyExamAttemptStats(username, f)
+	titles, _ := data.GetExamAttemptDistinctTitles(username)
 	return c.JSON(fiber.Map{
 		"attempts":   attempts,
 		"pagination": paginationMeta(total, limit, page),
 		"stats":      stats,
+		"examTitles": titles,
 	})
 }
 
@@ -292,15 +298,21 @@ func (h *Handler) GetMyExamAttemptDetails(c *fiber.Ctx) error {
 
 func (h *Handler) GetAllExamAttemptsAdmin(c *fiber.Ctx) error {
 	limit, offset, page := parsePage(c)
-	attempts, total, err := data.GetAllExamAttemptsAdmin(limit, offset)
+	f := data.ExamAttemptFilter{
+		Search:    strings.TrimSpace(c.Query("search")),
+		ExamTitle: strings.TrimSpace(c.Query("exam_title")),
+	}
+	attempts, total, err := data.GetAllExamAttemptsAdmin(limit, offset, f)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot get attempts")
 	}
-	stats, _ := data.GetExamAttemptStatsAdmin()
+	stats, _ := data.GetExamAttemptStatsAdmin(f)
+	titles, _ := data.GetExamAttemptDistinctTitles("")
 	return c.JSON(fiber.Map{
 		"attempts":   attempts,
 		"pagination": paginationMeta(total, limit, page),
 		"stats":      stats,
+		"examTitles": titles,
 	})
 }
 
