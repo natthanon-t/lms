@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { fetchMyExamAttemptDetailsApi } from "../services/examApiService";
+import { fetchMyExamAttemptDetailsApi, fetchExamAttemptDetailsAdminApi } from "../services/examApiService";
+import { useAuth } from "../contexts/AuthContext";
 
 const toDomainAnchorId = (domain) => `domain-${(domain || "-").replace(/\s+/g, "-")}`;
 
@@ -24,6 +25,7 @@ export default function ExamResultPage() {
   const { examId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { canViewAllExamHistory } = useAuth();
   const result = location.state?.result;
   const examTitle = location.state?.examTitle ?? "ข้อสอบ";
 
@@ -35,7 +37,10 @@ export default function ExamResultPage() {
     if (!attemptId) return;
     let mounted = true;
     setLoadingDetails(true);
-    fetchMyExamAttemptDetailsApi(attemptId)
+    const fetchDetails = canViewAllExamHistory
+      ? fetchExamAttemptDetailsAdminApi(attemptId)
+      : fetchMyExamAttemptDetailsApi(attemptId);
+    fetchDetails
       .then((rawDetails) => {
         if (mounted && rawDetails.length > 0) {
           setDetails(normalizeBackendDetails(rawDetails));

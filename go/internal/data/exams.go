@@ -643,7 +643,7 @@ func GetMyExamAttemptDetails(username string, attemptID int64) ([]ExamAttemptAns
 // GetMyAllExamAttempts returns all exam attempts for a user across all exams, with exam title.
 func GetMyAllExamAttempts(username string) ([]AdminExamAttempt, error) {
 	rows, err := db.Query(`
-		SELECT ea.id, ea.correct_count, ea.total_questions, ea.score_percent::float8,
+		SELECT ea.id, ea.exam_id, ea.correct_count, ea.total_questions, ea.score_percent::float8,
 		       ea.started_at, ea.finished_at, e.title
 		FROM exam_attempts ea
 		JOIN exams e ON e.id = ea.exam_id
@@ -661,7 +661,7 @@ func GetMyAllExamAttempts(username string) ([]AdminExamAttempt, error) {
 		var a AdminExamAttempt
 		var finishedAt sql.NullTime
 		if err := rows.Scan(
-			&a.ID, &a.CorrectCount, &a.TotalQuestions, &a.ScorePercent,
+			&a.ID, &a.ExamID, &a.CorrectCount, &a.TotalQuestions, &a.ScorePercent,
 			&a.StartedAt, &finishedAt, &a.ExamTitle,
 		); err != nil {
 			continue
