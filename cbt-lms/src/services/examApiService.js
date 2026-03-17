@@ -108,11 +108,15 @@ export const saveExamAttemptApi = async (examId, answers) =>
     body: JSON.stringify({ answers }),
   });
 
-export const fetchMyExamAttemptsApi = async () => {
-  const payload = await request("/api/exams/me/attempts", {
+export const fetchMyExamAttemptsApi = async ({ page = 1, limit = 20 } = {}) => {
+  const payload = await request(`/api/exams/me/attempts?page=${page}&limit=${limit}`, {
     headers: authHeaders(),
   });
-  return Array.isArray(payload?.attempts) ? payload.attempts : [];
+  return {
+    attempts: Array.isArray(payload?.attempts) ? payload.attempts : [],
+    pagination: payload?.pagination ?? { total: 0, page, limit, total_pages: 1 },
+    stats: payload?.stats ?? null,
+  };
 };
 
 export const fetchMyExamAttemptDetailsApi = async (attemptId) => {
@@ -129,11 +133,15 @@ export const fetchExamAttemptsApi = async (examId) => {
   return (Array.isArray(payload?.attempts) ? payload.attempts : []).map(normalizeAttempt);
 };
 
-export const fetchAllExamAttemptsAdminApi = async () => {
-  const payload = await request("/api/admin/exam-attempts", {
+export const fetchAllExamAttemptsAdminApi = async ({ page = 1, limit = 20 } = {}) => {
+  const payload = await request(`/api/admin/exam-attempts?page=${page}&limit=${limit}`, {
     headers: authHeaders(),
   });
-  return Array.isArray(payload?.attempts) ? payload.attempts : [];
+  return {
+    attempts: Array.isArray(payload?.attempts) ? payload.attempts : [],
+    pagination: payload?.pagination ?? { total: 0, page, limit, total_pages: 1 },
+    stats: payload?.stats ?? null,
+  };
 };
 
 export const fetchExamAttemptDetailsAdminApi = async (attemptId) => {

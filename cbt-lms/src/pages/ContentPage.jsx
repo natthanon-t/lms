@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { getPageNumbers } from "../utils/pagination";
 import StatusSelect from "../components/StatusSelect";
 import { STATUS_OPTIONS, isItemOwner, canViewItemByStatus } from "../services/accessControlService";
 import { useAuth } from "../contexts/AuthContext";
@@ -117,16 +118,20 @@ export default function ContentPage() {
           <button type="button" disabled={currentPage <= 1} onClick={() => handlePageChange(currentPage - 1)}>
             ← ก่อนหน้า
           </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <button
-              key={p}
-              type="button"
-              className={p === currentPage ? "active" : ""}
-              onClick={() => handlePageChange(p)}
-            >
-              {p}
-            </button>
-          ))}
+          {getPageNumbers(currentPage, totalPages).map((p, i) =>
+            p === "…" ? (
+              <span key={`ellipsis-${i}`} className="pagination-ellipsis">…</span>
+            ) : (
+              <button
+                key={p}
+                type="button"
+                className={p === currentPage ? "active" : ""}
+                onClick={() => handlePageChange(p)}
+              >
+                {p}
+              </button>
+            )
+          )}
           <button type="button" disabled={currentPage >= totalPages} onClick={() => handlePageChange(currentPage + 1)}>
             ถัดไป →
           </button>

@@ -257,11 +257,17 @@ func (h *Handler) GetMyExamAttempts(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
 	}
-	attempts, err := data.GetMyAllExamAttempts(username)
+	limit, offset, page := parsePage(c)
+	attempts, total, err := data.GetMyAllExamAttempts(username, limit, offset)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot get attempts")
 	}
-	return c.JSON(fiber.Map{"attempts": attempts})
+	stats, _ := data.GetMyExamAttemptStats(username)
+	return c.JSON(fiber.Map{
+		"attempts":   attempts,
+		"pagination": paginationMeta(total, limit, page),
+		"stats":      stats,
+	})
 }
 
 func (h *Handler) GetMyExamAttemptDetails(c *fiber.Ctx) error {
@@ -290,7 +296,12 @@ func (h *Handler) GetAllExamAttemptsAdmin(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot get attempts")
 	}
-	return c.JSON(fiber.Map{"attempts": attempts, "pagination": paginationMeta(total, limit, page)})
+	stats, _ := data.GetExamAttemptStatsAdmin()
+	return c.JSON(fiber.Map{
+		"attempts":   attempts,
+		"pagination": paginationMeta(total, limit, page),
+		"stats":      stats,
+	})
 }
 
 func (h *Handler) GetExamAttemptDetailsAdmin(c *fiber.Ctx) error {

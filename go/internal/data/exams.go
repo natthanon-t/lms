@@ -640,19 +640,25 @@ func GetMyExamAttemptDetails(username string, attemptID int64) ([]ExamAttemptAns
 	return GetExamAttemptDetails(attemptID)
 }
 
-// GetMyAllExamAttempts returns all exam attempts for a user across all exams, with exam title.
-func GetMyAllExamAttempts(username string) ([]AdminExamAttempt, error) {
+// GetMyAllExamAttempts returns paginated exam attempts for a user across all exams, with exam title.
+func GetMyAllExamAttempts(username string, limit, offset int) ([]AdminExamAttempt, int, error) {
+	var total int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM exam_attempts WHERE username = $1`, username).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
 	rows, err := db.Query(`
 		SELECT ea.id, ea.exam_id, ea.correct_count, ea.total_questions, ea.score_percent::float8,
 		       ea.started_at, ea.finished_at, e.title
 		FROM exam_attempts ea
 		JOIN exams e ON e.id = ea.exam_id
 		WHERE ea.username = $1
-		ORDER BY ea.started_at DESC`,
-		username,
+		ORDER BY ea.started_at DESC
+		LIMIT $2 OFFSET $3`,
+		username, limit, offset,
 	)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -672,7 +678,7 @@ func GetMyAllExamAttempts(username string) ([]AdminExamAttempt, error) {
 		a.Username = username
 		attempts = append(attempts, a)
 	}
-	return attempts, rows.Err()
+	return attempts, total, rows.Err()
 }
 
 // GradeAndSaveExamAttempt fetches exam questions, grades the submitted answers, saves the attempt, and returns graded details.
@@ -802,6 +808,29 @@ func GetAllExamAttemptsAdmin(limit, offset int) ([]AdminExamAttempt, int, error)
 		attempts = append(attempts, a)
 	}
 	return attempts, total, rows.Err()
+}
+
+// GetExamAttemptStatsAdmin returns aggregate statistics for all exam attempts.
+func GetExamAttemptStatsAdmin() (ExamAttemptAggregateStats, error) {
+	var s ExamAttemptAggregateStats
+	err := db.QueryRow(`
+		SELECT COUNT(*),
+		       COUNT(*) FILTER (WHERE score_percent >= 70),
+		       COALESCE(AVG(score_percent), 0)::float8
+		FROM exam_attempts`).Scan(&s.Total, &s.PassCount, &s.AvgScore)
+	return s, err
+}
+
+// GetMyExamAttemptStats returns aggregate statistics for a specific user's exam attempts.
+func GetMyExamAttemptStats(username string) (ExamAttemptAggregateStats, error) {
+	var s ExamAttemptAggregateStats
+	err := db.QueryRow(`
+		SELECT COUNT(*),
+		       COUNT(*) FILTER (WHERE score_percent >= 70),
+		       COALESCE(AVG(score_percent), 0)::float8
+		FROM exam_attempts
+		WHERE username = $1`, username).Scan(&s.Total, &s.PassCount, &s.AvgScore)
+	return s, err
 }
 
 // ── Seeding ───────────────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getPageNumbers } from "../utils/pagination";
 import {
   fetchAllExamAttemptsAdminApi,
   fetchMyExamAttemptsApi,
@@ -38,24 +39,22 @@ export default function ExamHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterExam, setFilterExam] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [stats, setStats] = useState({ total: 0, passCount: 0, avgScore: 0 });
 
-  useEffect(() => {
-    let mounted = true;
+  const loadAttempts = useCallback(async (page) => {
     setLoading(true);
-
-    const loadAttempts = async () => {
+    try {
       if (mode === "management") {
-        const data = await fetchAllExamAttemptsAdminApi();
-        if (mounted) {
-          setAttempts(data);
-        }
-        return;
-      }
-
-      const data = await fetchMyExamAttemptsApi();
-      if (mounted) {
+        const res = await fetchAllExamAttemptsAdminApi({ page });
+        setAttempts(res.attempts);
+        setTotalPages(res.pagination.total_pages);
+        if (res.stats) setStats(res.stats);
+      } else {
+        const res = await fetchMyExamAttemptsApi({ page });
         setAttempts(
-          data.map((attempt) => ({
+          res.attempts.map((attempt) => ({
             id: String(attempt.id),
             examId: attempt.examId ?? "",
             examTitle: attempt.examTitle ?? attempt.examId ?? "—",
@@ -68,25 +67,25 @@ export default function ExamHistoryPage() {
             finishedAt: attempt.finishedAt,
           }))
         );
+        setTotalPages(res.pagination.total_pages);
+        if (res.stats) setStats(res.stats);
       }
-    };
-
-    void loadAttempts()
-      .catch(() => {
-        if (mounted) {
-          setAttempts([]);
-        }
-      })
-      .finally(() => {
-        if (mounted) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      mounted = false;
-    };
+    } catch {
+      setAttempts([]);
+    } finally {
+      setLoading(false);
+    }
   }, [mode]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    void loadAttempts(1);
+  }, [loadAttempts]);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    void loadAttempts(page);
+  };
 
   const examTitles = useMemo(() => {
     const titles = [...new Set(attempts.map((a) => a.examTitle).filter(Boolean))];
@@ -109,10 +108,6 @@ export default function ExamHistoryPage() {
     });
   }, [attempts, filterExam, mode, search]);
 
-  const passCount = filtered.filter((attempt) => attempt.scorePercent >= PASS_THRESHOLD).length;
-  const avgScore = filtered.length
-    ? Math.round(filtered.reduce((sum, attempt) => sum + attempt.scorePercent, 0) / filtered.length)
-    : 0;
   const totalColumns = mode === "management" ? 9 : 7;
 
   return (
@@ -125,10 +120,10 @@ export default function ExamHistoryPage() {
       </header>
 
       <div className="metric-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
-        <article className="metric-card"><h3>รายการทั้งหมด</h3><p>{filtered.length}</p></article>
-        <article className="metric-card"><h3>ผ่านการสอบ</h3><p style={{ color: "#166534" }}>{passCount}</p></article>
-        <article className="metric-card"><h3>ไม่ผ่าน</h3><p style={{ color: "#b91c1c" }}>{filtered.length - passCount}</p></article>
-        <article className="metric-card"><h3>คะแนนเฉลี่ย</h3><p>{avgScore}%</p></article>
+        <article className="metric-card"><h3>รายการทั้งหมด</h3><p>{stats.total}</p></article>
+        <article className="metric-card"><h3>ผ่านการสอบ</h3><p style={{ color: "#166534" }}>{stats.passCount}</p></article>
+        <article className="metric-card"><h3>ไม่ผ่าน</h3><p style={{ color: "#b91c1c" }}>{stats.total - stats.passCount}</p></article>
+        <article className="metric-card"><h3>คะแนนเฉลี่ย</h3><p>{Math.round(stats.avgScore)}%</p></article>
       </div>
 
       <div className="exam-history-filters">
@@ -174,7 +169,7 @@ export default function ExamHistoryPage() {
             ) : (
               filtered.map((row, index) => (
                 <tr key={`${row.id}-${index}`}>
-                  <td>{index + 1}</td>
+                  <td>{(currentPage - 1) * 20 + index + 1}</td>
                   {mode === "management" ? <td>{row.employeeCode || "—"}</td> : null}
                   {mode === "management" ? <td>{row.name}</td> : null}
                   <td>{row.examTitle}</td>
@@ -218,6 +213,30 @@ export default function ExamHistoryPage() {
         </table>
       </div>
 
+      {totalPages > 1 && (
+        <nav className="pagination-bar" aria-label="Exam history pagination">
+          <button type="button" disabled={currentPage <= 1} onClick={() => handlePageChange(currentPage - 1)}>
+            ← ก่อนหน้า
+          </button>
+          {getPageNumbers(currentPage, totalPages).map((p, i) =>
+            p === "…" ? (
+              <span key={`ellipsis-${i}`} className="pagination-ellipsis">…</span>
+            ) : (
+              <button
+                key={p}
+                type="button"
+                className={p === currentPage ? "active" : ""}
+                onClick={() => handlePageChange(p)}
+              >
+                {p}
+              </button>
+            )
+          )}
+          <button type="button" disabled={currentPage >= totalPages} onClick={() => handlePageChange(currentPage + 1)}>
+            ถัดไป →
+          </button>
+        </nav>
+      )}
     </section>
   );
 }

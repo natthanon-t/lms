@@ -139,6 +139,13 @@ type AdminExamAttempt struct {
 	FinishedAt     *time.Time `json:"finishedAt"`
 }
 
+// ExamAttemptAggregateStats holds summary statistics computed across all matching attempts.
+type ExamAttemptAggregateStats struct {
+	Total     int     `json:"total"`
+	PassCount int     `json:"passCount"`
+	AvgScore  float64 `json:"avgScore"`
+}
+
 // ExamAnswerInput is used when saving attempt answers
 type ExamAnswerInput struct {
 	QuestionID string

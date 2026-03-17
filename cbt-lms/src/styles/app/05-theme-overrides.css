@@ -1366,3 +1366,14 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+.pagination-ellipsis {
+  min-width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted, #888);
+  font-weight: 600;
+  user-select: none;
+}

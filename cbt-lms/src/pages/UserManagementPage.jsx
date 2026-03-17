@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { getPageNumbers } from "../utils/pagination";
 import { useEscapeKey } from "../hooks/useEscapeKey";
 import { getInitials } from "../utils/avatar";
 import { useAuth } from "../contexts/AuthContext";
@@ -71,6 +72,9 @@ export default function UserManagementPage() {
     [roleOptions],
   );
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 20;
+
   const keyword = useMemo(() => searchTerm.trim().toLowerCase(), [searchTerm]);
   const nonAdminRoles = useMemo(
     () => roleOptions.filter((r) => r.code !== "admin"),
@@ -98,6 +102,12 @@ export default function UserManagementPage() {
         }),
     [allRows, keyword, roleFilter, statusFilter],
   );
+
+  // Reset page when filters change
+  useEffect(() => { setCurrentPage(1); }, [keyword, roleFilter, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const paginatedRows = rows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const handleSaveDefaultPassword = async () => {
     const result = await onUpdateDefaultPassword?.(defaultPasswordInput);
@@ -294,8 +304,8 @@ export default function UserManagementPage() {
             </tr>
           </thead>
           <tbody>
-            {rows.length ? (
-              rows.map((row) => {
+            {paginatedRows.length ? (
+              paginatedRows.map((row) => {
                 const isAdmin = getRoleKey(row.role) === "admin";
                 const isSelf = row.username === currentUserKey;
                 const isOtherAdmin = isAdmin && !isSelf;
@@ -392,6 +402,31 @@ export default function UserManagementPage() {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <nav className="pagination-bar" aria-label="User pagination">
+          <button type="button" disabled={currentPage <= 1} onClick={() => setCurrentPage(currentPage - 1)}>
+            ← ก่อนหน้า
+          </button>
+          {getPageNumbers(currentPage, totalPages).map((p, i) =>
+            p === "…" ? (
+              <span key={`ellipsis-${i}`} className="pagination-ellipsis">…</span>
+            ) : (
+              <button
+                key={p}
+                type="button"
+                className={p === currentPage ? "active" : ""}
+                onClick={() => setCurrentPage(p)}
+              >
+                {p}
+              </button>
+            )
+          )}
+          <button type="button" disabled={currentPage >= totalPages} onClick={() => setCurrentPage(currentPage + 1)}>
+            ถัดไป →
+          </button>
+        </nav>
+      )}
 
       {/* Create User Modal */}
       {showCreateUserModal && (
