@@ -93,6 +93,30 @@ export default function ExamDetailPage() {
                 </div>
                 <p className="exam-history-score-row">
                   คะแนน: {attempt.correctCount}/{attempt.totalQuestions} ({attempt.scorePercent}%)
+                  <button
+                    type="button"
+                    className="view-answers-btn"
+                    style={{ marginLeft: 12 }}
+                    onClick={() => {
+                      const gradedDetails = (attempt.details ?? []).filter((d) => d.isCorrect !== null);
+                      navigate(`/exam/${examId}/result`, {
+                        state: {
+                          result: {
+                            attemptId: attempt.attemptId,
+                            correctCount: attempt.correctCount,
+                            totalQuestions: attempt.totalQuestions,
+                            gradedTotal: gradedDetails.length || attempt.totalQuestions,
+                            scorePercent: attempt.scorePercent,
+                            details: attempt.details ?? [],
+                            domainStats: attempt.domainStats ?? [],
+                          },
+                          examTitle: exam.title,
+                        },
+                      });
+                    }}
+                  >
+                    ดูผลสอบ
+                  </button>
                 </p>
 
                 {attempt.domainStats?.length > 0 && (

@@ -1061,6 +1061,54 @@
   font-weight: 700;
 }
 
+/* Domain section separator */
+.result-domain-separator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 12px;
+}
+
+.result-domain-separator:first-child {
+  margin-top: 0;
+}
+
+.result-domain-separator-line {
+  flex: 1;
+  height: 1px;
+  background: #c5d3ed;
+}
+
+.result-domain-separator-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #45608f;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+/* Domain badge in question card */
+.result-q-domain-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #45608f;
+  background: #e8eef9;
+  border-radius: 999px;
+  padding: 2px 9px;
+  white-space: nowrap;
+}
+
+/* Clickable domain stat items */
+.domain-result-item-clickable {
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.domain-result-item-clickable:hover {
+  background: #eef3ff;
+  box-shadow: 0 0 0 2px #c5d3ed;
+}
+
 .text-answer-wrap {
   margin: 12px 0;
 }

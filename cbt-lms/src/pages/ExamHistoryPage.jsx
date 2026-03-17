@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   fetchAllExamAttemptsAdminApi,
-  fetchExamAttemptDetailsAdminApi,
   fetchMyExamAttemptsApi,
-  fetchMyExamAttemptDetailsApi,
 } from "../services/examApiService";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -31,115 +30,18 @@ function formatDate(dateStr) {
   });
 }
 
-function AnswerModal({ attempt, fetchDetails, onClose }) {
-  const [details, setDetails] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    void fetchDetails(attempt.id)
-      .then((items) => {
-        if (mounted) {
-          setDetails(items);
-        }
-      })
-      .catch(() => {
-        if (mounted) {
-          setDetails([]);
-        }
-      })
-      .finally(() => {
-        if (mounted) {
-          setLoading(false);
-        }
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [attempt.id, fetchDetails]);
-
-  return (
-    <div className="exam-answer-overlay" onClick={onClose}>
-      <div className="exam-answer-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="exam-answer-modal-header">
-          <div>
-            <h2>{attempt.examTitle}</h2>
-            <p>
-              {attempt.name}
-              {attempt.employeeCode ? ` · ${attempt.employeeCode}` : ""}
-              {` · คะแนน ${Math.round(attempt.scorePercent)}% (${attempt.correctCount}/${attempt.totalQuestions})`}
-            </p>
-          </div>
-          <button type="button" className="exam-answer-close" onClick={onClose}>✕</button>
-        </div>
-
-        <div className="exam-answer-body">
-          {loading ? (
-            <p style={{ color: "#6b8ab8", textAlign: "center", padding: "24px" }}>กำลังโหลด…</p>
-          ) : !details || details.length === 0 ? (
-            <p style={{ color: "#6b8ab8", textAlign: "center", padding: "24px" }}>ไม่พบข้อมูลคำตอบ</p>
-          ) : (
-            <div className="exam-answer-list">
-              {details.map((item, i) => {
-                const isCorrect = item.isCorrect === true;
-                const isWrong = item.isCorrect === false;
-                return (
-                  <div key={item.questionId} className={`exam-answer-item ${isCorrect ? "answer-correct" : isWrong ? "answer-wrong" : "answer-pending"}`}>
-                    <div className="exam-answer-item-head">
-                      <span className="exam-answer-num">{i + 1}</span>
-                      <span className="exam-answer-domain">{item.domain}</span>
-                      <span className={`exam-answer-result ${isCorrect ? "result-correct" : isWrong ? "result-wrong" : "result-pending"}`}>
-                        {isCorrect ? "ถูก" : isWrong ? "ผิด" : "รอตรวจ"}
-                      </span>
-                    </div>
-                    <p className="exam-answer-question">{item.question}</p>
-                    <div className="exam-answer-choices">
-                      {item.choices?.filter(Boolean).map((choice, ci) => {
-                        const label = String.fromCharCode(65 + ci);
-                        const isSelected = item.selected === choice;
-                        const isKey = item.answerKey === choice;
-                        return (
-                          <div
-                            key={ci}
-                            className={`exam-answer-choice ${isKey ? "choice-key" : ""} ${isSelected && !isKey ? "choice-selected-wrong" : ""}`}
-                          >
-                            <span className="choice-label">{label}</span>
-                            {choice}
-                            {isSelected && isKey && <span className="choice-tag">เลือก + เฉลย</span>}
-                            {isKey && !isSelected && <span className="choice-tag">เฉลย</span>}
-                            {isSelected && !isKey && <span className="choice-tag choice-tag-wrong">เลือก</span>}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {item.explanation ? (
-                      <p className="exam-answer-explain"><strong>คำอธิบาย:</strong> {item.explanation}</p>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function ExamHistoryPage() {
+  const navigate = useNavigate();
   const { canViewAllExamHistory } = useAuth();
   const mode = canViewAllExamHistory ? "management" : "self";
   const [attempts, setAttempts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterExam, setFilterExam] = useState("");
-  const [selectedAttempt, setSelectedAttempt] = useState(null);
 
   useEffect(() => {
     let mounted = true;
     setLoading(true);
-    setSelectedAttempt(null);
 
     const loadAttempts = async () => {
       if (mode === "management") {
@@ -155,6 +57,7 @@ export default function ExamHistoryPage() {
         setAttempts(
           data.map((attempt) => ({
             id: String(attempt.id),
+            examId: attempt.examId ?? "",
             examTitle: attempt.examTitle ?? attempt.examId ?? "—",
             employeeCode: "",
             name: "ฉัน",
@@ -287,7 +190,23 @@ export default function ExamHistoryPage() {
                     <button
                       type="button"
                       className="view-answers-btn"
-                      onClick={() => setSelectedAttempt(row)}
+                      onClick={() => {
+                        const examId = row.examId ?? row.id;
+                        navigate(`/exam/${examId}/result`, {
+                          state: {
+                            result: {
+                              attemptId: row.id,
+                              correctCount: row.correctCount,
+                              totalQuestions: row.totalQuestions,
+                              gradedTotal: row.totalQuestions,
+                              scorePercent: row.scorePercent,
+                              details: [],
+                              domainStats: [],
+                            },
+                            examTitle: row.examTitle,
+                          },
+                        });
+                      }}
                     >
                       ดูคำตอบ
                     </button>
@@ -299,13 +218,6 @@ export default function ExamHistoryPage() {
         </table>
       </div>
 
-      {selectedAttempt ? (
-        <AnswerModal
-          attempt={selectedAttempt}
-          fetchDetails={mode === "management" ? fetchExamAttemptDetailsAdminApi : fetchMyExamAttemptDetailsApi}
-          onClose={() => setSelectedAttempt(null)}
-        />
-      ) : null}
     </section>
   );
 }
