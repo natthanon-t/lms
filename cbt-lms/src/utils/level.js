@@ -2,15 +2,15 @@
 // Thresholds are based on course completion + subtopic scores
 export const LEVEL_DEFS = [
   { num: 1,  min: 0,     label: "พลทหารเน็ตคาเฟ่",                   color: "#64748b", bg: "#f1f5f9" },
-  { num: 2,  min: 50,    label: "อัศวินแป้นพิมพ์สีลอก",              color: "#2f66da", bg: "#dbeafe" },
-  { num: 3,  min: 150,   label: "องครักษ์การ์ดจอออนบอร์ด",           color: "#059669", bg: "#d1fae5" },
-  { num: 4,  min: 300,   label: "มือปราบปลั๊กหลุด",                  color: "#0891b2", bg: "#cffafe" },
-  { num: 5,  min: 500,   label: "พยัคฆ์ร้ายสาย LAN",                 color: "#7c3aed", bg: "#ede9fe" },
-  { num: 6,  min: 800,   label: "เทพเจ้าสแกนไวรัสด้วยตาเปล่า",      color: "#d97706", bg: "#fef3c7" },
-  { num: 7,  min: 1200,  label: "มหาอุปราชฟอร์แมตโลก",              color: "#dc2626", bg: "#fee2e2" },
-  { num: 8,  min: 1800,  label: "จอมมารบลูสกรีน",                    color: "#be123c", bg: "#ffe4e6" },
-  { num: 9,  min: 2600,  label: "มหาเทพสงครามไร้สาย",               color: "#9333ea", bg: "#f3e8ff" },
-  { num: 10, min: 3500,  label: "องค์สัมมาสัมพุทธเจ้า 4.0",         color: "#b45309", bg: "#fef9c3" },
+  { num: 2,  min: 100,    label: "อัศวินแป้นพิมพ์สีลอก",              color: "#2f66da", bg: "#dbeafe" },
+  { num: 3,  min: 300,   label: "องครักษ์การ์ดจอออนบอร์ด",           color: "#059669", bg: "#d1fae5" },
+  { num: 4,  min: 600,   label: "มือปราบปลั๊กหลุด",                  color: "#0891b2", bg: "#cffafe" },
+  { num: 5,  min: 1000,   label: "พยัคฆ์ร้ายสาย LAN",                 color: "#7c3aed", bg: "#ede9fe" },
+  { num: 6,  min: 1600,   label: "เทพเจ้าสแกนไวรัสด้วยตาเปล่า",      color: "#d97706", bg: "#fef3c7" },
+  { num: 7,  min: 2400,  label: "มหาอุปราชฟอร์แมตโลก",              color: "#dc2626", bg: "#fee2e2" },
+  { num: 8,  min: 3200,  label: "จอมมารบลูสกรีน",                    color: "#be123c", bg: "#ffe4e6" },
+  { num: 9,  min: 4200,  label: "มหาเทพสงครามไร้สาย",               color: "#9333ea", bg: "#f3e8ff" },
+  { num: 10, min: 5500,  label: "องค์สัมมาสัมพุทธเจ้า 4.0",         color: "#b45309", bg: "#fef9c3" },
 ];
 
 export function getLevel(score) {
