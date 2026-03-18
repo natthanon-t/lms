@@ -61,7 +61,10 @@ export const normalizeExamRecord = (item) => {
 export const parseExamUploadJson = (rawExam, baseExam = {}) => {
   const rawQuestions = Array.isArray(rawExam?.Questions) ? rawExam.Questions : rawExam?.questions;
   const questions = normalizeUploadedQuestions(rawQuestions);
-  const domainPercentages = rawExam?.DomainPercentages ?? rawExam?.domainPercentages ?? {};
+  const rawDomainPct = rawExam?.DomainPercentages ?? rawExam?.domainPercentages ?? {};
+  const domainPercentages = Object.fromEntries(
+    Object.entries(rawDomainPct).map(([k, v]) => [k, Math.round(Number(v) || 0)]),
+  );
   const numberOfQuestions = Number(rawExam?.["Number of Questions"] ?? rawExam?.numberOfQuestions ?? questions.length);
   const defaultTime = Number(rawExam?.["Default Time"] ?? rawExam?.defaultTime ?? 0);
   const parsedExam = {
@@ -82,8 +85,10 @@ export const parseExamUploadJson = (rawExam, baseExam = {}) => {
 export const toExamTakingDraft = (exam) => ({
   sourceId: exam.id,
   title: exam.title,
+  creator: exam.creator ?? "",
   description: exam.description,
   instructions: exam.instructions,
+  image: exam.image ?? "",
   numberOfQuestions: exam.numberOfQuestions,
   defaultTime: exam.defaultTime,
   maxAttempts: Number(exam.maxAttempts ?? 0),

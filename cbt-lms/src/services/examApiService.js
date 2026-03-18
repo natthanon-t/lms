@@ -78,7 +78,9 @@ export const upsertExamApi = async (exam) =>
       numberOfQuestions: exam.numberOfQuestions,
       defaultTime:       exam.defaultTime,
       maxAttempts:       exam.maxAttempts ?? 0,
-      domainPercentages: exam.domainPercentages ?? {},
+      domainPercentages: Object.fromEntries(
+        Object.entries(exam.domainPercentages ?? {}).map(([k, v]) => [k, Math.round(Number(v) || 0)]),
+      ),
       questions:         Array.isArray(exam.questions) ? exam.questions.map((q) => ({
         ...q,
         questionType: q.questionType ?? "multiple_choice",

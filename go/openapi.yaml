@@ -876,6 +876,128 @@ paths:
         "500":
           $ref: "#/components/responses/ErrorResponse"
 
+  /api/admin/analytics/course-stats:
+    get:
+      tags: [Admin Exams]
+      summary: Get per-course stats for instructor view (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [my]
+          description: "Filter to owned courses only (scope=my)"
+      responses:
+        "200":
+          description: Course stats list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  courses:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CourseInstructorStats"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/admin/analytics/courses/{courseId}/detail:
+    get:
+      tags: [Admin Exams]
+      summary: Get subtopic time and unanswered Q&A for a course (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Course detail analytics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CourseDetailAnalytics"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/admin/analytics/exam-stats:
+    get:
+      tags: [Admin Exams]
+      summary: Get per-exam stats for instructor view (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [my]
+          description: "Filter to owned exams only (scope=my)"
+      responses:
+        "200":
+          description: Exam stats list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exams:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ExamInstructorStats"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/admin/analytics/exams/{examId}/detail:
+    get:
+      tags: [Admin Exams]
+      summary: Get domain avg scores and hard questions for an exam (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: examId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Exam detail analytics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExamDetailAnalytics"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
   /api/courses:
     get:
       tags: [Courses]
@@ -1059,6 +1181,144 @@ paths:
         "400":
           $ref: "#/components/responses/ErrorResponse"
         "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/courses/{id}/attachments:
+    get:
+      tags: [Courses]
+      summary: Get all attachments for a course (public)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Course attachments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  attachments:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CourseAttachment"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+    post:
+      tags: [Courses]
+      summary: Upload an attachment file for a course (max 20 MB)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: "Allowed: pdf, doc, docx, xls, xlsx, ppt, pptx, txt"
+              required: [file]
+      responses:
+        "200":
+          description: Attachment uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  attachment:
+                    $ref: "#/components/schemas/CourseAttachment"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "413":
+          description: File exceeds 20 MB limit
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/courses/{id}/attachments/{attId}:
+    delete:
+      tags: [Courses]
+      summary: Delete a course attachment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: attId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Attachment deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: attachment deleted
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/courses/{courseId}/qna:
+    get:
+      tags: [Courses]
+      summary: Get Q&A questions for a course (public)
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Q&A questions with replies
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  questions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/QnAQuestion"
+        "400":
           $ref: "#/components/responses/ErrorResponse"
         "500":
           $ref: "#/components/responses/ErrorResponse"
@@ -1286,6 +1546,89 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/SkillReward"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/learning/courses/{courseId}/qna:
+    post:
+      tags: [Learning]
+      summary: Post a Q&A question for a course subtopic
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subtopic_id:
+                  type: string
+                question:
+                  type: string
+                  example: ข้อนี้ไม่เข้าใจครับ
+              required: [question]
+      responses:
+        "200":
+          description: Question posted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  question:
+                    $ref: "#/components/schemas/QnAQuestion"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/learning/qna/{questionId}/reply:
+    post:
+      tags: [Learning]
+      summary: Post a reply to a Q&A question
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reply:
+                  type: string
+                  example: ตอบได้เลยครับ
+              required: [reply]
+      responses:
+        "200":
+          description: Reply posted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reply:
+                    $ref: "#/components/schemas/QnAReply"
         "400":
           $ref: "#/components/responses/ErrorResponse"
         "401":
@@ -1589,6 +1932,41 @@ paths:
         "400":
           $ref: "#/components/responses/ErrorResponse"
         "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "500":
+          $ref: "#/components/responses/ErrorResponse"
+
+  /api/exams/{id}/questions:
+    get:
+      tags: [Exams]
+      summary: Get shuffled questions for an exam attempt (requires exam_take permission)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Exam questions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  questions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ExamQuestion"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "403":
+          $ref: "#/components/responses/ErrorResponse"
+        "404":
           $ref: "#/components/responses/ErrorResponse"
         "500":
           $ref: "#/components/responses/ErrorResponse"
@@ -2220,3 +2598,192 @@ components:
                 nullable: true
             required: [question_id, selected]
       required: [correct_count, total_questions, score_percent]
+
+    CourseAttachment:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        courseId:
+          type: string
+        origName:
+          type: string
+        urlPath:
+          type: string
+        uploadedAt:
+          type: string
+          format: date-time
+      required: [id, courseId, origName, urlPath, uploadedAt]
+
+    QnAReply:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        questionId:
+          type: integer
+          format: int64
+        username:
+          type: string
+        name:
+          type: string
+        reply:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, questionId, username, reply, createdAt]
+
+    QnAQuestion:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        courseId:
+          type: string
+        subtopicId:
+          type: string
+        username:
+          type: string
+        name:
+          type: string
+        question:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        replies:
+          type: array
+          items:
+            $ref: "#/components/schemas/QnAReply"
+      required: [id, courseId, username, question, createdAt]
+
+    CourseInstructorStats:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        learners:
+          type: integer
+        completed:
+          type: integer
+        inProgress:
+          type: integer
+        notStarted:
+          type: integer
+        avgScore:
+          type: integer
+        qnaTotal:
+          type: integer
+        qnaUnanswered:
+          type: integer
+      required: [id, title, learners]
+
+    SubtopicTimeStat:
+      type: object
+      properties:
+        subtopicId:
+          type: string
+        name:
+          type: string
+        avgMinutes:
+          type: number
+          format: float
+        learners:
+          type: integer
+      required: [subtopicId, avgMinutes, learners]
+
+    UnansweredQnA:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        subtopicId:
+          type: string
+        question:
+          type: string
+        asker:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, question, asker, createdAt]
+
+    CourseDetailAnalytics:
+      type: object
+      properties:
+        subtopicTime:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubtopicTimeStat"
+        unansweredQna:
+          type: array
+          items:
+            $ref: "#/components/schemas/UnansweredQnA"
+      required: [subtopicTime, unansweredQna]
+
+    ExamInstructorStats:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        testTakers:
+          type: integer
+        attempts:
+          type: integer
+        avgScore:
+          type: number
+          format: float
+        passRate:
+          type: number
+          format: float
+      required: [id, title, testTakers, attempts, avgScore, passRate]
+
+    DomainAvgScore:
+      type: object
+      properties:
+        domain:
+          type: string
+        avgScore:
+          type: number
+          format: float
+        total:
+          type: integer
+      required: [domain, avgScore, total]
+
+    HardExamQuestion:
+      type: object
+      properties:
+        questionId:
+          type: string
+        question:
+          type: string
+        domain:
+          type: string
+        correctRate:
+          type: number
+          format: float
+        attempts:
+          type: integer
+      required: [questionId, question, correctRate, attempts]
+
+    ExamDetailAnalytics:
+      type: object
+      properties:
+        domainAvgScores:
+          type: array
+          items:
+            $ref: "#/components/schemas/DomainAvgScore"
+        hardQuestions:
+          type: array
+          items:
+            $ref: "#/components/schemas/HardExamQuestion"
+      required: [domainAvgScores, hardQuestions]

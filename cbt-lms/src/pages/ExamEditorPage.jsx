@@ -106,6 +106,7 @@ export default function ExamEditorPage() {
   const [questions, setQuestions] = useState(() => toQuestions(draft.questions));
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
   const [importStatus, setImportStatus] = useState({ type: "", message: "" });
+  const [saveToast, setSaveToast] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [questionViewMode, setQuestionViewMode] = useState("single");
   const questionRefs = useRef({});
@@ -117,6 +118,12 @@ export default function ExamEditorPage() {
     setSelectedQuestionIndex(0);
     setImportStatus({ type: "", message: "" });
   }, [draft]);
+
+  useEffect(() => {
+    if (!saveToast) return;
+    const timer = setTimeout(() => setSaveToast(""), 3000);
+    return () => clearTimeout(timer);
+  }, [saveToast]);
 
   const domainTotal = useMemo(
     () => domainRows.reduce((sum, row) => sum + Number(row.percent || 0), 0),
@@ -191,13 +198,13 @@ export default function ExamEditorPage() {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const domainPercentages = {};
     domainRows.forEach((row) => {
       const name = String(row.domain ?? "").trim();
       const percent = Number(row.percent ?? 0);
       if (name && percent > 0) {
-        domainPercentages[name] = percent;
+        domainPercentages[name] = Math.round(percent);
       }
     });
 
@@ -212,7 +219,8 @@ export default function ExamEditorPage() {
       explanation: String(question.explanation ?? "").trim(),
     }));
 
-    void saveExamEditorDraft({
+    setImportStatus({ type: "", message: "" });
+    const result = await saveExamEditorDraft({
       ...exam,
       image: ensureCoverImage(exam.image, exam.id ?? exam.sourceId ?? `exam-${Date.now()}`),
       domainPercentages,
@@ -221,6 +229,12 @@ export default function ExamEditorPage() {
       maxAttempts: Number(exam.maxAttempts ?? 0),
       questions: normalizedQuestions,
     });
+
+    if (result?.success) {
+      setSaveToast("บันทึกข้อสอบสำเร็จ");
+    } else {
+      setSaveToast("บันทึกข้อสอบไม่สำเร็จ กรุณาลองใหม่");
+    }
   };
 
   const handleUploadCoverImage = async (event) => {
@@ -772,6 +786,13 @@ export default function ExamEditorPage() {
           </article>
         </div>
       ) : null}
+
+      {saveToast && (
+        <div className="um-toast" onClick={() => setSaveToast("")}>
+          <span>{saveToast}</span>
+          <span className="um-toast-close">✕</span>
+        </div>
+      )}
     </section>
   );
 }
