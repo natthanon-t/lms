@@ -2,6 +2,7 @@ package data
 
 import (
 	"database/sql"
+	"fmt"
 	"strings"
 )
 
@@ -76,6 +77,19 @@ func ListCourses(limit, offset int) ([]Course, int, error) {
 }
 
 func UpsertCourse(c Course, callerUsername string, isAdmin bool) (Course, error) {
+	// Check duplicate title
+	title := strings.TrimSpace(c.Title)
+	if title != "" {
+		var dupID string
+		dupErr := db.QueryRow(
+			`SELECT id FROM courses WHERE LOWER(TRIM(title)) = LOWER($1) AND id != $2 LIMIT 1`,
+			title, c.ID,
+		).Scan(&dupID)
+		if dupErr == nil {
+			return Course{}, fmt.Errorf("ชื่อเนื้อหา \"%s\" ซ้ำกับเนื้อหาที่มีอยู่แล้ว", title)
+		}
+	}
+
 	var existingOwner sql.NullString
 	err := db.QueryRow(`SELECT owner_username FROM courses WHERE id = $1`, c.ID).Scan(&existingOwner)
 	if err != nil && err != sql.ErrNoRows {

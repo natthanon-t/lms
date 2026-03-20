@@ -101,7 +101,7 @@ export const buildNewExamRecord = ({ now, creator, ownerUsername }) =>
   normalizeExamRecord({
     id: `exam-${now}`,
     sourceId: `exam-${now}`,
-    title: "New Practice Exam",
+    title: "",
     description: "Custom exam created by instructor",
     creator: creator ?? "ทีมผู้สอน",
     ownerUsername: ownerUsername ?? "",

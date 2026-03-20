@@ -145,7 +145,7 @@ function ProfileModal({ username, onClose }) {
   );
 }
 
-const LIMIT_OPTIONS = [5, 10, 20, 50];
+const LIMIT_OPTIONS = [10, 50, 100];
 
 export default function LeaderboardPage() {
   const [ranking, setRanking] = useState([]);

@@ -537,7 +537,7 @@ export default function SummaryPage() {
     // ── สถานะการเรียนรายบุคคล (เฉพาะเมื่อเลือกคอร์ส) ──
     if (selectedCourseId && filteredLearners.length > 0) {
       const courseTitle =
-        safeExamples.find((c) => c.id === selectedCourseId)?.title ?? selectedCourseId;
+        allCourseStats.find((c) => c.id === selectedCourseId)?.title ?? selectedCourseId;
       const statusLabel = { completed: "เสร็จสิ้น", in_progress: "กำลังเรียน", not_started: "ยังไม่เริ่ม" };
       rows.push([]);
       rows.push([`สถานะการเรียนรายบุคคล — ${courseTitle}`]);
@@ -805,7 +805,7 @@ export default function SummaryPage() {
             onChange={(e) => setSelectedCourseId(e.target.value)}
           >
             <option value="">— เลือกคอร์ส —</option>
-            {safeExamples.map((c) => (
+            {allCourseStats.map((c) => (
               <option key={c.id} value={c.id}>{c.title}</option>
             ))}
           </select>

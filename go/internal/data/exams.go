@@ -273,6 +273,19 @@ func GetExamQuestionsPublic(examID string) ([]PublicExamQuestion, error) {
 // ── Write ─────────────────────────────────────────────────────────────────────
 
 func UpsertExam(exam Exam, callerUsername string, isAdmin bool) (Exam, error) {
+	// Check duplicate title
+	title := strings.TrimSpace(exam.Title)
+	if title != "" {
+		var dupID string
+		dupErr := db.QueryRow(
+			`SELECT id FROM exams WHERE LOWER(TRIM(title)) = LOWER($1) AND id != $2 LIMIT 1`,
+			title, exam.ID,
+		).Scan(&dupID)
+		if dupErr == nil {
+			return Exam{}, fmt.Errorf("ชื่อข้อสอบ \"%s\" ซ้ำกับข้อสอบที่มีอยู่แล้ว", title)
+		}
+	}
+
 	var existingOwner sql.NullString
 	err := db.QueryRow(`SELECT owner_username FROM exams WHERE id = $1`, exam.ID).Scan(&existingOwner)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {

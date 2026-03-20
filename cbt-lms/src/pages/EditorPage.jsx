@@ -438,13 +438,15 @@ export default function EditorPage() {
     setShowDeleteConfirm(false);
   };
 
+  const isSavedToDB = examples.some((e) => e.id === (draft.sourceId || draft.id));
+
   const handleUploadEditorImage = async (event) => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
     try {
       const dataUrl = await fileToDataUrl(file);
-      if (!draft.sourceId) {
+      if (!draft.sourceId || !isSavedToDB) {
         setSaveMessage("บันทึกคอร์สก่อนอัพโหลดรูป");
         return;
       }
@@ -460,7 +462,7 @@ export default function EditorPage() {
 
   // Image upload callback for Visual Editor blocks
   const handleUploadImageForBlock = useCallback(async (file) => {
-    if (!draft.sourceId) {
+    if (!draft.sourceId || !isSavedToDB) {
       setSaveMessage("บันทึกคอร์สก่อนอัพโหลดรูป");
       return null;
     }
@@ -475,7 +477,7 @@ export default function EditorPage() {
       setSaveMessage("อัพโหลดรูปไม่สำเร็จ");
       return null;
     }
-  }, [draft.sourceId]);
+  }, [draft.sourceId, isSavedToDB]);
 
   const handleMoveMainBefore = (sourceHeadingId, targetHeadingId) => {
     const nextContent = moveMainSectionBefore(draft.content, sourceHeadingId, targetHeadingId);

@@ -64,7 +64,7 @@ export const toCourseDraft = (course) => ({
 export const buildNewCourseRecord = ({ now, courseIndex, creator, ownerUsername }) =>
   normalizeExampleRecord({
     id: `course-${now}`,
-    title: `เนื้อหาใหม่ ${courseIndex}`,
+    title: "",
     creator: creator ?? "Cyber Training Team",
     ownerUsername: ownerUsername ?? "",
     description: "เนื้อหาใหม่สำหรับฝึกการเรียนรู้ด้าน Cyber Security",

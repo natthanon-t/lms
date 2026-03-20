@@ -1074,9 +1074,10 @@
 
 .confirm-delete-modal {
   margin-top: 0;
-  width: min(100%, 500px);
+  width: min(90%, 380px);
   position: relative;
   box-shadow: 0 18px 38px rgba(15, 23, 42, 0.24);
+  text-align: center;
 }
 
 .confirm-delete-modal h3 {
@@ -1084,8 +1085,40 @@
 }
 
 .confirm-delete-modal p {
-  margin: 0 0 12px;
+  margin: 0 0 18px;
   color: #375587;
+}
+
+.confirm-delete-modal .profile-action-row {
+  justify-content: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.confirm-delete-modal .profile-action-row button {
+  min-width: 120px;
+}
+
+.confirm-delete-modal .end-exam-button,
+.confirm-delete-modal .danger-button {
+  background: #ef4444;
+  border-color: #ef4444;
+}
+
+.confirm-delete-modal .end-exam-button:hover,
+.confirm-delete-modal .danger-button:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+.confirm-delete-modal .back-button {
+  background: #94a3b8;
+  border-color: #94a3b8;
+}
+
+.confirm-delete-modal .back-button:hover {
+  background: #64748b;
+  border-color: #64748b;
 }
 
 .user-management-toolbar {

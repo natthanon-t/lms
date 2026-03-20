@@ -60,12 +60,6 @@ INSERT INTO role_permissions (role_code, permission_code) VALUES
 -- ==========================================================
 -- USERS  (password ทุก account: Demo@2026)
 -- ==========================================================
--- สร้าง users หลากหลายระดับเพื่อทดสอบ Level badge:
---   Lv5 ปรมาจารย์ : anant, kittichai   (≥700 pts)
---   Lv4 ผู้เชี่ยวชาญ: somchai, pranom   (≥350 pts)
---   Lv3 มีทักษะ     : somying, wannee   (≥150 pts)
---   Lv2 ผู้เรียน    : wichai, burin     (≥50 pts)
---   Lv1 มือใหม่     : napa, pairot      (<50 pts)
 
 INSERT INTO users (name, username, employee_code, password_hash, role_code, status) VALUES
   -- ผู้ใช้ทั่วไป (role: user)
@@ -427,24 +421,25 @@ INSERT INTO learning_subtopic_answers (username, course_id, subtopic_id, questio
 -- ==========================================================
 -- USER SCORES  (ทดสอบ Leaderboard + Level system)
 -- ==========================================================
--- Lv5 ปรมาจารย์ (≥700):  anant=750, kittichai=720
--- Lv4 ผู้เชี่ยวชาญ (≥350): somchai=380, pranom=420
--- Lv3 มีทักษะ (≥150):     somying=170, wannee=155
--- Lv2 ผู้เรียน (≥50):     wichai=85,   burin=60
--- Lv1 มือใหม่ (<50):      napa=25,     pairot=10
+-- Lv8 จอมมารบลูสกรีน (≥3200):       anant=3500
+-- Lv7 มหาอุปราชฟอร์แมตโลก (≥2400): kittichai=2600
+-- Lv4 มือปราบปลั๊กหลุด (≥600):      somchai=650, pranom=680
+-- Lv3 องครักษ์การ์ดจอออนบอร์ด (≥300): somying=320, wannee=350, weerachai=380
+-- Lv2 อัศวินแป้นพิมพ์สีลอก (≥100):  wichai=130, burin=110
+-- Lv1 พลทหารเน็ตคาเฟ่ (<100):       napa=25, pairot=10
 
 INSERT INTO user_scores (username, total) VALUES
-  ('anant',     750),
-  ('kittichai', 720),
-  ('pranom',    420),
-  ('somchai',   380),
-  ('wannee',    155),
-  ('somying',   170),
-  ('wichai',     85),
-  ('burin',      60),
-  ('napa',       25),
-  ('pairot',     10),
-  ('weerachai', 200);
+  ('anant',     3500),
+  ('kittichai', 2600),
+  ('pranom',     680),
+  ('somchai',    650),
+  ('wannee',     350),
+  ('somying',    320),
+  ('wichai',     130),
+  ('burin',      110),
+  ('napa',        25),
+  ('pairot',      10),
+  ('weerachai',  380);
 
 -- ==========================================================
 -- USER SKILL SCORES  (ทดสอบ Profile modal — skill badges)
@@ -689,166 +684,161 @@ WHERE a.username = 'napa' AND a.exam_id = 'exam-itsec-01'
 ORDER BY a.started_at DESC
 LIMIT 1;
 
+
 -- ==========================================================
--- ███  STRESS TEST DATA  (50 users, 110 courses, 3 exams)  ███
+-- ███  ADDITIONAL DATA  (23 users เพิ่ม — รวม 35 คน, 10 courses เพิ่ม — รวม 17 คอร์ส)  ███
 -- ==========================================================
 
--- === STRESS TEST USERS (50 คน) ===
+-- === USERS เพิ่ม (23 คน — ชื่อจริงไทย, หลากหลาย level) ===
+-- Level distribution (รวมกับ 12 คนเดิม — ครบ 10 ระดับจาก level.js):
+--   Lv10 องค์สัมมาสัมพุทธเจ้า 4.0 (≥5500): thanapol=5800
+--   Lv9  มหาเทพสงครามไร้สาย (≥4200):       piya=4500
+--   Lv8  จอมมารบลูสกรีน (≥3200):            anant=3500
+--   Lv7  มหาอุปราชฟอร์แมตโลก (≥2400):      kittichai=2600
+--   Lv6  เทพเจ้าสแกนไวรัสด้วยตาเปล่า (≥1600): jirayu=1800, suthida=1650
+--   Lv5  พยัคฆ์ร้ายสาย LAN (≥1000):         natthapong=1200, paweena=1050
+--   Lv4  มือปราบปลั๊กหลุด (≥600):           siriporn=750, somchai=650, pranom=680
+--   Lv3  องครักษ์การ์ดจอออนบอร์ด (≥300):    kamonchanok=450, wannapha=380, weerachai=380, somying=320, wannee=350
+--   Lv2  อัศวินแป้นพิมพ์สีลอก (≥100):       theerasak=200, anchalee=150, rattana=120, pitchaya=110, wichai=130, burin=110
+--   Lv1  พลทหารเน็ตคาเฟ่ (<100):            thawatchai=70, kanokwan=55, supatsara=40, wasan=30, nicha=20, chaiwat=15, maneerat=35, thidarat=10, napa=25, pairot=10
+
 INSERT INTO users (name, username, employee_code, password_hash, role_code, status) VALUES
-  ('ทดสอบ คนที่หนึ่ง',    'st-user-001', 'ST-001', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่สอง',     'st-user-002', 'ST-002', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่สาม',     'st-user-003', 'ST-003', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่สี่',      'st-user-004', 'ST-004', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ห้า',     'st-user-005', 'ST-005', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่หก',      'st-user-006', 'ST-006', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่เจ็ด',    'st-user-007', 'ST-007', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่แปด',     'st-user-008', 'ST-008', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่เก้า',    'st-user-009', 'ST-009', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่สิบ',     'st-user-010', 'ST-010', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 11',     'st-user-011', 'ST-011', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 12',     'st-user-012', 'ST-012', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 13',     'st-user-013', 'ST-013', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 14',     'st-user-014', 'ST-014', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 15',     'st-user-015', 'ST-015', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 16',     'st-user-016', 'ST-016', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 17',     'st-user-017', 'ST-017', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 18',     'st-user-018', 'ST-018', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 19',     'st-user-019', 'ST-019', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 20',     'st-user-020', 'ST-020', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 21',     'st-user-021', 'ST-021', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 22',     'st-user-022', 'ST-022', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 23',     'st-user-023', 'ST-023', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 24',     'st-user-024', 'ST-024', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 25',     'st-user-025', 'ST-025', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 26',     'st-user-026', 'ST-026', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 27',     'st-user-027', 'ST-027', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 28',     'st-user-028', 'ST-028', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 29',     'st-user-029', 'ST-029', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 30',     'st-user-030', 'ST-030', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 31',     'st-user-031', 'ST-031', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 32',     'st-user-032', 'ST-032', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 33',     'st-user-033', 'ST-033', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 34',     'st-user-034', 'ST-034', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 35',     'st-user-035', 'ST-035', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 36',     'st-user-036', 'ST-036', crypt('Demo@2026', gen_salt('bf', 10)), 'instructor', 'active'),
-  ('ทดสอบ คนที่ 37',     'st-user-037', 'ST-037', crypt('Demo@2026', gen_salt('bf', 10)), 'instructor', 'active'),
-  ('ทดสอบ คนที่ 38',     'st-user-038', 'ST-038', crypt('Demo@2026', gen_salt('bf', 10)), 'instructor', 'active'),
-  ('ทดสอบ คนที่ 39',     'st-user-039', 'ST-039', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 40',     'st-user-040', 'ST-040', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 41',     'st-user-041', 'ST-041', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'inactive'),
-  ('ทดสอบ คนที่ 42',     'st-user-042', 'ST-042', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'inactive'),
-  ('ทดสอบ คนที่ 43',     'st-user-043', 'ST-043', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 44',     'st-user-044', 'ST-044', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 45',     'st-user-045', 'ST-045', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 46',     'st-user-046', 'ST-046', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 47',     'st-user-047', 'ST-047', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 48',     'st-user-048', 'ST-048', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 49',     'st-user-049', 'ST-049', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
-  ('ทดสอบ คนที่ 50',     'st-user-050', 'ST-050', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active');
+  -- Lv10 องค์สัมมาสัมพุทธเจ้า 4.0
+  ('ธนพล ฉลาดดี',       'thanapol',    'ST-001', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  -- Lv9 มหาเทพสงครามไร้สาย
+  ('ปิยะ สุขสันต์',      'piya',        'ST-002', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  -- Lv6 เทพเจ้าสแกนไวรัสด้วยตาเปล่า
+  ('จิรายุ เก่งกล้า',    'jirayu',      'ST-003', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  -- Lv5 พยัคฆ์ร้ายสาย LAN
+  ('ณัฐพงษ์ ใจแกร่ง',    'natthapong',  'ST-004', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  -- Lv4 มือปราบปลั๊กหลุด
+  ('ศิริพร ขยันเรียน',   'siriporn',    'ST-005', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  -- Lv3 องครักษ์การ์ดจอออนบอร์ด
+  ('กมลชนก อดทน',       'kamonchanok', 'ST-006', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('วรรณภา ตั้งใจ',      'wannapha',    'ST-007', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  -- Lv2 อัศวินแป้นพิมพ์สีลอก
+  ('ธีรศักดิ์ มั่นคง',    'theerasak',   'ST-008', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('อัญชลี สว่างจิต',    'anchalee',    'ST-009', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('พิชญา ริเริ่ม',      'pitchaya',    'ST-010', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('รัตนา ร่าเริง',       'rattana',     'ST-013', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  -- Lv1 พลทหารเน็ตคาเฟ่
+  ('ธวัชชัย เริ่มเดิน',   'thawatchai',  'ST-011', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('กนกวรรณ ก้าวหน้า',   'kanokwan',    'ST-012', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('สุภัสสรา เริ่มใหม่',  'supatsara',   'ST-014', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('วสันต์ ยังน้อย',      'wasan',       'ST-015', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ณิชา มาใหม่',        'nicha',       'ST-016', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ชัยวัฒน์ เพิ่งมา',    'chaiwat',     'ST-017', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('มณีรัตน์ ใส่ใจ',      'maneerat',    'ST-018', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  ('ธิดารัตน์ เริ่มต้น',   'thidarat',    'ST-019', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'active'),
+  -- ผู้สอน (instructor) — Lv6, Lv5
+  ('สุธิดา ผู้สอนใหม่',   'suthida',     'ST-020', crypt('Demo@2026', gen_salt('bf', 10)), 'instructor', 'active'),
+  ('ปวีณา สร้างสรรค์',   'paweena',     'ST-021', crypt('Demo@2026', gen_salt('bf', 10)), 'instructor', 'active'),
+  -- inactive
+  ('ภัทรพล ทดลอง',      'pattarapol',  'ST-022', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'inactive'),
+  ('ศุภกิจ ว่างเปล่า',    'suppakit',    'ST-023', crypt('Demo@2026', gen_salt('bf', 10)), 'user',       'inactive');
 
--- === STRESS TEST LOGIN LOGS (กระจาย heatmap) ===
+-- === LOGIN LOGS สำหรับ users ใหม่ ===
 INSERT INTO user_login_logs (user_id, logged_in_at)
 SELECT u.id, ts
 FROM users u
 CROSS JOIN (VALUES
-  (NOW() - INTERVAL '90 days'), (NOW() - INTERVAL '85 days'),
-  (NOW() - INTERVAL '80 days'), (NOW() - INTERVAL '75 days'),
-  (NOW() - INTERVAL '70 days'), (NOW() - INTERVAL '65 days'),
-  (NOW() - INTERVAL '60 days'), (NOW() - INTERVAL '55 days'),
-  (NOW() - INTERVAL '50 days'), (NOW() - INTERVAL '45 days'),
-  (NOW() - INTERVAL '40 days'), (NOW() - INTERVAL '35 days'),
-  (NOW() - INTERVAL '30 days'), (NOW() - INTERVAL '25 days'),
-  (NOW() - INTERVAL '20 days'), (NOW() - INTERVAL '15 days'),
+  (NOW() - INTERVAL '90 days'), (NOW() - INTERVAL '80 days'),
+  (NOW() - INTERVAL '60 days'), (NOW() - INTERVAL '45 days'),
+  (NOW() - INTERVAL '30 days'), (NOW() - INTERVAL '20 days'),
   (NOW() - INTERVAL '10 days'), (NOW() - INTERVAL '5 days'),
   (NOW() - INTERVAL '3 days'),  (NOW() - INTERVAL '1 day')
 ) AS t(ts)
-WHERE u.username LIKE 'st-user-0%' AND RIGHT(u.username, 2)::int <= 20;
+WHERE u.username IN ('thanapol', 'piya', 'jirayu');
 
 INSERT INTO user_login_logs (user_id, logged_in_at)
 SELECT u.id, ts
 FROM users u
 CROSS JOIN (VALUES
-  (NOW() - INTERVAL '30 days'), (NOW() - INTERVAL '20 days'),
-  (NOW() - INTERVAL '10 days'), (NOW() - INTERVAL '5 days'),
-  (NOW() - INTERVAL '2 days'),  (NOW() - INTERVAL '1 day')
+  (NOW() - INTERVAL '60 days'), (NOW() - INTERVAL '40 days'),
+  (NOW() - INTERVAL '20 days'), (NOW() - INTERVAL '10 days'),
+  (NOW() - INTERVAL '5 days'),  (NOW() - INTERVAL '2 days')
 ) AS t(ts)
-WHERE u.username LIKE 'st-user-0%' AND RIGHT(u.username, 2)::int BETWEEN 21 AND 40;
+WHERE u.username IN ('natthapong', 'siriporn', 'kamonchanok', 'wannapha', 'theerasak', 'suthida', 'paweena');
 
 INSERT INTO user_login_logs (user_id, logged_in_at)
 SELECT u.id, ts
 FROM users u
 CROSS JOIN (VALUES
-  (NOW() - INTERVAL '10 days'), (NOW() - INTERVAL '3 days')
+  (NOW() - INTERVAL '15 days'), (NOW() - INTERVAL '8 days'),
+  (NOW() - INTERVAL '3 days')
 ) AS t(ts)
-WHERE u.username LIKE 'st-user-0%' AND RIGHT(u.username, 2)::int BETWEEN 41 AND 50;
+WHERE u.username IN ('anchalee', 'pitchaya', 'thawatchai', 'kanokwan', 'rattana', 'supatsara', 'wasan', 'nicha', 'chaiwat', 'maneerat', 'thidarat');
 
--- === STRESS TEST COURSES (10 courses จาก instructors ทดสอบ top creators) ===
+-- ==========================================================
+-- COURSES เพิ่ม (10 courses — รวม 17 คอร์ส)
+-- ==========================================================
+
 INSERT INTO courses (id, title, creator, owner_username, status, description, image, content, skill_points, subtopic_completion_score, course_completion_score) VALUES
   (
-    'st-course-01', 'Network Fundamentals', 'ทดสอบ คนที่ 36', 'st-user-036', 'active',
+    'st-course-01', 'Network Fundamentals', 'สุธิดา ผู้สอนใหม่', 'suthida', 'active',
     'เครือข่ายพื้นฐาน: OSI Model, TCP/IP, Subnetting',
     'https://picsum.photos/seed/st-net/640/360',
     E'# Network Fundamentals\n\n## OSI Model\nOSI Model มี 7 ชั้น ตั้งแต่ Physical จนถึง Application\n\n### osi-basics\n- [SCORE] 10\n- [Q] OSI Model มีกี่ชั้น :: 7 ชั้น :: 10\n\n## TCP/IP\nTCP/IP มี 4 ชั้น ซึ่งถือเป็นโมเดลที่ใช้จริงบน Internet\n\n### tcpip\n- [SCORE] 10\n- [Q] TCP/IP มีกี่ชั้น :: 4 ชั้น :: 10\n\n## Subnetting\nSubnetting ใช้แบ่ง network ออกเป็น subnet ย่อย\n\n### subnetting\n- [SCORE] 10\n- [Q] Subnet mask /24 มีกี่ host :: 254 :: 10',
     10, 10, 60
   ),
   (
-    'st-course-02', 'Cloud Computing Basics', 'ทดสอบ คนที่ 36', 'st-user-036', 'active',
+    'st-course-02', 'Cloud Computing Basics', 'สุธิดา ผู้สอนใหม่', 'suthida', 'active',
     'พื้นฐาน Cloud: IaaS, PaaS, SaaS',
     'https://picsum.photos/seed/st-cloud/640/360',
     E'# Cloud Computing Basics\n\n## IaaS\nInfrastructure as a Service ให้เช่า VM, Storage, Network\n\n### iaas\n- [SCORE] 10\n- [Q] IaaS ย่อมาจากอะไร :: Infrastructure as a Service :: 10\n\n## PaaS\nPlatform as a Service ให้ runtime พร้อมใช้งาน\n\n### paas\n- [SCORE] 10\n- [Q] PaaS ย่อมาจากอะไร :: Platform as a Service :: 10\n\n## SaaS\nSoftware as a Service คือซอฟต์แวร์สำเร็จรูปบน cloud\n\n### saas\n- [SCORE] 10\n- [Q] Gmail จัดเป็น cloud model ใด :: SaaS :: 10',
     10, 10, 50
   ),
   (
-    'st-course-03', 'Docker & Containers', 'ทดสอบ คนที่ 37', 'st-user-037', 'active',
+    'st-course-03', 'Docker & Containers', 'ปวีณา สร้างสรรค์', 'paweena', 'active',
     'การใช้ Docker สร้าง container และ image',
     'https://picsum.photos/seed/st-docker/640/360',
     E'# Docker & Containers\n\n## Container vs VM\nContainer แชร์ kernel เดียวกัน เบากว่า VM มาก\n\n### container-vs-vm\n- [SCORE] 10\n- [Q] Container ต่างจาก VM อย่างไร :: แชร์ kernel เบากว่า :: 10\n\n## Dockerfile\nDockerfile ใช้สร้าง image โดยกำหนด base image, command, expose port\n\n### dockerfile\n- [SCORE] 10\n- [Q] คำสั่งกำหนด base image คือ :: FROM :: 10',
     10, 10, 40
   ),
   (
-    'st-course-04', 'Git Version Control', 'ทดสอบ คนที่ 37', 'st-user-037', 'active',
+    'st-course-04', 'Git Version Control', 'ปวีณา สร้างสรรค์', 'paweena', 'active',
     'พื้นฐาน Git: branch, merge, rebase, conflict resolution',
     'https://picsum.photos/seed/st-git/640/360',
     E'# Git Version Control\n\n## Branch & Merge\nBranch ใช้แยกงาน Merge ใช้รวมงานกลับ\n\n### branch-merge\n- [SCORE] 10\n- [Q] คำสั่งสร้าง branch ใหม่ :: git branch :: 10\n\n## Rebase\nRebase ย้ายประวัติ commit ให้เรียงใหม่บน target branch\n\n### rebase\n- [SCORE] 10\n- [Q] Rebase ต่างจาก Merge อย่างไร :: ย้ายประวัติให้เรียงใหม่ :: 10',
     10, 10, 40
   ),
   (
-    'st-course-05', 'SQL Fundamentals', 'ทดสอบ คนที่ 38', 'st-user-038', 'active',
+    'st-course-05', 'SQL Fundamentals', 'สุธิดา ผู้สอนใหม่', 'suthida', 'active',
     'พื้นฐาน SQL: SELECT, JOIN, GROUP BY, Subquery',
     'https://picsum.photos/seed/st-sql/640/360',
     E'# SQL Fundamentals\n\n## SELECT & WHERE\nSELECT เลือกคอลัมน์ WHERE กรองข้อมูลตามเงื่อนไข\n\n### select-where\n- [SCORE] 10\n- [Q] คำสั่งกรองข้อมูลใน SQL คือ :: WHERE :: 10\n\n## JOIN\nJOIN ใช้เชื่อมตารางหลายตารางเข้าด้วยกัน\n\n### join-basics\n- [SCORE] 10\n- [Q] INNER JOIN แสดงข้อมูลแบบใด :: เฉพาะแถวที่ตรงกัน :: 10\n\n## GROUP BY\nGROUP BY รวมกลุ่มข้อมูลเพื่อใช้กับ aggregate function\n\n### group-by\n- [SCORE] 10\n- [Q] Aggregate function ที่นับจำนวนคือ :: COUNT :: 10',
     10, 10, 60
   ),
   (
-    'st-course-06', 'Agile & Scrum', 'ทดสอบ คนที่ 38', 'st-user-038', 'active',
+    'st-course-06', 'Agile & Scrum', 'ปวีณา สร้างสรรค์', 'paweena', 'active',
     'Agile Methodology, Sprint, User Story, Retrospective',
     'https://picsum.photos/seed/st-agile/640/360',
     E'# Agile & Scrum\n\n## Sprint\nSprint คือช่วงเวลาทำงานคงที่ โดยปกติ 1-4 สัปดาห์\n\n### sprint\n- [SCORE] 10\n- [Q] Sprint ปกติยาวกี่สัปดาห์ :: 1-4 สัปดาห์ :: 10\n\n## Retrospective\nRetrospective สรุปสิ่งที่ดีและควรปรับปรุงหลังจบ Sprint\n\n### retro\n- [SCORE] 10\n- [Q] Retrospective จัดเมื่อไหร่ :: หลังจบ Sprint :: 10',
     10, 10, 40
   ),
   (
-    'st-course-07', 'Python for Beginners', 'ทดสอบ คนที่ 36', 'st-user-036', 'active',
+    'st-course-07', 'Python for Beginners', 'สุธิดา ผู้สอนใหม่', 'suthida', 'active',
     'พื้นฐาน Python: ตัวแปร, ฟังก์ชัน, loop, list comprehension',
     'https://picsum.photos/seed/st-python/640/360',
     E'# Python for Beginners\n\n## Variables & Types\nPython เป็น dynamically typed ไม่ต้องประกาศ type\n\n### var-types\n- [SCORE] 10\n- [Q] Python เป็น typed แบบใด :: dynamically typed :: 10\n\n## Functions\nFunction ใช้ def ตามด้วยชื่อและ parameter\n\n### functions\n- [SCORE] 10\n- [Q] คำสั่งสร้างฟังก์ชันใน Python :: def :: 10',
     10, 10, 40
   ),
   (
-    'st-course-08', 'Cybersecurity Advanced', 'ทดสอบ คนที่ 37', 'st-user-037', 'active',
+    'st-course-08', 'Cybersecurity Advanced', 'ปวีณา สร้างสรรค์', 'paweena', 'active',
     'การป้องกันภัยไซเบอร์ขั้นสูง: Zero Trust, SASE, XDR',
     'https://picsum.photos/seed/st-cybadv/640/360',
     E'# Cybersecurity Advanced\n\n## Zero Trust\nZero Trust หมายถึงไม่ไว้วางใจทุกเครื่องและทุกผู้ใช้โดยอัตโนมัติ\n\n### zero-trust\n- [SCORE] 15\n- [Q] หลักการ Zero Trust คืออะไร :: ไม่ไว้วางใจโดยอัตโนมัติ :: 10\n\n## XDR\nExtended Detection and Response รวม EDR, NDR, SIEM เข้าด้วยกัน\n\n### xdr\n- [SCORE] 15\n- [Q] XDR ย่อมาจากอะไร :: Extended Detection and Response :: 10',
     10, 15, 50
   ),
   (
-    'st-course-09', 'Data Privacy & PDPA', 'ทดสอบ คนที่ 38', 'st-user-038', 'inactive',
+    'st-course-09', 'Data Privacy & PDPA', 'สุธิดา ผู้สอนใหม่', 'suthida', 'inactive',
     'กฎหมายคุ้มครองข้อมูลส่วนบุคคล PDPA',
     'https://picsum.photos/seed/st-pdpa/640/360',
     E'# Data Privacy & PDPA\n\n## PDPA Overview\nPDPA คือ พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562\n\n### pdpa-overview\n- [SCORE] 10\n- [Q] PDPA ย่อมาจากอะไร :: Personal Data Protection Act :: 10\n\n## Data Subject Rights\nเจ้าของข้อมูลมีสิทธิ ขอเข้าถึง แก้ไข ลบ และคัดค้าน\n\n### data-rights\n- [SCORE] 10\n- [Q] สิทธิของเจ้าของข้อมูลมีอะไรบ้าง :: เข้าถึง แก้ไข ลบ คัดค้าน :: 10',
     10, 10, 40
   ),
   (
-    'st-course-10', 'Presentation Skills', 'ทดสอบ คนที่ 36', 'st-user-036', 'inprogress',
+    'st-course-10', 'Presentation Skills', 'ปวีณา สร้างสรรค์', 'paweena', 'inprogress',
     'ทักษะนำเสนองาน: โครงสร้าง, การพูด, สไลด์',
     'https://picsum.photos/seed/st-present/640/360',
     E'# Presentation Skills\n\n## Storytelling\nเล่าเรื่องแบบมีโครงสร้าง: Opening, Body, Closing\n\n### storytelling\n- [SCORE] 10\n- [Q] โครงสร้างการนำเสนอมี 3 ส่วนคือ :: Opening Body Closing :: 10\n\n## Slide Design\nสไลด์ที่ดีไม่ควรมีข้อความมากเกิน ใช้ภาพและกราฟเสริม\n\n### slide-design\n- [SCORE] 10\n- [Q] สไลด์ที่ดีควรเป็นอย่างไร :: ข้อความน้อย ใช้ภาพเสริม :: 10',
@@ -877,64 +867,70 @@ INSERT INTO course_skill_rewards (course_id, skill, points) VALUES
   ('st-course-10', 'Communication',      40),
   ('st-course-10', 'Presentation',       30);
 
--- === STRESS TEST ENROLLMENTS (กระจาย users ลง courses ให้เยอะ) ===
--- st-course-01 (35 learners — สูงสุด)
-INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at)
-SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-01',
-  NOW() - (120 - n) * INTERVAL '1 day',
-  CASE WHEN n <= 20 THEN NOW() - (90 - n) * INTERVAL '1 day' ELSE NULL END
-FROM generate_series(1, 35) AS n;
+-- ==========================================================
+-- ENROLLMENTS สำหรับ users ใหม่
+-- ==========================================================
 
--- st-course-02 (30 learners)
-INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at)
-SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-02',
-  NOW() - (100 - n) * INTERVAL '1 day',
-  CASE WHEN n <= 15 THEN NOW() - (70 - n) * INTERVAL '1 day' ELSE NULL END
-FROM generate_series(1, 30) AS n;
+INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at) VALUES
+  -- st-course-01 (Network): 9 learners ใหม่
+  ('thanapol',    'st-course-01', NOW() - INTERVAL '100 days', NOW() - INTERVAL '80 days'),
+  ('piya',        'st-course-01', NOW() - INTERVAL '95 days',  NOW() - INTERVAL '75 days'),
+  ('jirayu',      'st-course-01', NOW() - INTERVAL '85 days',  NOW() - INTERVAL '65 days'),
+  ('natthapong',  'st-course-01', NOW() - INTERVAL '70 days',  NOW() - INTERVAL '55 days'),
+  ('siriporn',    'st-course-01', NOW() - INTERVAL '60 days',  NOW() - INTERVAL '45 days'),
+  ('kamonchanok', 'st-course-01', NOW() - INTERVAL '50 days',  NOW() - INTERVAL '35 days'),
+  ('wannapha',    'st-course-01', NOW() - INTERVAL '40 days',  NULL),
+  ('theerasak',   'st-course-01', NOW() - INTERVAL '30 days',  NULL),
+  ('anchalee',    'st-course-01', NOW() - INTERVAL '15 days',  NULL),
+  -- st-course-02 (Cloud): 7 learners ใหม่
+  ('thanapol',    'st-course-02', NOW() - INTERVAL '90 days',  NOW() - INTERVAL '70 days'),
+  ('piya',        'st-course-02', NOW() - INTERVAL '80 days',  NOW() - INTERVAL '60 days'),
+  ('jirayu',      'st-course-02', NOW() - INTERVAL '65 days',  NOW() - INTERVAL '50 days'),
+  ('natthapong',  'st-course-02', NOW() - INTERVAL '55 days',  NOW() - INTERVAL '40 days'),
+  ('kamonchanok', 'st-course-02', NOW() - INTERVAL '45 days',  NULL),
+  ('pitchaya',    'st-course-02', NOW() - INTERVAL '25 days',  NULL),
+  ('thawatchai',  'st-course-02', NOW() - INTERVAL '10 days',  NULL),
+  -- st-course-03 (Docker): 6 learners ใหม่
+  ('piya',        'st-course-03', NOW() - INTERVAL '75 days',  NOW() - INTERVAL '55 days'),
+  ('jirayu',      'st-course-03', NOW() - INTERVAL '60 days',  NOW() - INTERVAL '45 days'),
+  ('siriporn',    'st-course-03', NOW() - INTERVAL '50 days',  NOW() - INTERVAL '35 days'),
+  ('theerasak',   'st-course-03', NOW() - INTERVAL '35 days',  NULL),
+  ('anchalee',    'st-course-03', NOW() - INTERVAL '20 days',  NULL),
+  ('kanokwan',    'st-course-03', NOW() - INTERVAL '10 days',  NULL),
+  -- st-course-04 (Git): 5 learners ใหม่
+  ('thanapol',    'st-course-04', NOW() - INTERVAL '70 days',  NOW() - INTERVAL '55 days'),
+  ('natthapong',  'st-course-04', NOW() - INTERVAL '50 days',  NOW() - INTERVAL '35 days'),
+  ('wannapha',    'st-course-04', NOW() - INTERVAL '30 days',  NULL),
+  ('pitchaya',    'st-course-04', NOW() - INTERVAL '15 days',  NULL),
+  ('supatsara',   'st-course-04', NOW() - INTERVAL '5 days',   NULL),
+  -- st-course-05 (SQL): 8 learners ใหม่
+  ('thanapol',    'st-course-05', NOW() - INTERVAL '85 days',  NOW() - INTERVAL '65 days'),
+  ('piya',        'st-course-05', NOW() - INTERVAL '75 days',  NOW() - INTERVAL '55 days'),
+  ('jirayu',      'st-course-05', NOW() - INTERVAL '65 days',  NOW() - INTERVAL '50 days'),
+  ('siriporn',    'st-course-05', NOW() - INTERVAL '55 days',  NOW() - INTERVAL '40 days'),
+  ('kamonchanok', 'st-course-05', NOW() - INTERVAL '40 days',  NOW() - INTERVAL '25 days'),
+  ('wannapha',    'st-course-05', NOW() - INTERVAL '30 days',  NULL),
+  ('theerasak',   'st-course-05', NOW() - INTERVAL '20 days',  NULL),
+  ('rattana',     'st-course-05', NOW() - INTERVAL '10 days',  NULL),
+  -- st-course-06 (Agile): 4 learners ใหม่
+  ('jirayu',      'st-course-06', NOW() - INTERVAL '45 days',  NOW() - INTERVAL '30 days'),
+  ('natthapong',  'st-course-06', NOW() - INTERVAL '35 days',  NOW() - INTERVAL '20 days'),
+  ('anchalee',    'st-course-06', NOW() - INTERVAL '20 days',  NULL),
+  ('thawatchai',  'st-course-06', NOW() - INTERVAL '10 days',  NULL),
+  -- st-course-07 (Python): 4 learners ใหม่
+  ('piya',        'st-course-07', NOW() - INTERVAL '60 days',  NOW() - INTERVAL '40 days'),
+  ('siriporn',    'st-course-07', NOW() - INTERVAL '40 days',  NOW() - INTERVAL '25 days'),
+  ('kanokwan',    'st-course-07', NOW() - INTERVAL '20 days',  NULL),
+  ('wasan',       'st-course-07', NOW() - INTERVAL '5 days',   NULL),
+  -- st-course-08 (CyberAdv): 3 learners ใหม่
+  ('thanapol',    'st-course-08', NOW() - INTERVAL '50 days',  NOW() - INTERVAL '30 days'),
+  ('piya',        'st-course-08', NOW() - INTERVAL '40 days',  NOW() - INTERVAL '25 days'),
+  ('jirayu',      'st-course-08', NOW() - INTERVAL '25 days',  NULL),
+  -- st-course-10 (Presentation): 2 learners ใหม่
+  ('natthapong',  'st-course-10', NOW() - INTERVAL '15 days',  NULL),
+  ('wannapha',    'st-course-10', NOW() - INTERVAL '10 days',  NULL);
 
--- st-course-03 (25 learners)
-INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at)
-SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-03',
-  NOW() - (90 - n) * INTERVAL '1 day',
-  CASE WHEN n <= 12 THEN NOW() - (60 - n) * INTERVAL '1 day' ELSE NULL END
-FROM generate_series(1, 25) AS n;
-
--- st-course-04 (20 learners)
-INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at)
-SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-04',
-  NOW() - (80 - n) * INTERVAL '1 day',
-  CASE WHEN n <= 10 THEN NOW() - (50 - n) * INTERVAL '1 day' ELSE NULL END
-FROM generate_series(1, 20) AS n;
-
--- st-course-05 (28 learners)
-INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at)
-SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-05',
-  NOW() - (110 - n) * INTERVAL '1 day',
-  CASE WHEN n <= 18 THEN NOW() - (80 - n) * INTERVAL '1 day' ELSE NULL END
-FROM generate_series(1, 28) AS n;
-
--- st-course-06 (22 learners)
-INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at)
-SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-06',
-  NOW() - (70 - n) * INTERVAL '1 day',
-  CASE WHEN n <= 8 THEN NOW() - (40 - n) * INTERVAL '1 day' ELSE NULL END
-FROM generate_series(1, 22) AS n;
-
--- st-course-07 (18 learners)
-INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at)
-SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-07',
-  NOW() - (60 - n) * INTERVAL '1 day',
-  CASE WHEN n <= 5 THEN NOW() - (30 - n) * INTERVAL '1 day' ELSE NULL END
-FROM generate_series(1, 18) AS n;
-
--- st-course-08 (15 learners)
-INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at)
-SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-08',
-  NOW() - (50 - n) * INTERVAL '1 day',
-  CASE WHEN n <= 5 THEN NOW() - (25 - n) * INTERVAL '1 day' ELSE NULL END
-FROM generate_series(1, 15) AS n;
-
--- original users ลง stress-test courses ด้วย
+-- original users ลง st-courses ด้วย
 INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at) VALUES
   ('somchai',   'st-course-01', NOW() - INTERVAL '80 days',  NOW() - INTERVAL '60 days'),
   ('somying',   'st-course-01', NOW() - INTERVAL '70 days',  NOW() - INTERVAL '55 days'),
@@ -947,133 +943,167 @@ INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed
   ('burin',     'st-course-07', NOW() - INTERVAL '20 days',  NULL),
   ('pairot',    'st-course-06', NOW() - INTERVAL '15 days',  NULL);
 
--- === STRESS TEST LEARNING PROGRESS (subtopic completions) ===
--- completed learners ใน st-course-01 (3 subtopics: osi-basics, tcpip, subnetting)
-INSERT INTO learning_subtopic_progress (username, course_id, subtopic_id, completed_at)
-SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-01', sub.id,
-  NOW() - (90 - n) * INTERVAL '1 day' + sub.offset_hrs * INTERVAL '1 hour'
-FROM generate_series(1, 20) AS n
-CROSS JOIN (VALUES ('osi-basics', 0), ('tcpip', 2), ('subnetting', 4)) AS sub(id, offset_hrs);
+-- new users ลง original courses ด้วย
+INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at) VALUES
+  ('thanapol',    'course-itsec',    NOW() - INTERVAL '100 days', NOW() - INTERVAL '85 days'),
+  ('piya',        'course-itsec',    NOW() - INTERVAL '80 days',  NOW() - INTERVAL '65 days'),
+  ('jirayu',      'course-timemgmt', NOW() - INTERVAL '60 days',  NOW() - INTERVAL '45 days'),
+  ('natthapong',  'course-excel',    NOW() - INTERVAL '50 days',  NOW() - INTERVAL '35 days'),
+  ('siriporn',    'course-itsec',    NOW() - INTERVAL '45 days',  NULL),
+  ('kamonchanok', 'course-timemgmt', NOW() - INTERVAL '35 days',  NULL),
+  ('theerasak',   'course-leadership', NOW() - INTERVAL '25 days', NULL),
+  ('anchalee',    'course-excel',    NOW() - INTERVAL '15 days',  NULL);
 
--- completed learners ใน st-course-02 (3 subtopics: iaas, paas, saas)
-INSERT INTO learning_subtopic_progress (username, course_id, subtopic_id, completed_at)
-SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-02', sub.id,
-  NOW() - (70 - n) * INTERVAL '1 day' + sub.offset_hrs * INTERVAL '1 hour'
-FROM generate_series(1, 15) AS n
-CROSS JOIN (VALUES ('iaas', 0), ('paas', 2), ('saas', 4)) AS sub(id, offset_hrs);
+-- ==========================================================
+-- LEARNING PROGRESS สำหรับ users ใหม่
+-- ==========================================================
 
--- completed learners ใน st-course-05 (3 subtopics: select-where, join-basics, group-by)
-INSERT INTO learning_subtopic_progress (username, course_id, subtopic_id, completed_at)
-SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-05', sub.id,
-  NOW() - (80 - n) * INTERVAL '1 day' + sub.offset_hrs * INTERVAL '1 hour'
-FROM generate_series(1, 18) AS n
-CROSS JOIN (VALUES ('select-where', 0), ('join-basics', 2), ('group-by', 4)) AS sub(id, offset_hrs);
+INSERT INTO learning_subtopic_progress (username, course_id, subtopic_id, completed_at) VALUES
+  -- thanapol: st-course-01 ครบ 3/3
+  ('thanapol', 'st-course-01', 'osi-basics',  NOW() - INTERVAL '95 days'),
+  ('thanapol', 'st-course-01', 'tcpip',       NOW() - INTERVAL '90 days'),
+  ('thanapol', 'st-course-01', 'subnetting',  NOW() - INTERVAL '85 days'),
+  -- piya: st-course-01 ครบ, st-course-02 ครบ, st-course-03 ครบ
+  ('piya', 'st-course-01', 'osi-basics',  NOW() - INTERVAL '90 days'),
+  ('piya', 'st-course-01', 'tcpip',       NOW() - INTERVAL '88 days'),
+  ('piya', 'st-course-01', 'subnetting',  NOW() - INTERVAL '85 days'),
+  ('piya', 'st-course-02', 'iaas',        NOW() - INTERVAL '75 days'),
+  ('piya', 'st-course-02', 'paas',        NOW() - INTERVAL '73 days'),
+  ('piya', 'st-course-02', 'saas',        NOW() - INTERVAL '70 days'),
+  ('piya', 'st-course-03', 'container-vs-vm', NOW() - INTERVAL '65 days'),
+  ('piya', 'st-course-03', 'dockerfile',  NOW() - INTERVAL '60 days'),
+  -- jirayu: st-course-01 ครบ, st-course-05 2/3
+  ('jirayu', 'st-course-01', 'osi-basics',  NOW() - INTERVAL '80 days'),
+  ('jirayu', 'st-course-01', 'tcpip',       NOW() - INTERVAL '78 days'),
+  ('jirayu', 'st-course-01', 'subnetting',  NOW() - INTERVAL '75 days'),
+  ('jirayu', 'st-course-05', 'select-where', NOW() - INTERVAL '60 days'),
+  ('jirayu', 'st-course-05', 'join-basics', NOW() - INTERVAL '55 days'),
+  -- natthapong: st-course-01 ครบ, st-course-02 ครบ
+  ('natthapong', 'st-course-01', 'osi-basics',  NOW() - INTERVAL '65 days'),
+  ('natthapong', 'st-course-01', 'tcpip',       NOW() - INTERVAL '63 days'),
+  ('natthapong', 'st-course-01', 'subnetting',  NOW() - INTERVAL '60 days'),
+  ('natthapong', 'st-course-02', 'iaas',        NOW() - INTERVAL '50 days'),
+  ('natthapong', 'st-course-02', 'paas',        NOW() - INTERVAL '48 days'),
+  ('natthapong', 'st-course-02', 'saas',        NOW() - INTERVAL '45 days'),
+  -- siriporn: st-course-01 ครบ
+  ('siriporn', 'st-course-01', 'osi-basics',  NOW() - INTERVAL '55 days'),
+  ('siriporn', 'st-course-01', 'tcpip',       NOW() - INTERVAL '52 days'),
+  ('siriporn', 'st-course-01', 'subnetting',  NOW() - INTERVAL '50 days'),
+  -- kamonchanok: st-course-01 ครบ, st-course-05 ครบ
+  ('kamonchanok', 'st-course-01', 'osi-basics',    NOW() - INTERVAL '45 days'),
+  ('kamonchanok', 'st-course-01', 'tcpip',         NOW() - INTERVAL '43 days'),
+  ('kamonchanok', 'st-course-01', 'subnetting',    NOW() - INTERVAL '40 days'),
+  ('kamonchanok', 'st-course-05', 'select-where',  NOW() - INTERVAL '35 days'),
+  ('kamonchanok', 'st-course-05', 'join-basics',   NOW() - INTERVAL '33 days'),
+  ('kamonchanok', 'st-course-05', 'group-by',      NOW() - INTERVAL '30 days'),
+  -- wannapha: st-course-01 1/3 (in progress)
+  ('wannapha', 'st-course-01', 'osi-basics',  NOW() - INTERVAL '35 days'),
+  -- theerasak: st-course-01 1/3
+  ('theerasak', 'st-course-01', 'osi-basics',  NOW() - INTERVAL '25 days'),
+  -- thanapol: course-itsec ครบ
+  ('thanapol', 'course-itsec', 'password-mgmt', NOW() - INTERVAL '95 days'),
+  ('thanapol', 'course-itsec', 'phishing',      NOW() - INTERVAL '93 days'),
+  ('thanapol', 'course-itsec', 'backup',        NOW() - INTERVAL '90 days'),
+  -- piya: course-itsec 2/3
+  ('piya', 'course-itsec', 'password-mgmt', NOW() - INTERVAL '75 days'),
+  ('piya', 'course-itsec', 'phishing',      NOW() - INTERVAL '70 days');
 
--- partial progress สำหรับ in-progress learners
-INSERT INTO learning_subtopic_progress (username, course_id, subtopic_id, completed_at)
-SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-01', 'osi-basics',
-  NOW() - (30 - n) * INTERVAL '1 day'
-FROM generate_series(21, 30) AS n;
+-- ==========================================================
+-- USER SCORES สำหรับ users ใหม่
+-- ==========================================================
 
-INSERT INTO learning_subtopic_progress (username, course_id, subtopic_id, completed_at)
-SELECT 'st-user-' || LPAD(n::text, 3, '0'), 'st-course-03', sub.id,
-  NOW() - (60 - n) * INTERVAL '1 day' + sub.offset_hrs * INTERVAL '1 hour'
-FROM generate_series(1, 12) AS n
-CROSS JOIN (VALUES ('container-vs-vm', 0), ('dockerfile', 2)) AS sub(id, offset_hrs);
-
--- === STRESS TEST SCORES (กระจายระดับ Lv1-Lv5) ===
 INSERT INTO user_scores (username, total) VALUES
-  ('st-user-001', 850),  -- Lv5
-  ('st-user-002', 780),  -- Lv5
-  ('st-user-003', 720),  -- Lv5
-  ('st-user-004', 600),  -- Lv4
-  ('st-user-005', 550),  -- Lv4
-  ('st-user-006', 480),  -- Lv4
-  ('st-user-007', 400),  -- Lv4
-  ('st-user-008', 350),  -- Lv4
-  ('st-user-009', 300),  -- Lv3
-  ('st-user-010', 280),  -- Lv3
-  ('st-user-011', 250),  -- Lv3
-  ('st-user-012', 220),  -- Lv3
-  ('st-user-013', 200),  -- Lv3
-  ('st-user-014', 180),  -- Lv3
-  ('st-user-015', 165),  -- Lv3
-  ('st-user-016', 150),  -- Lv3
-  ('st-user-017', 140),  -- Lv2
-  ('st-user-018', 130),  -- Lv2
-  ('st-user-019', 120),  -- Lv2
-  ('st-user-020', 110),  -- Lv2
-  ('st-user-021', 100),  -- Lv2
-  ('st-user-022',  95),  -- Lv2
-  ('st-user-023',  85),  -- Lv2
-  ('st-user-024',  75),  -- Lv2
-  ('st-user-025',  65),  -- Lv2
-  ('st-user-026',  55),  -- Lv2
-  ('st-user-027',  50),  -- Lv2
-  ('st-user-028',  45),  -- Lv1
-  ('st-user-029',  40),  -- Lv1
-  ('st-user-030',  35),  -- Lv1
-  ('st-user-031',  30),  -- Lv1
-  ('st-user-032',  25),  -- Lv1
-  ('st-user-033',  20),  -- Lv1
-  ('st-user-034',  15),  -- Lv1
-  ('st-user-035',  10),  -- Lv1
-  ('st-user-036', 420),  -- Lv4 (instructor)
-  ('st-user-037', 380),  -- Lv4 (instructor)
-  ('st-user-038', 350),  -- Lv4 (instructor)
-  ('st-user-039',   5),  -- Lv1
-  ('st-user-040',   3),  -- Lv1
-  ('st-user-043',  45),  -- Lv1
-  ('st-user-044',  40),  -- Lv1
-  ('st-user-045',  35),  -- Lv1
-  ('st-user-046',  30),  -- Lv1
-  ('st-user-047',  20),  -- Lv1
-  ('st-user-048',  15),  -- Lv1
-  ('st-user-049',  10),  -- Lv1
-  ('st-user-050',   5);  -- Lv1
+  ('thanapol',    5800),  -- Lv10 องค์สัมมาสัมพุทธเจ้า 4.0
+  ('piya',        4500),  -- Lv9  มหาเทพสงครามไร้สาย
+  ('jirayu',      1800),  -- Lv6  เทพเจ้าสแกนไวรัสด้วยตาเปล่า
+  ('natthapong',  1200),  -- Lv5  พยัคฆ์ร้ายสาย LAN
+  ('siriporn',     750),  -- Lv4  มือปราบปลั๊กหลุด
+  ('suthida',     1650),  -- Lv6  เทพเจ้าสแกนไวรัสด้วยตาเปล่า (instructor)
+  ('paweena',     1050),  -- Lv5  พยัคฆ์ร้ายสาย LAN (instructor)
+  ('kamonchanok',  450),  -- Lv3  องครักษ์การ์ดจอออนบอร์ด
+  ('wannapha',     380),  -- Lv3  องครักษ์การ์ดจอออนบอร์ด
+  ('theerasak',    200),  -- Lv2  อัศวินแป้นพิมพ์สีลอก
+  ('anchalee',     150),  -- Lv2  อัศวินแป้นพิมพ์สีลอก
+  ('pitchaya',     110),  -- Lv2  อัศวินแป้นพิมพ์สีลอก
+  ('rattana',      120),  -- Lv2  อัศวินแป้นพิมพ์สีลอก
+  ('thawatchai',    70),  -- Lv1  พลทหารเน็ตคาเฟ่
+  ('kanokwan',      55),  -- Lv1  พลทหารเน็ตคาเฟ่
+  ('supatsara',     40),  -- Lv1  พลทหารเน็ตคาเฟ่
+  ('wasan',         30),  -- Lv1  พลทหารเน็ตคาเฟ่
+  ('nicha',         20),  -- Lv1  พลทหารเน็ตคาเฟ่
+  ('chaiwat',       15),  -- Lv1  พลทหารเน็ตคาเฟ่
+  ('maneerat',      35),  -- Lv1  พลทหารเน็ตคาเฟ่
+  ('thidarat',      10);  -- Lv1  พลทหารเน็ตคาเฟ่
 
--- === STRESS TEST SKILL SCORES ===
+-- ==========================================================
+-- USER SKILL SCORES สำหรับ users ใหม่
+-- ==========================================================
+
 INSERT INTO user_skill_scores (username, skill, points) VALUES
-  ('st-user-001', 'Networking',     80), ('st-user-001', 'Cloud',          60), ('st-user-001', 'SQL',       70),
-  ('st-user-002', 'Networking',     70), ('st-user-002', 'DevOps',         60), ('st-user-002', 'Python',    50),
-  ('st-user-003', 'SQL',            80), ('st-user-003', 'Data Analysis',  60), ('st-user-003', 'Cloud',     40),
-  ('st-user-004', 'Networking',     60), ('st-user-004', 'Cybersecurity',  50),
-  ('st-user-005', 'Cloud',          60), ('st-user-005', 'DevOps',         40),
-  ('st-user-006', 'SQL',            50), ('st-user-006', 'Agile',          40),
-  ('st-user-007', 'Python',         50), ('st-user-007', 'Git',            30),
-  ('st-user-008', 'Networking',     40), ('st-user-008', 'Cloud',          30),
-  ('st-user-009', 'SQL',            40), ('st-user-009', 'Data Analysis',  25),
-  ('st-user-010', 'DevOps',         35), ('st-user-010', 'Container',      25),
-  ('st-user-036', 'Networking',     80), ('st-user-036', 'Cloud',          70), ('st-user-036', 'Python', 60),
-  ('st-user-037', 'DevOps',         80), ('st-user-037', 'Git',            60), ('st-user-037', 'Cybersecurity', 50),
-  ('st-user-038', 'SQL',            70), ('st-user-038', 'Data Privacy',   60), ('st-user-038', 'Agile', 50);
+  ('thanapol',    'Networking',     80), ('thanapol',    'Cloud',          60), ('thanapol',    'SQL',       70),
+  ('piya',        'Networking',     70), ('piya',        'DevOps',         60), ('piya',        'Python',    50),
+  ('jirayu',      'SQL',            80), ('jirayu',      'Data Analysis',  60), ('jirayu',      'Cloud',     40),
+  ('natthapong',  'Networking',     60), ('natthapong',  'Cybersecurity',  50),
+  ('siriporn',    'Cloud',          60), ('siriporn',    'DevOps',         40),
+  ('kamonchanok', 'SQL',            50), ('kamonchanok', 'Agile',          40),
+  ('wannapha',    'Python',         50), ('wannapha',    'Git',            30),
+  ('theerasak',   'Networking',     40), ('theerasak',   'Cloud',          30),
+  ('anchalee',    'SQL',            40), ('anchalee',    'Data Analysis',  25),
+  ('pitchaya',    'DevOps',         35), ('pitchaya',    'Container',      25),
+  ('suthida',     'Networking',     80), ('suthida',     'Cloud',          70), ('suthida',  'Python', 60),
+  ('paweena',     'DevOps',         80), ('paweena',     'Git',            60), ('paweena',  'Cybersecurity', 50);
 
--- === STRESS TEST SCORE EVENTS (ทดสอบ leaderboard ตามช่วงเวลา) ===
-INSERT INTO user_score_events (username, score, reason, course_id, earned_at)
-SELECT 'st-user-' || LPAD(n::text, 3, '0'),
-  (10 + (n % 5) * 5),
-  CASE WHEN n % 3 = 0 THEN 'course_complete' ELSE 'subtopic_complete' END,
-  'st-course-0' || (1 + (n % 8))::text,
-  NOW() - (n * 3) * INTERVAL '1 day'
-FROM generate_series(1, 50) AS n;
+-- ==========================================================
+-- SCORE EVENTS (ทดสอบ leaderboard ตามช่วงเวลา + monthly completions)
+-- ==========================================================
 
--- เพิ่ม score events สำหรับ monthly completions chart (กระจาย ม.ค.-ธ.ค.)
-INSERT INTO user_score_events (username, score, reason, course_id, earned_at)
-SELECT 'st-user-' || LPAD(((m * 3 + s) % 50 + 1)::text, 3, '0'),
-  20,
-  'course_complete',
-  'st-course-0' || (1 + (m % 8))::text,
-  DATE_TRUNC('year', NOW()) + (m - 1) * INTERVAL '1 month' + s * INTERVAL '3 days'
-FROM generate_series(1, 12) AS m
-CROSS JOIN generate_series(1, 4) AS s;
+INSERT INTO user_score_events (username, score, reason, course_id, earned_at) VALUES
+  ('thanapol',    30, 'course_complete',   'st-course-01', NOW() - INTERVAL '80 days'),
+  ('thanapol',    25, 'course_complete',   'st-course-02', NOW() - INTERVAL '70 days'),
+  ('thanapol',    20, 'subtopic_complete', 'st-course-05', NOW() - INTERVAL '65 days'),
+  ('piya',        30, 'course_complete',   'st-course-01', NOW() - INTERVAL '75 days'),
+  ('piya',        25, 'course_complete',   'st-course-02', NOW() - INTERVAL '60 days'),
+  ('piya',        20, 'course_complete',   'st-course-03', NOW() - INTERVAL '55 days'),
+  ('jirayu',      30, 'course_complete',   'st-course-01', NOW() - INTERVAL '65 days'),
+  ('jirayu',      25, 'course_complete',   'st-course-06', NOW() - INTERVAL '30 days'),
+  ('jirayu',      15, 'subtopic_complete', 'st-course-05', NOW() - INTERVAL '55 days'),
+  ('natthapong',  25, 'course_complete',   'st-course-01', NOW() - INTERVAL '55 days'),
+  ('natthapong',  20, 'course_complete',   'st-course-02', NOW() - INTERVAL '40 days'),
+  ('natthapong',  15, 'course_complete',   'st-course-06', NOW() - INTERVAL '20 days'),
+  ('siriporn',    25, 'course_complete',   'st-course-01', NOW() - INTERVAL '45 days'),
+  ('siriporn',    20, 'course_complete',   'st-course-07', NOW() - INTERVAL '25 days'),
+  ('kamonchanok', 20, 'course_complete',   'st-course-01', NOW() - INTERVAL '35 days'),
+  ('kamonchanok', 15, 'course_complete',   'st-course-05', NOW() - INTERVAL '25 days'),
+  ('anchalee',    10, 'subtopic_complete', 'st-course-01', NOW() - INTERVAL '15 days'),
+  ('pitchaya',    10, 'subtopic_complete', 'st-course-02', NOW() - INTERVAL '20 days'),
+  ('thawatchai',  10, 'subtopic_complete', 'st-course-02', NOW() - INTERVAL '8 days'),
+  ('supatsara',    5, 'subtopic_complete', 'st-course-04', NOW() - INTERVAL '3 days');
 
--- === STRESS TEST EXAMS (3 exams เพิ่ม) ===
+-- monthly completions (กระจาย ม.ค.-ธ.ค. สำหรับ chart)
+INSERT INTO user_score_events (username, score, reason, course_id, earned_at) VALUES
+  ('thanapol',    20, 'course_complete', 'course-itsec',    DATE_TRUNC('year', NOW()) + INTERVAL '0 months' + INTERVAL '10 days'),
+  ('piya',        20, 'course_complete', 'course-itsec',    DATE_TRUNC('year', NOW()) + INTERVAL '1 month' + INTERVAL '5 days'),
+  ('jirayu',      20, 'course_complete', 'course-timemgmt', DATE_TRUNC('year', NOW()) + INTERVAL '2 months' + INTERVAL '12 days'),
+  ('natthapong',  20, 'course_complete', 'course-excel',    DATE_TRUNC('year', NOW()) + INTERVAL '3 months' + INTERVAL '8 days'),
+  ('siriporn',    20, 'course_complete', 'st-course-03',    DATE_TRUNC('year', NOW()) + INTERVAL '4 months' + INTERVAL '15 days'),
+  ('kamonchanok', 20, 'course_complete', 'st-course-05',    DATE_TRUNC('year', NOW()) + INTERVAL '5 months' + INTERVAL '3 days'),
+  ('wannapha',    20, 'course_complete', 'st-course-04',    DATE_TRUNC('year', NOW()) + INTERVAL '6 months' + INTERVAL '20 days'),
+  ('theerasak',   20, 'course_complete', 'st-course-06',    DATE_TRUNC('year', NOW()) + INTERVAL '7 months' + INTERVAL '10 days'),
+  ('anchalee',    20, 'course_complete', 'st-course-02',    DATE_TRUNC('year', NOW()) + INTERVAL '8 months' + INTERVAL '5 days'),
+  ('pitchaya',    20, 'course_complete', 'st-course-01',    DATE_TRUNC('year', NOW()) + INTERVAL '9 months' + INTERVAL '18 days'),
+  ('thanapol',    20, 'course_complete', 'st-course-08',    DATE_TRUNC('year', NOW()) + INTERVAL '10 months' + INTERVAL '7 days'),
+  ('piya',        20, 'course_complete', 'st-course-07',    DATE_TRUNC('year', NOW()) + INTERVAL '11 months' + INTERVAL '12 days');
+
+-- ==========================================================
+-- EXAMS เพิ่ม (3 ข้อสอบ — รวม 5 ข้อสอบ)
+-- ==========================================================
+
 INSERT INTO exams (id, title, creator, owner_username, status, description, instructions, image, number_of_questions, default_time, max_attempts) VALUES
   (
     'st-exam-01',
     'ข้อสอบ Network Fundamentals',
-    'ทดสอบ คนที่ 36',
-    'st-user-036',
+    'สุธิดา ผู้สอนใหม่',
+    'suthida',
     'active',
     'ทดสอบความเข้าใจเรื่องเครือข่ายพื้นฐาน OSI, TCP/IP',
     'เลือกคำตอบที่ถูกต้อง มีเวลา 15 นาที',
@@ -1083,8 +1113,8 @@ INSERT INTO exams (id, title, creator, owner_username, status, description, inst
   (
     'st-exam-02',
     'ข้อสอบ Cloud Computing',
-    'ทดสอบ คนที่ 37',
-    'st-user-037',
+    'ปวีณา สร้างสรรค์',
+    'paweena',
     'active',
     'ทดสอบความเข้าใจ Cloud models: IaaS, PaaS, SaaS',
     'เลือกคำตอบที่ถูกต้อง มีเวลา 15 นาที',
@@ -1094,8 +1124,8 @@ INSERT INTO exams (id, title, creator, owner_username, status, description, inst
   (
     'st-exam-03',
     'ข้อสอบ SQL & Database',
-    'ทดสอบ คนที่ 38',
-    'st-user-038',
+    'สุธิดา ผู้สอนใหม่',
+    'suthida',
     'active',
     'ทดสอบความเข้าใจพื้นฐาน SQL: SELECT, JOIN, GROUP BY',
     'เลือกคำตอบที่ถูกต้อง มีเวลา 20 นาที',
@@ -1162,229 +1192,73 @@ INSERT INTO exam_questions (id, exam_id, domain, question_type, question, choice
    'PRIMARY KEY มีคุณสมบัติใด?', 'ซ้ำได้', 'ไม่ซ้ำและไม่เป็น NULL', 'เป็น NULL ได้', 'เก็บข้อมูลหลาย type',
    'B', 'PRIMARY KEY ต้อง unique และ NOT NULL');
 
--- === STRESS TEST EXAM ATTEMPTS (100+ attempts ข้ามสัปดาห์) ===
-
--- สัปดาห์ปัจจุบัน: วันจันทร์-ศุกร์ ข้อสอบ st-exam-01 (กระจายทุกวัน)
-INSERT INTO exam_attempts (username, exam_id, correct_count, total_questions, score_percent, domain_stats, started_at, finished_at)
-SELECT
-  'st-user-' || LPAD(n::text, 3, '0'),
-  'st-exam-01',
-  CASE WHEN n % 4 = 0 THEN 5 WHEN n % 4 = 1 THEN 4 WHEN n % 4 = 2 THEN 3 ELSE 2 END,
-  5,
-  CASE WHEN n % 4 = 0 THEN 100.00 WHEN n % 4 = 1 THEN 80.00 WHEN n % 4 = 2 THEN 60.00 ELSE 40.00 END,
-  ('{"Networking":{"correct":' || CASE WHEN n % 4 = 0 THEN '5' WHEN n % 4 = 1 THEN '4' WHEN n % 4 = 2 THEN '3' ELSE '2' END || ',"total":5}}')::jsonb,
-  DATE_TRUNC('week', NOW()) + ((n - 1) % 5) * INTERVAL '1 day' + n * INTERVAL '30 minutes',
-  DATE_TRUNC('week', NOW()) + ((n - 1) % 5) * INTERVAL '1 day' + n * INTERVAL '30 minutes' + INTERVAL '12 minutes'
-FROM generate_series(1, 30) AS n;
-
--- สัปดาห์ปัจจุบัน: st-exam-02 (Cloud)
-INSERT INTO exam_attempts (username, exam_id, correct_count, total_questions, score_percent, domain_stats, started_at, finished_at)
-SELECT
-  'st-user-' || LPAD(n::text, 3, '0'),
-  'st-exam-02',
-  CASE WHEN n % 3 = 0 THEN 5 WHEN n % 3 = 1 THEN 3 ELSE 2 END,
-  5,
-  CASE WHEN n % 3 = 0 THEN 100.00 WHEN n % 3 = 1 THEN 60.00 ELSE 40.00 END,
-  ('{"Cloud":{"correct":' || CASE WHEN n % 3 = 0 THEN '5' WHEN n % 3 = 1 THEN '3' ELSE '2' END || ',"total":5}}')::jsonb,
-  DATE_TRUNC('week', NOW()) + ((n - 1) % 5) * INTERVAL '1 day' + (n + 15) * INTERVAL '30 minutes',
-  DATE_TRUNC('week', NOW()) + ((n - 1) % 5) * INTERVAL '1 day' + (n + 15) * INTERVAL '30 minutes' + INTERVAL '14 minutes'
-FROM generate_series(1, 20) AS n;
-
--- สัปดาห์ปัจจุบัน: st-exam-03 (SQL) + original exams
-INSERT INTO exam_attempts (username, exam_id, correct_count, total_questions, score_percent, domain_stats, started_at, finished_at)
-SELECT
-  'st-user-' || LPAD(n::text, 3, '0'),
-  'st-exam-03',
-  CASE WHEN n % 5 = 0 THEN 5 WHEN n % 5 = 1 THEN 4 WHEN n % 5 = 2 THEN 3 WHEN n % 5 = 3 THEN 2 ELSE 1 END,
-  5,
-  CASE WHEN n % 5 = 0 THEN 100.00 WHEN n % 5 = 1 THEN 80.00 WHEN n % 5 = 2 THEN 60.00 WHEN n % 5 = 3 THEN 40.00 ELSE 20.00 END,
-  ('{"Database":{"correct":' || CASE WHEN n % 5 = 0 THEN '5' WHEN n % 5 = 1 THEN '4' WHEN n % 5 = 2 THEN '3' WHEN n % 5 = 3 THEN '2' ELSE '1' END || ',"total":5}}')::jsonb,
-  DATE_TRUNC('week', NOW()) + ((n - 1) % 5) * INTERVAL '1 day' + (n + 30) * INTERVAL '30 minutes',
-  DATE_TRUNC('week', NOW()) + ((n - 1) % 5) * INTERVAL '1 day' + (n + 30) * INTERVAL '30 minutes' + INTERVAL '18 minutes'
-FROM generate_series(1, 25) AS n;
-
--- attempts ย้อนหลัง (กระจาย 90 วัน — ทดสอบ exam history pagination)
-INSERT INTO exam_attempts (username, exam_id, correct_count, total_questions, score_percent, domain_stats, started_at, finished_at)
-SELECT
-  'st-user-' || LPAD(((n - 1) % 35 + 1)::text, 3, '0'),
-  CASE WHEN n % 5 IN (0,1) THEN 'st-exam-01' WHEN n % 5 IN (2,3) THEN 'st-exam-02' ELSE 'st-exam-03' END,
-  CASE WHEN n % 4 = 0 THEN 5 WHEN n % 4 = 1 THEN 4 WHEN n % 4 = 2 THEN 3 ELSE 1 END,
-  5,
-  CASE WHEN n % 4 = 0 THEN 100.00 WHEN n % 4 = 1 THEN 80.00 WHEN n % 4 = 2 THEN 60.00 ELSE 20.00 END,
-  (CASE
-    WHEN n % 5 IN (0,1) THEN '{"Networking":{"correct":' || CASE WHEN n % 4 = 0 THEN '5' WHEN n % 4 = 1 THEN '4' WHEN n % 4 = 2 THEN '3' ELSE '1' END || ',"total":5}}'
-    WHEN n % 5 IN (2,3) THEN '{"Cloud":{"correct":' || CASE WHEN n % 4 = 0 THEN '5' WHEN n % 4 = 1 THEN '4' WHEN n % 4 = 2 THEN '3' ELSE '1' END || ',"total":5}}'
-    ELSE '{"Database":{"correct":' || CASE WHEN n % 4 = 0 THEN '5' WHEN n % 4 = 1 THEN '4' WHEN n % 4 = 2 THEN '3' ELSE '1' END || ',"total":5}}'
-  END)::jsonb,
-  NOW() - n * INTERVAL '1 day' - (n % 8) * INTERVAL '1 hour',
-  NOW() - n * INTERVAL '1 day' - (n % 8) * INTERVAL '1 hour' + INTERVAL '15 minutes'
-FROM generate_series(1, 90) AS n;
-
--- stress-test users สอบ original exams ด้วย
-INSERT INTO exam_attempts (username, exam_id, correct_count, total_questions, score_percent, domain_stats, started_at, finished_at)
-SELECT
-  'st-user-' || LPAD(n::text, 3, '0'),
-  'exam-itsec-01',
-  CASE WHEN n % 3 = 0 THEN 5 WHEN n % 3 = 1 THEN 4 ELSE 2 END,
-  5,
-  CASE WHEN n % 3 = 0 THEN 100.00 WHEN n % 3 = 1 THEN 80.00 ELSE 40.00 END,
-  ('{"Security":{"correct":' || CASE WHEN n % 3 = 0 THEN '5' WHEN n % 3 = 1 THEN '4' ELSE '2' END || ',"total":5}}')::jsonb,
-  NOW() - (n * 2) * INTERVAL '1 day',
-  NOW() - (n * 2) * INTERVAL '1 day' + INTERVAL '20 minutes'
-FROM generate_series(1, 30) AS n;
-
-INSERT INTO exam_attempts (username, exam_id, correct_count, total_questions, score_percent, domain_stats, started_at, finished_at)
-SELECT
-  'st-user-' || LPAD(n::text, 3, '0'),
-  'exam-timemgmt-01',
-  CASE WHEN n % 2 = 0 THEN 5 ELSE 3 END,
-  5,
-  CASE WHEN n % 2 = 0 THEN 100.00 ELSE 60.00 END,
-  ('{"Management":{"correct":' || CASE WHEN n % 2 = 0 THEN '5' ELSE '3' END || ',"total":5}}')::jsonb,
-  NOW() - (n * 2 + 1) * INTERVAL '1 day',
-  NOW() - (n * 2 + 1) * INTERVAL '1 day' + INTERVAL '13 minutes'
-FROM generate_series(1, 25) AS n;
-
--- === STRESS TEST MONTHLY COMPLETIONS (เพิ่ม enrollments ที่ complete ในแต่ละเดือน) ===
--- ใช้ st-course-06: สร้าง enrollments ที่จบแต่ละเดือนของปี
-INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at)
-SELECT
-  'st-user-' || LPAD(n::text, 3, '0'),
-  'st-course-06',
-  DATE_TRUNC('year', NOW()) + (n - 1) * INTERVAL '1 month',
-  DATE_TRUNC('year', NOW()) + (n - 1) * INTERVAL '1 month' + INTERVAL '10 days'
-FROM generate_series(23, 35) AS n  -- users 23-35 ในเดือน ม.ค-ม.ค+12 ไม่เกิน
-WHERE n <= 35
-  AND 'st-user-' || LPAD(n::text, 3, '0') NOT IN (
-    SELECT username FROM user_course_enrollments WHERE course_id = 'st-course-06'
-  );
-
 -- ==========================================================
--- ███  BULK COURSES (100 more: st-course-011 ~ st-course-110)  ███
+-- EXAM ATTEMPTS สำหรับ users ใหม่
 -- ==========================================================
 
-DO $$
-DECLARE
-  titles TEXT[] := ARRAY[
-    'Linux Administration',        'Windows Server Management',   'DevOps Pipeline',
-    'API Design Patterns',         'React Frontend Development',  'Node.js Backend',
-    'Kubernetes Orchestration',    'Terraform Infrastructure',    'Ansible Automation',
-    'Prometheus Monitoring',       'GraphQL API',                 'TypeScript Advanced',
-    'MongoDB NoSQL',               'Redis Caching',               'RabbitMQ Messaging',
-    'Elasticsearch Analytics',     'CI/CD Best Practices',        'Microservices Architecture',
-    'Clean Code Principles',       'Design Patterns',             'UX/UI Foundations',
-    'Business Analysis',           'Data Engineering',            'Machine Learning Basics',
-    'IoT Fundamentals'
-  ];
-  descs TEXT[] := ARRAY[
-    'การบริหารจัดการระบบปฏิบัติการ Linux สำหรับ Server',
-    'การจัดการ Windows Server: Active Directory, Group Policy',
-    'ออกแบบ Pipeline สำหรับ Build, Test, Deploy อัตโนมัติ',
-    'หลักการออกแบบ RESTful API และ versioning',
-    'พัฒนา Single Page Application ด้วย React และ Hooks',
-    'สร้าง Backend API ด้วย Node.js, Express, middleware',
-    'จัดการ Container cluster ด้วย Kubernetes',
-    'สร้าง Infrastructure as Code ด้วย Terraform',
-    'Automate configuration management ด้วย Ansible',
-    'ติดตั้งและใช้ Prometheus + Grafana เพื่อ monitoring',
-    'ออกแบบ API ด้วย GraphQL: Query, Mutation, Subscription',
-    'TypeScript ขั้นสูง: Generics, Utility Types, Decorators',
-    'ฐานข้อมูล NoSQL ด้วย MongoDB: CRUD, Aggregation Pipeline',
-    'ใช้ Redis สำหรับ caching, session, pub/sub',
-    'ระบบ Message Queue ด้วย RabbitMQ: exchange, routing',
-    'ค้นหาและวิเคราะห์ข้อมูลด้วย Elasticsearch',
-    'แนวปฏิบัติ CI/CD: GitHub Actions, Jenkins, ArgoCD',
-    'ออกแบบระบบแบบ Microservices: decomposition, communication',
-    'เขียนโค้ดสะอาดตามหลัก SOLID และ DRY',
-    'รูปแบบการออกแบบซอฟต์แวร์: Singleton, Factory, Observer',
-    'พื้นฐานการออกแบบ UI/UX: wireframe, prototype, usability',
-    'วิเคราะห์ความต้องการธุรกิจและเขียน requirement',
-    'สร้าง Data Pipeline: ETL, data lake, data warehouse',
-    'เรียนรู้ Machine Learning เบื้องต้น: regression, classification',
-    'พื้นฐาน Internet of Things: sensor, protocol, edge computing'
-  ];
-  owners TEXT[] := ARRAY['st-user-036','st-user-037','st-user-038','pranom','weerachai'];
-  creators TEXT[] := ARRAY['ทดสอบ คนที่ 36','ทดสอบ คนที่ 37','ทดสอบ คนที่ 38','ปราณี สร้างสรรค์','วีระชัย บรรยาย'];
-  statuses TEXT[] := ARRAY['active','active','active','active','active','active','active','inprogress','inprogress','inactive'];
-  skills_a TEXT[] := ARRAY[
-    'Linux','Windows','DevOps','API Design','React',
-    'Node.js','Kubernetes','Terraform','Ansible','Monitoring',
-    'GraphQL','TypeScript','MongoDB','Redis','RabbitMQ',
-    'Elasticsearch','CI/CD','Microservices','Clean Code','Design Patterns',
-    'UX/UI','Business Analysis','Data Engineering','Machine Learning','IoT'
-  ];
-  skills_b TEXT[] := ARRAY[
-    'System Admin','System Admin','Automation','Backend','Frontend',
-    'Backend','Container','Infrastructure','Infrastructure','Observability',
-    'Backend','Frontend','Database','Database','Messaging',
-    'Data Analysis','Automation','Architecture','Software Engineering','Software Engineering',
-    'Design','Project Management','Data Analysis','AI','Embedded Systems'
-  ];
-  i INT; idx INT; oidx INT; sidx INT; vol INT;
-  c_title TEXT; c_id TEXT;
-BEGIN
-  FOR i IN 11..110 LOOP
-    idx  := ((i - 11) % 25) + 1;
-    oidx := ((i - 11) % 5) + 1;
-    sidx := ((i - 11) % 10) + 1;
-    vol  := (i - 11) / 25 + 1;
-    c_title := titles[idx] || CASE WHEN vol > 1 THEN ' Vol.' || vol ELSE '' END;
-    c_id := 'st-course-' || LPAD(i::text, 3, '0');
+-- สัปดาห์ปัจจุบัน (กระจาย จ-ศ)
+INSERT INTO exam_attempts (username, exam_id, correct_count, total_questions, score_percent, domain_stats, started_at, finished_at) VALUES
+  -- จันทร์
+  ('thanapol',    'st-exam-01', 5, 5, 100.00, '{"Networking":{"correct":5,"total":5}}',
+   DATE_TRUNC('week', NOW()),                  DATE_TRUNC('week', NOW()) + INTERVAL '14 minutes'),
+  ('jirayu',      'st-exam-01', 4, 5,  80.00, '{"Networking":{"correct":4,"total":5}}',
+   DATE_TRUNC('week', NOW()) + INTERVAL '1 hour', DATE_TRUNC('week', NOW()) + INTERVAL '1 hour 15 minutes'),
+  ('supatsara',   'st-exam-01', 2, 5,  40.00, '{"Networking":{"correct":2,"total":5}}',
+   DATE_TRUNC('week', NOW()) + INTERVAL '2 hours', DATE_TRUNC('week', NOW()) + INTERVAL '2 hours 18 minutes'),
+  -- อังคาร
+  ('piya',        'st-exam-02', 5, 5, 100.00, '{"Cloud":{"correct":5,"total":5}}',
+   DATE_TRUNC('week', NOW()) + INTERVAL '1 day', DATE_TRUNC('week', NOW()) + INTERVAL '1 day 13 minutes'),
+  ('natthapong',  'st-exam-02', 4, 5,  80.00, '{"Cloud":{"correct":4,"total":5}}',
+   DATE_TRUNC('week', NOW()) + INTERVAL '1 day 1 hour', DATE_TRUNC('week', NOW()) + INTERVAL '1 day 1 hour 14 minutes'),
+  ('nicha',       'exam-itsec-01', 2, 5, 40.00, '{"Security":{"correct":2,"total":5}}',
+   DATE_TRUNC('week', NOW()) + INTERVAL '1 day 2 hours', DATE_TRUNC('week', NOW()) + INTERVAL '1 day 2 hours 20 minutes'),
+  -- พุธ
+  ('siriporn',    'st-exam-03', 4, 5,  80.00, '{"Database":{"correct":4,"total":5}}',
+   DATE_TRUNC('week', NOW()) + INTERVAL '2 days', DATE_TRUNC('week', NOW()) + INTERVAL '2 days 16 minutes'),
+  ('kamonchanok', 'st-exam-03', 3, 5,  60.00, '{"Database":{"correct":3,"total":5}}',
+   DATE_TRUNC('week', NOW()) + INTERVAL '2 days 1 hour', DATE_TRUNC('week', NOW()) + INTERVAL '2 days 1 hour 19 minutes'),
+  -- พฤหัส
+  ('thanapol',    'st-exam-02', 5, 5, 100.00, '{"Cloud":{"correct":5,"total":5}}',
+   DATE_TRUNC('week', NOW()) + INTERVAL '3 days', DATE_TRUNC('week', NOW()) + INTERVAL '3 days 12 minutes'),
+  ('wannapha',    'exam-timemgmt-01', 3, 5, 60.00, '{"Management":{"correct":3,"total":5}}',
+   DATE_TRUNC('week', NOW()) + INTERVAL '3 days 1 hour', DATE_TRUNC('week', NOW()) + INTERVAL '3 days 1 hour 14 minutes'),
+  ('chaiwat',     'st-exam-01', 1, 5,  20.00, '{"Networking":{"correct":1,"total":5}}',
+   DATE_TRUNC('week', NOW()) + INTERVAL '3 days 2 hours', DATE_TRUNC('week', NOW()) + INTERVAL '3 days 2 hours 20 minutes'),
+  -- ศุกร์
+  ('piya',        'st-exam-03', 5, 5, 100.00, '{"Database":{"correct":5,"total":5}}',
+   DATE_TRUNC('week', NOW()) + INTERVAL '4 days', DATE_TRUNC('week', NOW()) + INTERVAL '4 days 15 minutes'),
+  ('theerasak',   'st-exam-01', 3, 5,  60.00, '{"Networking":{"correct":3,"total":5}}',
+   DATE_TRUNC('week', NOW()) + INTERVAL '4 days 1 hour', DATE_TRUNC('week', NOW()) + INTERVAL '4 days 1 hour 16 minutes');
 
-    INSERT INTO courses (id, title, creator, owner_username, status, description, image, content, skill_points, subtopic_completion_score, course_completion_score)
-    VALUES (
-      c_id,
-      c_title,
-      creators[oidx],
-      owners[oidx],
-      statuses[sidx],
-      descs[idx],
-      'https://picsum.photos/seed/st-c' || i || '/640/360',
-      E'# ' || c_title
-        || E'\n\n## บทที่ 1\n' || descs[idx]
-        || E'\n\n### subtopic-a\n- [SCORE] 10\n- [Q] คำถามข้อ 1 ของ ' || c_title || E' :: คำตอบ 1 :: 10'
-        || E'\n\n## บทที่ 2\nเนื้อหาเชิงลึกของ ' || c_title
-        || E'\n\n### subtopic-b\n- [SCORE] 10\n- [Q] คำถามข้อ 2 ของ ' || c_title || ' :: คำตอบ 2 :: 10',
-      10, 10, 50
-    );
-
-    INSERT INTO course_skill_rewards (course_id, skill, points) VALUES
-      (c_id, skills_a[idx], 30 + (i % 30)),
-      (c_id, skills_b[idx], 20 + (i % 20));
-  END LOOP;
-END;
-$$;
-
--- === BULK ENROLLMENTS สำหรับ 100 courses (st-course-011 ~ st-course-110) ===
--- แต่ละ course มี 1-15 learners (จำนวนลดหลั่นตาม course id)
-INSERT INTO user_course_enrollments (username, course_id, enrolled_at, completed_at)
-SELECT
-  'st-user-' || LPAD(u::text, 3, '0'),
-  'st-course-' || LPAD(c::text, 3, '0'),
-  NOW() - (150 - c + u) * INTERVAL '1 day',
-  CASE
-    WHEN u <= GREATEST(1, (15 - (c - 11) % 10) / 2)
-    THEN NOW() - (100 - c + u) * INTERVAL '1 day'
-    ELSE NULL
-  END
-FROM generate_series(11, 110) AS c
-CROSS JOIN generate_series(1, 50) AS u
-WHERE u <= GREATEST(2, 15 - ((c - 11) % 13))
-  AND u NOT IN (36, 37, 38, 41, 42)  -- exclude instructors & inactive
-ON CONFLICT DO NOTHING;
-
--- === BULK SUBTOPIC PROGRESS สำหรับ completed enrollments ===
-INSERT INTO learning_subtopic_progress (username, course_id, subtopic_id, completed_at)
-SELECT
-  e.username,
-  e.course_id,
-  sub.id,
-  e.completed_at - sub.offset_d * INTERVAL '1 day'
-FROM user_course_enrollments e
-CROSS JOIN (VALUES ('subtopic-a', 2), ('subtopic-b', 1)) AS sub(id, offset_d)
-WHERE e.course_id LIKE 'st-course-0%'
-  AND CAST(RIGHT(e.course_id, 3) AS INT) >= 11
-  AND e.completed_at IS NOT NULL
-ON CONFLICT DO NOTHING;
+-- attempts ย้อนหลัง
+INSERT INTO exam_attempts (username, exam_id, correct_count, total_questions, score_percent, domain_stats, started_at, finished_at) VALUES
+  ('thanapol',    'exam-itsec-01',    5, 5, 100.00, '{"Security":{"correct":5,"total":5}}',
+   NOW() - INTERVAL '30 days', NOW() - INTERVAL '30 days' + INTERVAL '15 minutes'),
+  ('thanapol',    'exam-timemgmt-01', 5, 5, 100.00, '{"Management":{"correct":5,"total":5}}',
+   NOW() - INTERVAL '25 days', NOW() - INTERVAL '25 days' + INTERVAL '12 minutes'),
+  ('piya',        'exam-itsec-01',    4, 5,  80.00, '{"Security":{"correct":4,"total":5}}',
+   NOW() - INTERVAL '20 days', NOW() - INTERVAL '20 days' + INTERVAL '18 minutes'),
+  ('piya',        'st-exam-01',       5, 5, 100.00, '{"Networking":{"correct":5,"total":5}}',
+   NOW() - INTERVAL '15 days', NOW() - INTERVAL '15 days' + INTERVAL '14 minutes'),
+  ('jirayu',      'exam-itsec-01',    3, 5,  60.00, '{"Security":{"correct":3,"total":5}}',
+   NOW() - INTERVAL '18 days', NOW() - INTERVAL '18 days' + INTERVAL '22 minutes'),
+  ('jirayu',      'st-exam-02',       4, 5,  80.00, '{"Cloud":{"correct":4,"total":5}}',
+   NOW() - INTERVAL '10 days', NOW() - INTERVAL '10 days' + INTERVAL '14 minutes'),
+  ('natthapong',  'exam-itsec-01',    4, 5,  80.00, '{"Security":{"correct":4,"total":5}}',
+   NOW() - INTERVAL '12 days', NOW() - INTERVAL '12 days' + INTERVAL '19 minutes'),
+  ('siriporn',    'exam-timemgmt-01', 4, 5,  80.00, '{"Management":{"correct":4,"total":5}}',
+   NOW() - INTERVAL '14 days', NOW() - INTERVAL '14 days' + INTERVAL '13 minutes'),
+  ('kamonchanok', 'st-exam-01',       3, 5,  60.00, '{"Networking":{"correct":3,"total":5}}',
+   NOW() - INTERVAL '8 days',  NOW() - INTERVAL '8 days'  + INTERVAL '16 minutes'),
+  ('wannapha',    'st-exam-01',       2, 5,  40.00, '{"Networking":{"correct":2,"total":5}}',
+   NOW() - INTERVAL '6 days',  NOW() - INTERVAL '6 days'  + INTERVAL '18 minutes'),
+  ('anchalee',    'exam-itsec-01',    2, 5,  40.00, '{"Security":{"correct":2,"total":5}}',
+   NOW() - INTERVAL '5 days',  NOW() - INTERVAL '5 days'  + INTERVAL '25 minutes'),
+  ('pitchaya',    'st-exam-02',       3, 5,  60.00, '{"Cloud":{"correct":3,"total":5}}',
+   NOW() - INTERVAL '4 days',  NOW() - INTERVAL '4 days'  + INTERVAL '15 minutes'),
+  ('thawatchai',  'exam-timemgmt-01', 2, 5,  40.00, '{"Management":{"correct":2,"total":5}}',
+   NOW() - INTERVAL '3 days',  NOW() - INTERVAL '3 days'  + INTERVAL '16 minutes'),
+  ('wasan',       'st-exam-01',       1, 5,  20.00, '{"Networking":{"correct":1,"total":5}}',
+   NOW() - INTERVAL '2 days',  NOW() - INTERVAL '2 days'  + INTERVAL '20 minutes');
 
 COMMIT;

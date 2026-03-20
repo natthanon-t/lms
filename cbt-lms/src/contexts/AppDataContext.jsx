@@ -218,6 +218,22 @@ export function AppDataProvider({ children }) {
   };
 
   const saveExamEditorDraft = async (nextDraft) => {
+    const draftTitle = (nextDraft.title ?? "").trim();
+    if (!draftTitle) {
+      setAppAlert({ title: "ไม่สามารถบันทึกข้อสอบได้", message: "กรุณาระบุชื่อข้อสอบก่อนบันทึก" });
+      return { success: false };
+    }
+    const draftId = nextDraft.sourceId || nextDraft.id;
+    const duplicate = examBank.find(
+      (e) => e.id !== draftId && (e.title ?? "").trim().toLowerCase() === draftTitle.toLowerCase(),
+    );
+    if (duplicate) {
+      setAppAlert({
+        title: "ไม่สามารถบันทึกข้อสอบได้",
+        message: `ชื่อข้อสอบ "${draftTitle}" ซ้ำกับข้อสอบที่มีอยู่แล้ว`,
+      });
+      return { success: false };
+    }
     const normalized = normalizeExamRecord({
       ...nextDraft,
       numberOfQuestions:
@@ -313,21 +329,10 @@ export function AppDataProvider({ children }) {
       creator: currentUser?.name,
       ownerUsername: currentUserKey,
     });
-    try {
-      const payload = await upsertCourseApi(newContent);
-      const saved = normalizeExampleRecord(payload?.course ?? newContent);
-      setExamples((prev) => [saved, ...prev]);
-      setEditorDraft(toCourseDraft(saved));
-      setStudyDraft(toCourseDraft(saved));
-      coursesCachedAt.current = 0;
-      return { success: true, saved };
-    } catch (error) {
-      setAppAlert({
-        title: "ไม่สามารถสร้างเนื้อหาได้",
-        message: error?.message ?? "เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง",
-      });
-      return { success: false };
-    }
+    const draft = toCourseDraft(normalizeExampleRecord(newContent));
+    setEditorDraft(draft);
+    setStudyDraft(draft);
+    return { success: true, saved: draft };
   };
 
   const updateContentStatus = async (contentId, nextStatus) => {
@@ -398,6 +403,19 @@ export function AppDataProvider({ children }) {
   };
 
   const saveEditorDraft = useCallback(async () => {
+    const draftTitle = (editorDraft.title ?? "").trim();
+    if (!draftTitle) {
+      setAppAlert({ title: "ไม่สามารถบันทึกเนื้อหาได้", message: "กรุณาระบุชื่อเนื้อหาก่อนบันทึก" });
+      return { success: false, message: "กรุณาระบุชื่อเนื้อหาก่อนบันทึก" };
+    }
+    const draftId = editorDraft.sourceId || editorDraft.id;
+    const duplicate = examples.find(
+      (e) => e.id !== draftId && (e.title ?? "").trim().toLowerCase() === draftTitle.toLowerCase(),
+    );
+    if (duplicate) {
+      setAppAlert({ title: "ไม่สามารถบันทึกเนื้อหาได้", message: `ชื่อเนื้อหา "${draftTitle}" ซ้ำกับเนื้อหาที่มีอยู่แล้ว` });
+      return { success: false, message: `ชื่อเนื้อหา "${draftTitle}" ซ้ำกับเนื้อหาที่มีอยู่แล้ว` };
+    }
     try {
       const payload = await upsertCourseApi(editorDraft);
       const saved = normalizeExampleRecord(payload?.course ?? editorDraft);
@@ -412,7 +430,7 @@ export function AppDataProvider({ children }) {
     } catch (error) {
       return { success: false, message: error?.message ?? "บันทึกไม่สำเร็จ" };
     }
-  }, [editorDraft, syncPrimaryCourseDrafts]);
+  }, [editorDraft, examples, syncPrimaryCourseDrafts]);
 
   const handleSubmitSubtopicAnswer = (courseId, subtopicId, answerResult) => {
     if (!currentUserKey) return;
