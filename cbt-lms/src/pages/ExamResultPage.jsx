@@ -5,6 +5,20 @@ import { useAuth } from "../contexts/AuthContext";
 
 const toDomainAnchorId = (domain) => `domain-${(domain || "-").replace(/\s+/g, "-")}`;
 
+const scrollToDomain = (domain) => {
+  const el = document.getElementById(toDomainAnchorId(domain));
+  if (!el) return;
+  const container = el.closest(".workspace-content");
+  if (container) {
+    const elRect = el.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    const target = container.scrollTop + (elRect.top - containerRect.top) - 120;
+    container.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
+  } else {
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+};
+
 const normalizeBackendDetails = (rawDetails) =>
   rawDetails.map((item, idx) => ({
     index: idx + 1,
@@ -151,17 +165,11 @@ export default function ExamResultPage() {
                 <div
                   key={entry.domain}
                   className="domain-result-item domain-result-item-clickable"
-                  onClick={() => {
-                    const el = document.getElementById(toDomainAnchorId(entry.domain));
-                    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }}
+                  onClick={() => scrollToDomain(entry.domain)}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      const el = document.getElementById(toDomainAnchorId(entry.domain));
-                      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }
+                    if (e.key === "Enter" || e.key === " ") scrollToDomain(entry.domain);
                   }}
                 >
                   <div className="domain-result-head">

@@ -142,6 +142,7 @@ export default function ExamTakingPage() {
   const [remainingSeconds, setRemainingSeconds] = useState(durationSeconds);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const navStripRef = useRef(null);
 
   useEffect(() => {
     setCurrentIndex(0);
@@ -149,6 +150,15 @@ export default function ExamTakingPage() {
     setRemainingSeconds(durationSeconds);
     setSubmitting(false);
   }, [draft.sourceId, orderMode, durationSeconds]);
+
+  useEffect(() => {
+    const strip = navStripRef.current;
+    if (!strip) return;
+    const dot = strip.children[currentIndex];
+    if (!dot) return;
+    const left = dot.offsetLeft - strip.offsetWidth / 2 + dot.offsetWidth / 2;
+    strip.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
+  }, [currentIndex]);
 
   const totalQuestions = orderedQuestions.length;
 
@@ -297,6 +307,23 @@ export default function ExamTakingPage() {
             <div className="exam-progress-fill" style={{ width: `${answeredPercent}%` }} />
           </div>
           <span className="exam-progress-label">ตอบแล้ว {answeredCount}/{totalQuestions} ({answeredPercent}%)</span>
+        </div>
+
+        <div className="exam-nav-strip" ref={navStripRef}>
+          {orderedQuestions.map((q, idx) => {
+            const isAnswered = answers[q.id] != null && answers[q.id] !== "";
+            const isCurrent = idx === currentIndex;
+            return (
+              <button
+                key={q.id}
+                type="button"
+                className={`exam-nav-pill${isCurrent ? " exam-nav-pill-current" : ""}${isAnswered && !isCurrent ? " exam-nav-pill-answered" : ""}`}
+                onClick={() => setCurrentIndex(idx)}
+              >
+                {idx + 1}
+              </button>
+            );
+          })}
         </div>
 
         <p className="question-domain-label">
