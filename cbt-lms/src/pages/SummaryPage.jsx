@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { fetchAnalyticsApi, fetchCourseLearnerApi, fetchCourseStatsApi, fetchCourseDetailAnalyticsApi, fetchExamStatsApi, fetchExamDetailAnalyticsApi } from "../services/analyticsApiService";
 import { useAuth } from "../contexts/AuthContext";
 import { useAppData } from "../contexts/AppDataContext";
+import { getPageNumbers } from "../utils/pagination";
 
 const THAI_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
 
@@ -345,15 +346,15 @@ function DomainScoreChart({ data }) {
 export default function SummaryPage() {
   const navigate = useNavigate();
   const { users, currentUserKey } = useAuth();
-  const { examples, examBank, userTotalScore, loadExamples, loadExamCatalog } = useAppData();
+  const { examples, examBank, userTotalScore, loadExamples, loadExamCatalog, coursesPagination, examsPagination } = useAppData();
 
   useEffect(() => {
     void loadExamples();
     void loadExamCatalog();
   }, [loadExamples, loadExamCatalog]);
 
-  const lessonCount = examples.length;
-  const examCount = examBank.length;
+  const lessonCount = coursesPagination.total || examples.length;
+  const examCount = examsPagination.total || (Array.isArray(examBank) ? examBank.length : 0);
   const [summaryTab, setSummaryTab] = useState("org"); // "org" | "my" | "all" | "myExam" | "allExam"
   const [selectedMyCourseId, setSelectedMyCourseId] = useState("");
   const [courseSearch, setCourseSearch] = useState("");
@@ -601,7 +602,7 @@ export default function SummaryPage() {
           onClick={() => { setSummaryTab("all"); setSelectedMyCourseId(""); setCourseSearch(""); setSelectedExamId(""); setExamSearch(""); }}
         >
           คอร์สทั้งหมด
-          {safeExamples.length > 0 && <span className="summary-tab-badge">{safeExamples.length}</span>}
+          {coursesPagination.total > 0 && <span className="summary-tab-badge">{coursesPagination.total}</span>}
         </button>
         <button
           type="button"
@@ -617,7 +618,7 @@ export default function SummaryPage() {
           onClick={() => { setSummaryTab("allExam"); setSelectedMyCourseId(""); setCourseSearch(""); setSelectedExamId(""); setExamSearch(""); }}
         >
           ข้อสอบทั้งหมด
-          {(Array.isArray(examBank) ? examBank.length : 0) > 0 && <span className="summary-tab-badge">{examBank.length}</span>}
+          {examsPagination.total > 0 && <span className="summary-tab-badge">{examsPagination.total}</span>}
         </button>
       </div>
 
@@ -869,18 +870,28 @@ export default function SummaryPage() {
                   </table>
                 </div>
                 {totalPages > 1 && (
-                  <div className="learner-pagination">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                      <button
-                        key={p}
-                        type="button"
-                        className={`page-btn${p === safePage ? " page-btn-active" : ""}`}
-                        onClick={() => setCurrentPage(p)}
-                      >
-                        {p}
-                      </button>
-                    ))}
-                  </div>
+                  <nav className="pagination-bar" aria-label="Learner pagination">
+                    <button type="button" disabled={safePage <= 1} onClick={() => setCurrentPage(safePage - 1)}>
+                      ← ก่อนหน้า
+                    </button>
+                    {getPageNumbers(safePage, totalPages).map((p, i) =>
+                      p === "…" ? (
+                        <span key={`ellipsis-${i}`} className="pagination-ellipsis">…</span>
+                      ) : (
+                        <button
+                          key={p}
+                          type="button"
+                          className={p === safePage ? "active" : ""}
+                          onClick={() => setCurrentPage(p)}
+                        >
+                          {p}
+                        </button>
+                      )
+                    )}
+                    <button type="button" disabled={safePage >= totalPages} onClick={() => setCurrentPage(safePage + 1)}>
+                      ถัดไป →
+                    </button>
+                  </nav>
                 )}
               </>
             );

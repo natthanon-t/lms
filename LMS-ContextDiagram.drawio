@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36" version="29.6.3" pages="2">
+  <diagram name="Context-Diagram-L0" id="context-l0">
+    <mxGraphModel dx="1892" dy="1172" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;fontSize=20;fontStyle=1;align=center;fillColor=none;strokeColor=none" value="Context Diagram (Level 0 DFD) — ระบบตรวจสอบความถูกต้องของอุปกรณ์การใช้งาน" vertex="1">
+          <mxGeometry height="40" width="1200" x="200" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="user" parent="1" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2;fontSize=16;fontStyle=1" value="User&#xa;(ผู้ใช้งาน)" vertex="1">
+          <mxGeometry height="900" width="160" x="230" y="114" as="geometry" />
+        </mxCell>
+        <mxCell id="f1" edge="1" parent="1" style="rounded=0;html=1;strokeWidth=1.5;endArrow=classic;endFill=1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="390" y="154" as="sourcePoint" />
+            <mxPoint x="1200" y="154" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f1_lbl" parent="1" style="text;html=1;fontSize=11;align=center;fillColor=#ffffff;strokeColor=none" value="ข้อมูล WIFI สำหรับ Connect WIFI Station" vertex="1">
+          <mxGeometry height="20" width="400" x="595" y="132" as="geometry" />
+        </mxCell>
+        <mxCell id="f1r" edge="1" parent="1" style="rounded=0;html=1;strokeWidth=1.5;endArrow=classic;endFill=1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1200" y="204" as="sourcePoint" />
+            <mxPoint x="390" y="204" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f1r_lbl" parent="1" style="text;html=1;fontSize=11;align=center;fillColor=#ffffff;strokeColor=none" value="ผลตอบรับจาก Connect WIFI Station" vertex="1">
+          <mxGeometry height="20" width="400" x="595" y="182" as="geometry" />
+        </mxCell>
+        <mxCell id="f2" edge="1" parent="1" style="rounded=0;html=1;strokeWidth=1.5;endArrow=classic;endFill=1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="390" y="254" as="sourcePoint" />
+            <mxPoint x="1200" y="254" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f2_lbl" parent="1" style="text;html=1;fontSize=11;align=center;fillColor=#ffffff;strokeColor=none" value="Disconnect WIFI Station" vertex="1">
+          <mxGeometry height="20" width="400" x="595" y="232" as="geometry" />
+        </mxCell>
+        <mxCell id="f2r" edge="1" parent="1" style="rounded=0;html=1;strokeWidth=1.5;endArrow=classic;endFill=1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1200" y="304" as="sourcePoint" />
+            <mxPoint x="390" y="304" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f2r_lbl" parent="1" style="text;html=1;fontSize=11;align=center;fillColor=#ffffff;strokeColor=none" value="ผลตอบรับจาก Disconnect WIFI Station" vertex="1">
+          <mxGeometry height="20" width="400" x="595" y="282" as="geometry" />
+        </mxCell>
+        <mxCell id="f3" edge="1" parent="1" style="rounded=0;html=1;strokeWidth=1.5;endArrow=classic;endFill=1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="390" y="354" as="sourcePoint" />
+            <mxPoint x="1200" y="354" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f3_lbl" parent="1" style="text;html=1;fontSize=11;align=center;fillColor=#ffffff;strokeColor=none" value="จัดการข้อมูล CRUD Tools Setting" vertex="1">
+          <mxGeometry height="20" width="400" x="595" y="332" as="geometry" />
+        </mxCell>
+        <mxCell id="f3r" edge="1" parent="1" style="rounded=0;html=1;strokeWidth=1.5;endArrow=classic;endFill=1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1200" y="404" as="sourcePoint" />
+            <mxPoint x="390" y="404" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f3r_lbl" parent="1" style="text;html=1;fontSize=11;align=center;fillColor=#ffffff;strokeColor=none" value="ผลตอบรับจาก Tools Setting" vertex="1">
+          <mxGeometry height="20" width="400" x="595" y="382" as="geometry" />
+        </mxCell>
+        <mxCell id="f4" edge="1" parent="1" style="rounded=0;html=1;strokeWidth=1.5;endArrow=classic;endFill=1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="390" y="454" as="sourcePoint" />
+            <mxPoint x="1200" y="454" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f4_lbl" parent="1" style="text;html=1;fontSize=11;align=center;fillColor=#ffffff;strokeColor=none" value="จัดการข้อมูล CRUD Applications Setting" vertex="1">
+          <mxGeometry height="20" width="400" x="595" y="432" as="geometry" />
+        </mxCell>
+        <mxCell id="f4r" edge="1" parent="1" style="rounded=0;html=1;strokeWidth=1.5;endArrow=classic;endFill=1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1200" y="504" as="sourcePoint" />
+            <mxPoint x="390" y="504" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f4r_lbl" parent="1" style="text;html=1;fontSize=11;align=center;fillColor=#ffffff;strokeColor=none" value="ผลตอบรับจาก Applications Setting" vertex="1">
+          <mxGeometry height="20" width="400" x="595" y="482" as="geometry" />
+        </mxCell>
+        <mxCell id="f5" edge="1" parent="1" style="rounded=0;html=1;strokeWidth=1.5;endArrow=classic;endFill=1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="390" y="554" as="sourcePoint" />
+            <mxPoint x="1200" y="554" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f5_lbl" parent="1" style="text;html=1;fontSize=11;align=center;fillColor=#ffffff;strokeColor=none" value="จัดการข้อมูล CRUD Linkings Setting" vertex="1">
+          <mxGeometry height="20" width="400" x="595" y="532" as="geometry" />
+        </mxCell>
+        <mxCell id="f5r" edge="1" parent="1" style="rounded=0;html=1;strokeWidth=1.5;endArrow=classic;endFill=1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1200" y="604" as="sourcePoint" />
+            <mxPoint x="390" y="604" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f5r_lbl" parent="1" style="text;html=1;fontSize=11;align=center;fillColor=#ffffff;strokeColor=none" value="ผลตอบรับจาก Linkings Setting" vertex="1">
+          <mxGeometry height="20" width="400" x="595" y="582" as="geometry" />
+        </mxCell>
+        <mxCell id="f6" edge="1" parent="1" style="rounded=0;html=1;strokeWidth=1.5;endArrow=classic;endFill=1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="390" y="654" as="sourcePoint" />
+            <mxPoint x="1200" y="654" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f6_lbl" parent="1" style="text;html=1;fontSize=11;align=center;fillColor=#ffffff;strokeColor=none" value="จัดการข้อมูล CRUD Barcodes Setting" vertex="1">
+          <mxGeometry height="20" width="400" x="595" y="632" as="geometry" />
+        </mxCell>
+        <mxCell id="f6r" edge="1" parent="1" style="rounded=0;html=1;strokeWidth=1.5;endArrow=classic;endFill=1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1200" y="704" as="sourcePoint" />
+            <mxPoint x="390" y="704" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f6r_lbl" parent="1" style="text;html=1;fontSize=11;align=center;fillColor=#ffffff;strokeColor=none" value="ผลตอบรับจาก Barcodes Setting" vertex="1">
+          <mxGeometry height="20" width="400" x="595" y="682" as="geometry" />
+        </mxCell>
+        <mxCell id="f7" edge="1" parent="1" style="rounded=0;html=1;strokeWidth=1.5;endArrow=classic;endFill=1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="390" y="754" as="sourcePoint" />
+            <mxPoint x="1200" y="754" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f7_lbl" parent="1" style="text;html=1;fontSize=11;align=center;fillColor=#ffffff;strokeColor=none" value="จัดการข้อมูล CRUD Counts Setting" vertex="1">
+          <mxGeometry height="20" width="400" x="595" y="732" as="geometry" />
+        </mxCell>
+        <mxCell id="f7r" edge="1" parent="1" style="rounded=0;html=1;strokeWidth=1.5;endArrow=classic;endFill=1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1200" y="804" as="sourcePoint" />
+            <mxPoint x="390" y="804" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f7r_lbl" parent="1" style="text;html=1;fontSize=11;align=center;fillColor=#ffffff;strokeColor=none" value="ผลตอบรับจาก Counts Setting" vertex="1">
+          <mxGeometry height="20" width="400" x="595" y="782" as="geometry" />
+        </mxCell>
+        <mxCell id="f8" edge="1" parent="1" style="rounded=0;html=1;strokeWidth=1.5;endArrow=classic;endFill=1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="390" y="854" as="sourcePoint" />
+            <mxPoint x="1200" y="854" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f8_lbl" parent="1" style="text;html=1;fontSize=11;align=center;fillColor=#ffffff;strokeColor=none" value="ขอข้อมูล Dashboard" vertex="1">
+          <mxGeometry height="20" width="400" x="595" y="832" as="geometry" />
+        </mxCell>
+        <mxCell id="f8r" edge="1" parent="1" style="rounded=0;html=1;strokeWidth=1.5;endArrow=classic;endFill=1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1200" y="904" as="sourcePoint" />
+            <mxPoint x="390" y="904" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f8r_lbl" parent="1" style="text;html=1;fontSize=11;align=center;fillColor=#ffffff;strokeColor=none" value="ข้อมูล Dashboard" vertex="1">
+          <mxGeometry height="20" width="400" x="595" y="882" as="geometry" />
+        </mxCell>
+        <mxCell id="f9" edge="1" parent="1" style="rounded=0;html=1;strokeWidth=1.5;endArrow=classic;endFill=1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="390" y="954" as="sourcePoint" />
+            <mxPoint x="1200" y="954" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f9_lbl" parent="1" style="text;html=1;fontSize=11;align=center;fillColor=#ffffff;strokeColor=none" value="ข้อมูล Barcode สำหรับ Assembly Process" vertex="1">
+          <mxGeometry height="20" width="400" x="595" y="932" as="geometry" />
+        </mxCell>
+        <mxCell id="f9r" edge="1" parent="1" style="rounded=0;html=1;strokeWidth=1.5;endArrow=classic;endFill=1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1200" y="1004" as="sourcePoint" />
+            <mxPoint x="390" y="1004" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="f9r_lbl" parent="1" style="text;html=1;fontSize=11;align=center;fillColor=#ffffff;strokeColor=none" value="ผลตอบรับจาก Assembly Process" vertex="1">
+          <mxGeometry height="20" width="400" x="595" y="982" as="geometry" />
+        </mxCell>
+        <mxCell id="g2xf9nQ0PZdG65uUSD_F-1" parent="1" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;rounded=1;fontSize=14;fontStyle=0;strokeWidth=2;resizeParent=0;resizeLast=1;shadow=0;dashed=0;align=center;arcSize=4;whiteSpace=wrap;html=1;" value="0" vertex="1">
+          <mxGeometry height="934" width="200" x="1200" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="g2xf9nQ0PZdG65uUSD_F-2" parent="g2xf9nQ0PZdG65uUSD_F-1" style="align=center;strokeColor=none;fillColor=none;spacingLeft=4;spacingRight=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;whiteSpace=wrap;" value="&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;ระบบตรวจสอบความถูกต้อง&lt;/span&gt;&lt;span style=&quot;font-size: 14px; font-weight: 700;&quot;&gt;ของอุปกรณ์การใช้งาน&lt;/span&gt;" vertex="1">
+          <mxGeometry height="884" width="200" y="50" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="xQ5pEBQPBN80W4G49zt8" name="Page-2">
+    <mxGraphModel dx="946" dy="586" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

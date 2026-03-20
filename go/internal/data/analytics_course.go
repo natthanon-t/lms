@@ -40,6 +40,16 @@ type CourseDetailAnalytics struct {
 
 // GetAllCourseStats returns per-course stats for all courses (or filtered by owner).
 func GetAllCourseStats(ownerUsername string) ([]CourseInstructorStats, error) {
+	// Count total active learners (non-admin) for NotStarted calculation
+	var totalLearners int
+	_ = db.QueryRow(`
+		SELECT COUNT(*) FROM users u
+		WHERE u.status = 'active'
+		  AND u.role_code NOT IN (
+			SELECT DISTINCT role_code FROM role_permissions
+			WHERE permission_code = 'management.users.manage'
+		  )`).Scan(&totalLearners)
+
 	query := `
 		SELECT
 			c.id,
@@ -75,7 +85,7 @@ func GetAllCourseStats(ownerUsername string) ([]CourseInstructorStats, error) {
 		if err := rows.Scan(&s.ID, &s.Title, &s.Learners, &s.Completed, &s.InProgress, &s.QnaTotal, &s.QnaUnanswered); err != nil {
 			continue
 		}
-		s.NotStarted = s.Learners - s.Completed - s.InProgress
+		s.NotStarted = totalLearners - s.Learners
 		if s.NotStarted < 0 {
 			s.NotStarted = 0
 		}

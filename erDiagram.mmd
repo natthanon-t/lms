@@ -1,0 +1,261 @@
+---
+config:
+  layout: elk
+  theme: redux
+---
+erDiagram
+	direction TB
+	ROLES {
+		string code PK ""  
+		string name  ""  
+		timestamp created_at  ""  
+	}
+
+	USERS {
+		bigint id PK ""  
+		string name  ""  
+		string username UK ""  
+		string employee_code  ""  
+		string password_hash  ""  
+		string role_code FK ""  
+		string status  ""  
+		timestamp created_at  ""  
+	}
+
+	REFRESH_TOKENS {
+		bigint id PK ""  
+		bigint user_id FK ""  
+		string token_hash UK ""  
+		timestamp expires_at  ""  
+		timestamp revoked_at  ""  
+		timestamp created_at  ""  
+	}
+
+	PERMISSIONS {
+		string code PK ""  
+		string module  ""  
+		string action  ""  
+		string description  ""  
+		timestamp created_at  ""  
+	}
+
+	ROLE_PERMISSIONS {
+		string role_code PK,FK ""  
+		string permission_code PK,FK ""  
+		timestamp created_at  ""  
+	}
+
+	USER_LOGIN_LOGS {
+		bigint id PK ""  
+		bigint user_id FK ""  
+		timestamp logged_in_at  ""  
+	}
+
+	APP_SETTINGS {
+		string key PK ""  
+		string value  ""  
+		timestamp updated_at  ""  
+	}
+
+	USER_AVATARS {
+		string username PK,FK ""  
+		text data_url  ""  
+		timestamp updated_at  ""  
+	}
+
+	USER_SCORES {
+		string username PK,FK ""  
+		int total  ""  
+		timestamp updated_at  ""  
+	}
+
+	USER_SCORE_EVENTS {
+		bigint id PK ""  
+		string username FK ""  
+		int score  ""  
+		string reason  ""  
+		string course_id  ""  
+		timestamp earned_at  ""  
+	}
+
+	USER_SKILL_SCORES {
+		string username PK,FK ""  
+		string skill PK ""  
+		int points  ""  
+	}
+
+	COURSES {
+		string id PK ""  
+		string title  ""  
+		string creator  ""  
+		string owner_username FK ""  
+		string status  ""  
+		string visibility  ""  
+		string[] allowed_usernames  ""  
+		text description  ""  
+		text image  ""  
+		text content  ""  
+		int skill_points  ""  
+		int subtopic_completion_score  ""  
+		int course_completion_score  ""  
+		timestamp created_at  ""  
+	}
+
+	COURSE_CONTENT_IMAGES {
+		string course_id PK,FK ""  
+		string filename PK ""  
+		text data_url  ""  
+	}
+
+	COURSE_ATTACHMENTS {
+		bigint id PK ""  
+		string course_id FK ""  
+		string stored_name  ""  
+		string orig_name  ""  
+		string url_path  ""  
+		timestamp uploaded_at  ""  
+	}
+
+	COURSE_SKILL_REWARDS {
+		string course_id PK,FK ""  
+		string skill PK ""  
+		int points  ""  
+	}
+
+	USER_COURSE_ENROLLMENTS {
+		string username PK,FK ""  
+		string course_id PK,FK ""  
+		timestamp enrolled_at  ""  
+		timestamp completed_at  ""  
+	}
+
+	LEARNING_SUBTOPIC_PROGRESS {
+		string username PK,FK ""  
+		string course_id PK,FK ""  
+		string subtopic_id PK ""  
+		timestamp completed_at  ""  
+	}
+
+	LEARNING_SUBTOPIC_ANSWERS {
+		string username PK,FK ""  
+		string course_id PK,FK ""  
+		string subtopic_id PK ""  
+		string question_id PK ""  
+		text typed_answer  ""  
+		boolean is_correct  ""  
+		timestamp answered_at  ""  
+	}
+
+	LEARNING_SUBTOPIC_TIME {
+		string username PK,FK ""  
+		string course_id PK,FK ""  
+		string subtopic_id PK ""  
+		int seconds_spent  ""  
+		timestamp updated_at  ""  
+	}
+
+	QNA_QUESTIONS {
+		bigint id PK ""  
+		string course_id FK ""  
+		string subtopic_id  ""  
+		string username FK ""  
+		text question  ""  
+		timestamp created_at  ""  
+	}
+
+	QNA_REPLIES {
+		bigint id PK ""  
+		bigint question_id FK ""  
+		string username FK ""  
+		text reply  ""  
+		timestamp created_at  ""  
+	}
+
+	EXAMS {
+		string id PK ""  
+		string title  ""  
+		string creator  ""  
+		string owner_username FK ""  
+		string status  ""  
+		string visibility  ""  
+		string[] allowed_usernames  ""  
+		text description  ""  
+		text instructions  ""  
+		text image  ""  
+		int number_of_questions  ""  
+		int default_time  ""  
+		int max_attempts  ""  
+		timestamp created_at  ""  
+	}
+
+	EXAM_DOMAIN_PERCENTAGES {
+		string exam_id PK,FK ""  
+		string domain PK ""  
+		int percentage  ""  
+	}
+
+	EXAM_QUESTIONS {
+		string id PK ""  
+		string exam_id FK ""  
+		string domain  ""  
+		string question_type  ""  
+		text question  ""  
+		text choice_a  ""  
+		text choice_b  ""  
+		text choice_c  ""  
+		text choice_d  ""  
+		string answer_key  ""  
+		text explanation  ""  
+	}
+
+	EXAM_ATTEMPTS {
+		bigint id PK ""  
+		string username FK ""  
+		string exam_id FK ""  
+		int correct_count  ""  
+		int total_questions  ""  
+		numeric score_percent  ""  
+		jsonb domain_stats  ""  
+		timestamp started_at  ""  
+		timestamp finished_at  ""  
+	}
+
+	EXAM_ATTEMPT_ANSWERS {
+		bigint attempt_id PK,FK ""  
+		string question_id PK,FK ""  
+		text selected  ""  
+		boolean is_correct  ""  
+	}
+
+	ROLES||--o{USERS:"has role"
+	ROLES||--o{ROLE_PERMISSIONS:"contains"
+	PERMISSIONS||--o{ROLE_PERMISSIONS:"grants"
+	USERS||--o{REFRESH_TOKENS:"issues"
+	USERS||--o{USER_LOGIN_LOGS:"logs login"
+	USERS||--o{USER_AVATARS:"has avatar"
+	USERS||--o{USER_SCORES:"maintains score"
+	USERS||--o{USER_SCORE_EVENTS:"earns points"
+	USERS||--o{USER_SKILL_SCORES:"acquires skills"
+	USERS||--o{COURSES:"owns"
+	COURSES||--o{COURSE_CONTENT_IMAGES:"contains images"
+	COURSES||--o{COURSE_ATTACHMENTS:"has attachments"
+	COURSES||--o{COURSE_SKILL_REWARDS:"rewards"
+	USERS||--o{USER_COURSE_ENROLLMENTS:"enrolls"
+	COURSES||--o{USER_COURSE_ENROLLMENTS:"has enrollments"
+	USERS||--o{LEARNING_SUBTOPIC_PROGRESS:"completes"
+	COURSES||--o{LEARNING_SUBTOPIC_PROGRESS:"contains"
+	USERS||--o{LEARNING_SUBTOPIC_ANSWERS:"answers questions"
+	COURSES||--o{LEARNING_SUBTOPIC_ANSWERS:"has answers"
+	USERS||--o{LEARNING_SUBTOPIC_TIME:"spends time"
+	COURSES||--o{LEARNING_SUBTOPIC_TIME:"tracks time"
+	COURSES||--o{QNA_QUESTIONS:"hosts"
+	USERS||--o{QNA_QUESTIONS:"asks questions"
+	QNA_QUESTIONS||--o{QNA_REPLIES:"receives replies"
+	USERS||--o{QNA_REPLIES:"replies"
+	USERS||--o{EXAMS:"owns"
+	EXAMS||--o{EXAM_DOMAIN_PERCENTAGES:"defines domains"
+	EXAMS||--o{EXAM_QUESTIONS:"contains"
+	USERS||--o{EXAM_ATTEMPTS:"takes exams"
+	EXAMS||--o{EXAM_ATTEMPTS:"tests users"
+	EXAM_QUESTIONS||--o{EXAM_ATTEMPT_ANSWERS:"answered by"
+	EXAM_ATTEMPTS||--o{EXAM_ATTEMPT_ANSWERS:"contains"
