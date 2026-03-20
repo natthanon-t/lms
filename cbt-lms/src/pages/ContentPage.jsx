@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { getPageNumbers } from "../utils/pagination";
+import { getSubtopicPages } from "../components/markdown/headingUtils";
 import StatusSelect from "../components/StatusSelect";
 import { STATUS_OPTIONS, isItemOwner, canViewItemByStatus } from "../services/accessControlService";
 import { useAuth } from "../contexts/AuthContext";
@@ -9,7 +10,7 @@ import { useAppData } from "../contexts/AppDataContext";
 export default function ContentPage() {
   const navigate = useNavigate();
   const { currentUserKey, canManageContent, canViewAllContent } = useAuth();
-  const { examples, coursesPagination, loadExamples, openContentDetail, openContentEditor, createContent, updateContentStatus } = useAppData();
+  const { examples, coursesPagination, learningProgress, loadExamples, openContentDetail, openContentEditor, createContent, updateContentStatus } = useAppData();
 
   useEffect(() => {
     void loadExamples();
@@ -22,6 +23,18 @@ export default function ContentPage() {
   const visibleExamples = examples.filter((example) =>
     canViewItemByStatus({ item: example, currentUserKey, hasManageAccess, hasViewAllAccess: canViewAllContent }),
   );
+
+  const userProgress = learningProgress[currentUserKey] ?? {};
+  const completedCourseIds = useMemo(() => {
+    const result = new Set();
+    visibleExamples.forEach((course) => {
+      const subtopics = getSubtopicPages(course.content, course.title);
+      if (!subtopics.length) return;
+      const completed = userProgress[course.id]?.completedSubtopics ?? {};
+      if (subtopics.every((s) => Boolean(completed[s.id]))) result.add(course.id);
+    });
+    return result;
+  }, [userProgress, visibleExamples]);
 
   const { page: currentPage, total_pages: totalPages } = coursesPagination;
 
@@ -71,6 +84,9 @@ export default function ContentPage() {
         <div className="example-grid">
           {visibleExamples.map((example) => (
             <article key={example.id} className="example-card">
+              {completedCourseIds.has(example.id) && (
+                <span className="card-completed-badge">เรียนจบแล้ว</span>
+              )}
               <img src={example.image} alt={example.title} className="card-image" />
               <div className="example-head">
                 <h3 className="example-title">{example.title}</h3>

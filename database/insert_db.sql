@@ -19,8 +19,8 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- ROLES
 -- ==========================================================
 
+-- admin role + permissions จัดการโดย Go server อัตโนมัติตอน start
 INSERT INTO roles (code, name) VALUES
-  ('admin',      'ผู้ดูแลระบบ'),
   ('user',       'ผู้ใช้งาน'),
   ('instructor', 'ผู้สอน');
 
@@ -31,11 +31,14 @@ INSERT INTO roles (code, name) VALUES
 INSERT INTO permissions (code, module, action, description) VALUES
   ('content.learn',                 'content',    'learn',              'เรียนเนื้อหา'),
   ('content.manage',                'content',    'manage',             'สร้าง / แก้ไขเนื้อหา'),
+  ('content.view_all',              'content',    'view_all',           'ดูเนื้อหาทั้งหมด (รวม Private)'),
   ('exam.take',                     'exam',       'take',               'เข้าทำข้อสอบ'),
   ('exam.manage',                   'exam',       'manage',             'สร้าง / แก้ไขข้อสอบ'),
+  ('exam.view_all',                 'exam',       'view_all',           'ดูข้อสอบทั้งหมด (รวม Private)'),
   ('system.report.view',            'system',     'report.view',        'ดูรายงานสรุปผล'),
   ('system.exam_history.view',      'system',     'exam_history.view',  'ดูประวัติการสอบของตัวเอง'),
   ('management.users.manage',       'management', 'users.manage',       'จัดการผู้ใช้'),
+  ('management.roles.manage',       'management', 'roles.manage',       'จัดการสิทธิ์การใช้งาน'),
   ('management.exam_history.view',  'management', 'exam_history.view',  'ดูประวัติการสอบของทุกคน');
 
 INSERT INTO role_permissions (role_code, permission_code) VALUES
@@ -44,18 +47,12 @@ INSERT INTO role_permissions (role_code, permission_code) VALUES
   ('user',       'system.exam_history.view'),
   ('instructor', 'content.learn'),
   ('instructor', 'content.manage'),
+  ('instructor', 'content.view_all'),
   ('instructor', 'exam.take'),
   ('instructor', 'exam.manage'),
+  ('instructor', 'exam.view_all'),
   ('instructor', 'system.report.view'),
-  ('instructor', 'system.exam_history.view'),
-  ('admin',      'content.learn'),
-  ('admin',      'content.manage'),
-  ('admin',      'exam.take'),
-  ('admin',      'exam.manage'),
-  ('admin',      'system.report.view'),
-  ('admin',      'system.exam_history.view'),
-  ('admin',      'management.users.manage'),
-  ('admin',      'management.exam_history.view');
+  ('instructor', 'system.exam_history.view');
 
 -- ==========================================================
 -- USERS  (password ทุก account: Demo@2026)
@@ -632,57 +629,7 @@ INSERT INTO exam_attempts (username, exam_id, correct_count, total_questions, sc
   ('wannee',    'exam-itsec-01',    3, 5,  60.00, '{"Security":{"correct":3,"total":5}}',
    NOW() - INTERVAL '3 days',  NOW() - INTERVAL '3 days'  + INTERVAL '20 minutes');
 
--- ==========================================================
--- EXAM ATTEMPT ANSWERS  (ทดสอบ Exam Attempt Detail view)
--- ==========================================================
--- สร้าง answers สำหรับ attempt แรกของแต่ละคน (attempt id จะเป็น auto-increment)
--- ใช้ subquery เพื่อหา attempt id
-
--- anant attempt ที่ 1 (exam-itsec-01, current week Monday, 5/5)
-INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
-SELECT a.id, q.question_id, q.selected, q.is_correct
-FROM exam_attempts a
-CROSS JOIN (VALUES
-  ('eq-sec-01', 'C', TRUE),
-  ('eq-sec-02', 'C', TRUE),
-  ('eq-sec-03', 'B', TRUE),
-  ('eq-sec-04', 'B', TRUE),
-  ('eq-sec-05', 'C', TRUE)
-) AS q(question_id, selected, is_correct)
-WHERE a.username = 'anant' AND a.exam_id = 'exam-itsec-01'
-ORDER BY a.started_at ASC
-LIMIT 5 OFFSET 0 * 5;
-
--- somchai attempt ล่าสุด (exam-itsec-01, 5/5 pass)
-INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
-SELECT a.id, q.question_id, q.selected, q.is_correct
-FROM exam_attempts a
-CROSS JOIN (VALUES
-  ('eq-sec-01', 'C', TRUE),
-  ('eq-sec-02', 'C', TRUE),
-  ('eq-sec-03', 'B', TRUE),
-  ('eq-sec-04', 'B', TRUE),
-  ('eq-sec-05', 'C', TRUE)
-) AS q(question_id, selected, is_correct)
-WHERE a.username = 'somchai' AND a.exam_id = 'exam-itsec-01'
-  AND a.score_percent = 100.00
-ORDER BY a.started_at DESC
-LIMIT 1;
-
--- napa attempt (exam-itsec-01, 2/5 fail)
-INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
-SELECT a.id, q.question_id, q.selected, q.is_correct
-FROM exam_attempts a
-CROSS JOIN (VALUES
-  ('eq-sec-01', 'C', TRUE),
-  ('eq-sec-02', 'A', FALSE),
-  ('eq-sec-03', 'B', TRUE),
-  ('eq-sec-04', 'A', FALSE),
-  ('eq-sec-05', 'B', FALSE)
-) AS q(question_id, selected, is_correct)
-WHERE a.username = 'napa' AND a.exam_id = 'exam-itsec-01'
-ORDER BY a.started_at DESC
-LIMIT 1;
+-- (exam_attempt_answers ย้ายไปใส่ท้ายไฟล์ หลัง INSERT exam_attempts ครบทุกชุด)
 
 
 -- ==========================================================
@@ -1260,5 +1207,219 @@ INSERT INTO exam_attempts (username, exam_id, correct_count, total_questions, sc
    NOW() - INTERVAL '3 days',  NOW() - INTERVAL '3 days'  + INTERVAL '16 minutes'),
   ('wasan',       'st-exam-01',       1, 5,  20.00, '{"Networking":{"correct":1,"total":5}}',
    NOW() - INTERVAL '2 days',  NOW() - INTERVAL '2 days'  + INTERVAL '20 minutes');
+
+-- ==========================================================
+-- EXAM ATTEMPT ANSWERS  (ครบทุก attempt — จัดกลุ่มตาม exam + correct_count)
+-- ==========================================================
+
+-- ── exam-itsec-01  (answer keys: C, C, B, B, C) ──
+
+-- 5/5 correct
+INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
+SELECT a.id, v.question_id, v.selected, v.is_correct
+FROM exam_attempts a
+CROSS JOIN (VALUES
+  ('eq-sec-01','C',TRUE), ('eq-sec-02','C',TRUE), ('eq-sec-03','B',TRUE),
+  ('eq-sec-04','B',TRUE), ('eq-sec-05','C',TRUE)
+) AS v(question_id, selected, is_correct)
+WHERE a.exam_id = 'exam-itsec-01' AND a.correct_count = 5;
+
+-- 4/5 correct
+INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
+SELECT a.id, v.question_id, v.selected, v.is_correct
+FROM exam_attempts a
+CROSS JOIN (VALUES
+  ('eq-sec-01','C',TRUE), ('eq-sec-02','C',TRUE), ('eq-sec-03','B',TRUE),
+  ('eq-sec-04','B',TRUE), ('eq-sec-05','A',FALSE)
+) AS v(question_id, selected, is_correct)
+WHERE a.exam_id = 'exam-itsec-01' AND a.correct_count = 4;
+
+-- 3/5 correct
+INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
+SELECT a.id, v.question_id, v.selected, v.is_correct
+FROM exam_attempts a
+CROSS JOIN (VALUES
+  ('eq-sec-01','C',TRUE), ('eq-sec-02','C',TRUE), ('eq-sec-03','B',TRUE),
+  ('eq-sec-04','A',FALSE), ('eq-sec-05','A',FALSE)
+) AS v(question_id, selected, is_correct)
+WHERE a.exam_id = 'exam-itsec-01' AND a.correct_count = 3;
+
+-- 2/5 correct
+INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
+SELECT a.id, v.question_id, v.selected, v.is_correct
+FROM exam_attempts a
+CROSS JOIN (VALUES
+  ('eq-sec-01','C',TRUE), ('eq-sec-02','A',FALSE), ('eq-sec-03','B',TRUE),
+  ('eq-sec-04','A',FALSE), ('eq-sec-05','A',FALSE)
+) AS v(question_id, selected, is_correct)
+WHERE a.exam_id = 'exam-itsec-01' AND a.correct_count = 2;
+
+-- 1/5 correct
+INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
+SELECT a.id, v.question_id, v.selected, v.is_correct
+FROM exam_attempts a
+CROSS JOIN (VALUES
+  ('eq-sec-01','C',TRUE), ('eq-sec-02','A',FALSE), ('eq-sec-03','A',FALSE),
+  ('eq-sec-04','A',FALSE), ('eq-sec-05','A',FALSE)
+) AS v(question_id, selected, is_correct)
+WHERE a.exam_id = 'exam-itsec-01' AND a.correct_count = 1;
+
+-- ── exam-timemgmt-01  (answer keys: C, B, B, B, B) ──
+
+-- 5/5 correct
+INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
+SELECT a.id, v.question_id, v.selected, v.is_correct
+FROM exam_attempts a
+CROSS JOIN (VALUES
+  ('eq-time-01','C',TRUE), ('eq-time-02','B',TRUE), ('eq-time-03','B',TRUE),
+  ('eq-time-04','B',TRUE), ('eq-time-05','B',TRUE)
+) AS v(question_id, selected, is_correct)
+WHERE a.exam_id = 'exam-timemgmt-01' AND a.correct_count = 5;
+
+-- 4/5 correct
+INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
+SELECT a.id, v.question_id, v.selected, v.is_correct
+FROM exam_attempts a
+CROSS JOIN (VALUES
+  ('eq-time-01','C',TRUE), ('eq-time-02','B',TRUE), ('eq-time-03','B',TRUE),
+  ('eq-time-04','B',TRUE), ('eq-time-05','A',FALSE)
+) AS v(question_id, selected, is_correct)
+WHERE a.exam_id = 'exam-timemgmt-01' AND a.correct_count = 4;
+
+-- 3/5 correct
+INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
+SELECT a.id, v.question_id, v.selected, v.is_correct
+FROM exam_attempts a
+CROSS JOIN (VALUES
+  ('eq-time-01','C',TRUE), ('eq-time-02','B',TRUE), ('eq-time-03','B',TRUE),
+  ('eq-time-04','A',FALSE), ('eq-time-05','A',FALSE)
+) AS v(question_id, selected, is_correct)
+WHERE a.exam_id = 'exam-timemgmt-01' AND a.correct_count = 3;
+
+-- 2/5 correct
+INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
+SELECT a.id, v.question_id, v.selected, v.is_correct
+FROM exam_attempts a
+CROSS JOIN (VALUES
+  ('eq-time-01','C',TRUE), ('eq-time-02','A',FALSE), ('eq-time-03','B',TRUE),
+  ('eq-time-04','A',FALSE), ('eq-time-05','A',FALSE)
+) AS v(question_id, selected, is_correct)
+WHERE a.exam_id = 'exam-timemgmt-01' AND a.correct_count = 2;
+
+-- ── st-exam-01  (answer keys: C, B, B, C, B) ──
+
+-- 5/5 correct
+INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
+SELECT a.id, v.question_id, v.selected, v.is_correct
+FROM exam_attempts a
+CROSS JOIN (VALUES
+  ('st-eq-net-01','C',TRUE), ('st-eq-net-02','B',TRUE), ('st-eq-net-03','B',TRUE),
+  ('st-eq-net-04','C',TRUE), ('st-eq-net-05','B',TRUE)
+) AS v(question_id, selected, is_correct)
+WHERE a.exam_id = 'st-exam-01' AND a.correct_count = 5;
+
+-- 4/5 correct
+INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
+SELECT a.id, v.question_id, v.selected, v.is_correct
+FROM exam_attempts a
+CROSS JOIN (VALUES
+  ('st-eq-net-01','C',TRUE), ('st-eq-net-02','B',TRUE), ('st-eq-net-03','B',TRUE),
+  ('st-eq-net-04','C',TRUE), ('st-eq-net-05','A',FALSE)
+) AS v(question_id, selected, is_correct)
+WHERE a.exam_id = 'st-exam-01' AND a.correct_count = 4;
+
+-- 3/5 correct
+INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
+SELECT a.id, v.question_id, v.selected, v.is_correct
+FROM exam_attempts a
+CROSS JOIN (VALUES
+  ('st-eq-net-01','C',TRUE), ('st-eq-net-02','B',TRUE), ('st-eq-net-03','B',TRUE),
+  ('st-eq-net-04','A',FALSE), ('st-eq-net-05','A',FALSE)
+) AS v(question_id, selected, is_correct)
+WHERE a.exam_id = 'st-exam-01' AND a.correct_count = 3;
+
+-- 2/5 correct
+INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
+SELECT a.id, v.question_id, v.selected, v.is_correct
+FROM exam_attempts a
+CROSS JOIN (VALUES
+  ('st-eq-net-01','C',TRUE), ('st-eq-net-02','A',FALSE), ('st-eq-net-03','B',TRUE),
+  ('st-eq-net-04','A',FALSE), ('st-eq-net-05','A',FALSE)
+) AS v(question_id, selected, is_correct)
+WHERE a.exam_id = 'st-exam-01' AND a.correct_count = 2;
+
+-- 1/5 correct
+INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
+SELECT a.id, v.question_id, v.selected, v.is_correct
+FROM exam_attempts a
+CROSS JOIN (VALUES
+  ('st-eq-net-01','C',TRUE), ('st-eq-net-02','A',FALSE), ('st-eq-net-03','A',FALSE),
+  ('st-eq-net-04','A',FALSE), ('st-eq-net-05','A',FALSE)
+) AS v(question_id, selected, is_correct)
+WHERE a.exam_id = 'st-exam-01' AND a.correct_count = 1;
+
+-- ── st-exam-02  (answer keys: C, C, B, B, B) ──
+
+-- 5/5 correct
+INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
+SELECT a.id, v.question_id, v.selected, v.is_correct
+FROM exam_attempts a
+CROSS JOIN (VALUES
+  ('st-eq-cloud-01','C',TRUE), ('st-eq-cloud-02','C',TRUE), ('st-eq-cloud-03','B',TRUE),
+  ('st-eq-cloud-04','B',TRUE), ('st-eq-cloud-05','B',TRUE)
+) AS v(question_id, selected, is_correct)
+WHERE a.exam_id = 'st-exam-02' AND a.correct_count = 5;
+
+-- 4/5 correct
+INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
+SELECT a.id, v.question_id, v.selected, v.is_correct
+FROM exam_attempts a
+CROSS JOIN (VALUES
+  ('st-eq-cloud-01','C',TRUE), ('st-eq-cloud-02','C',TRUE), ('st-eq-cloud-03','B',TRUE),
+  ('st-eq-cloud-04','B',TRUE), ('st-eq-cloud-05','A',FALSE)
+) AS v(question_id, selected, is_correct)
+WHERE a.exam_id = 'st-exam-02' AND a.correct_count = 4;
+
+-- 3/5 correct
+INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
+SELECT a.id, v.question_id, v.selected, v.is_correct
+FROM exam_attempts a
+CROSS JOIN (VALUES
+  ('st-eq-cloud-01','C',TRUE), ('st-eq-cloud-02','C',TRUE), ('st-eq-cloud-03','B',TRUE),
+  ('st-eq-cloud-04','A',FALSE), ('st-eq-cloud-05','A',FALSE)
+) AS v(question_id, selected, is_correct)
+WHERE a.exam_id = 'st-exam-02' AND a.correct_count = 3;
+
+-- ── st-exam-03  (answer keys: B, B, C, C, B) ──
+
+-- 5/5 correct
+INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
+SELECT a.id, v.question_id, v.selected, v.is_correct
+FROM exam_attempts a
+CROSS JOIN (VALUES
+  ('st-eq-sql-01','B',TRUE), ('st-eq-sql-02','B',TRUE), ('st-eq-sql-03','C',TRUE),
+  ('st-eq-sql-04','C',TRUE), ('st-eq-sql-05','B',TRUE)
+) AS v(question_id, selected, is_correct)
+WHERE a.exam_id = 'st-exam-03' AND a.correct_count = 5;
+
+-- 4/5 correct
+INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
+SELECT a.id, v.question_id, v.selected, v.is_correct
+FROM exam_attempts a
+CROSS JOIN (VALUES
+  ('st-eq-sql-01','B',TRUE), ('st-eq-sql-02','B',TRUE), ('st-eq-sql-03','C',TRUE),
+  ('st-eq-sql-04','C',TRUE), ('st-eq-sql-05','A',FALSE)
+) AS v(question_id, selected, is_correct)
+WHERE a.exam_id = 'st-exam-03' AND a.correct_count = 4;
+
+-- 3/5 correct
+INSERT INTO exam_attempt_answers (attempt_id, question_id, selected, is_correct)
+SELECT a.id, v.question_id, v.selected, v.is_correct
+FROM exam_attempts a
+CROSS JOIN (VALUES
+  ('st-eq-sql-01','B',TRUE), ('st-eq-sql-02','B',TRUE), ('st-eq-sql-03','C',TRUE),
+  ('st-eq-sql-04','A',FALSE), ('st-eq-sql-05','A',FALSE)
+) AS v(question_id, selected, is_correct)
+WHERE a.exam_id = 'st-exam-03' AND a.correct_count = 3;
 
 COMMIT;

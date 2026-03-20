@@ -36,6 +36,7 @@ var defaultPermissions = []Permission{
 	{Code: "system.report.view", Module: "system", Action: "report.view", Description: "ดูรายงานสรุปผล"},
 	{Code: "system.exam_history.view", Module: "system", Action: "exam_history.view", Description: "ดูประวัติการสอบของตัวเอง"},
 	{Code: "management.users.manage", Module: "management", Action: "users.manage", Description: "จัดการผู้ใช้"},
+	{Code: "management.roles.manage", Module: "management", Action: "roles.manage", Description: "จัดการสิทธิ์การใช้งาน"},
 	{Code: "management.exam_history.view", Module: "management", Action: "exam_history.view", Description: "ดูประวัติการสอบของทุกคน"},
 }
 
@@ -53,6 +54,7 @@ var sidebarPermissionItems = []AllowedMenuItem{
 	{Key: "system.report", Section: "system", Label: "ดูรายงานสรุปผล", Permission: "system.report.view"},
 	{Key: "system.exam_history", Section: "system", Label: "ประวัติการสอบของฉัน", Permission: "system.exam_history.view"},
 	{Key: "management.users", Section: "management", Label: "จัดการผู้ใช้", Permission: "management.users.manage"},
+	{Key: "management.roles", Section: "management", Label: "จัดการสิทธิ์การใช้งาน", Permission: "management.roles.manage"},
 	{Key: "management.exam_history", Section: "management", Label: "ประวัติการสอบทุกคน", Permission: "management.exam_history.view"},
 }
 
@@ -82,6 +84,7 @@ var defaultRolePermissions = map[string][]string{
 		"system.report.view",
 		"system.exam_history.view",
 		"management.users.manage",
+		"management.roles.manage",
 		"management.exam_history.view",
 	},
 }

@@ -19,6 +19,7 @@ const (
 	PermissionSystemExamHistory = "system.exam_history.view"
 
 	PermissionUserManage            = "management.users.manage"
+	PermissionRoleManage            = "management.roles.manage"
 	PermissionManagementExamHistory = "management.exam_history.view"
 )
 

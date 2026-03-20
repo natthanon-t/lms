@@ -11,7 +11,7 @@ export default function ContentDetailPage() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const { currentUserKey, canLearnContent } = useAuth();
-  const { examples, prepareStudy, loadExamples } = useAppData();
+  const { examples, learningProgress, prepareStudy, loadExamples } = useAppData();
 
   useEffect(() => {
     void loadExamples();
@@ -31,6 +31,10 @@ export default function ContentDetailPage() {
   );
   const rewards = contentItem ? getCourseSkillRewards(contentItem) : [];
   const totalSkillPoints = rewards.reduce((sum, reward) => sum + reward.points, 0);
+
+  const completedSubtopics = (learningProgress[currentUserKey] ?? {})[courseId]?.completedSubtopics ?? {};
+  const completedCount = subtopics.filter((s) => Boolean(completedSubtopics[s.id])).length;
+  const progressPercent = subtopics.length > 0 ? Math.round((completedCount / subtopics.length) * 100) : 0;
 
   if (!contentItem) {
     return (
@@ -62,6 +66,20 @@ export default function ContentDetailPage() {
         <button type="button" className="back-button" onClick={() => navigate("/content")}>
           กลับหน้ารายการเนื้อหา
         </button>
+        {currentUserKey && subtopics.length > 0 && (
+          <div className="content-detail-progress">
+            <div className="content-detail-progress-header">
+              <strong>ความคืบหน้า</strong>
+              <span>{completedCount}/{subtopics.length} ({progressPercent}%)</span>
+            </div>
+            <div className="content-detail-progress-track">
+              <div
+                className={`content-detail-progress-fill${progressPercent === 100 ? " content-detail-progress-complete" : ""}`}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
+        )}
       </header>
 
       <div className="content-detail-grid">

@@ -37,6 +37,7 @@ export default function App() {
     handleAuthAction,
     visibleSidebarTabs,
     canManageUsers,
+    canManageRoles,
     canViewAllExamHistory,
     canViewSummary,
   } = useAuth();
@@ -98,7 +99,7 @@ export default function App() {
         <WorkspaceSidebar
           onAuthAction={handleAuthAction}
           isAuthenticated={Boolean(currentUser)}
-          canViewRestrictedTabs={Boolean(currentUser && (canManageUsers || canViewAllExamHistory || canViewSummary))}
+          canViewRestrictedTabs={Boolean(currentUser && (canManageUsers || canManageRoles || canViewAllExamHistory || canViewSummary))}
           visibleTabKeys={visibleSidebarTabs}
         />
 
@@ -179,7 +180,7 @@ export default function App() {
             path="/role-permission"
             element={
               <ProtectedRoute>
-                <PermissionRoute permission="management.users.manage" label="สิทธิ์การใช้งาน">
+                <PermissionRoute permission="management.roles.manage" label="สิทธิ์การใช้งาน">
                   <RolePermissionPage />
                 </PermissionRoute>
               </ProtectedRoute>

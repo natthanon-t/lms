@@ -358,6 +358,45 @@
   border: none;
 }
 
+.content-detail-progress {
+  padding: 10px 0 0;
+  border-top: 1px solid #f1f5f9;
+}
+
+.editor-head > .content-detail-progress {
+  width: 100%;
+  padding: 0;
+  border-top: none;
+}
+
+.content-detail-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #1a2f57;
+  margin-bottom: 6px;
+}
+
+.content-detail-progress-track {
+  width: 100%;
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.content-detail-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.content-detail-progress-complete {
+  background: linear-gradient(90deg, #16a34a, #22c55e);
+}
+
 .content-detail-page .course-skill-awards {
   border: none;
   background: none;

@@ -73,11 +73,11 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	authProtected.Get("/me", handler.Me)
 	authProtected.Get("/login-dates", handler.LoginDates)
 	authProtected.Get("/permissions", handler.MyPermissions)
-	protected.Post("/role", auth.RequirePermissions(auth.PermissionUserManage), handler.CreateRole)
-	protected.Get("/role", auth.RequirePermissions(auth.PermissionUserManage), handler.RoleOptions)
-	protected.Patch("/role/:code", auth.RequirePermissions(auth.PermissionUserManage), handler.UpdateRole)
-	protected.Delete("/role/:code", auth.RequirePermissions(auth.PermissionUserManage), handler.DeleteRole)
-	protected.Put("/role/:code/permissions", auth.RequirePermissions(auth.PermissionUserManage), handler.UpdateRolePermissions)
+	protected.Post("/role", auth.RequirePermissions(auth.PermissionRoleManage), handler.CreateRole)
+	protected.Get("/role", auth.RequirePermissions(auth.PermissionRoleManage, auth.PermissionUserManage), handler.RoleOptions)
+	protected.Patch("/role/:code", auth.RequirePermissions(auth.PermissionRoleManage), handler.UpdateRole)
+	protected.Delete("/role/:code", auth.RequirePermissions(auth.PermissionRoleManage), handler.DeleteRole)
+	protected.Put("/role/:code/permissions", auth.RequirePermissions(auth.PermissionRoleManage), handler.UpdateRolePermissions)
 
 	profile := protected.Group("/profile")
 	profile.Patch("", handler.UpdateProfileName)
@@ -133,5 +133,5 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	learning.Post("/courses/:courseId/subtopics/:subtopicId/time", auth.RequirePermissions(auth.PermissionContentLearn), handler.RecordSubtopicTime)
 	learning.Post("/courses/:courseId/complete", auth.RequirePermissions(auth.PermissionContentLearn), handler.CompleteCourse)
 	learning.Post("/courses/:courseId/qna", auth.RequirePermissions(auth.PermissionContentLearn), handler.PostQnAQuestion)
-	learning.Post("/qna/:questionId/reply", handler.PostQnAReply)
+	learning.Post("/qna/:questionId/reply", auth.RequirePermissions(auth.PermissionContentLearn), handler.PostQnAReply)
 }

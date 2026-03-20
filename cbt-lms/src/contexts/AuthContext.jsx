@@ -54,6 +54,7 @@ export function AuthProvider({ children }) {
   const canManageExams = permissionSet.has("exam.manage");
   const canViewAllExams = permissionSet.has("exam.view_all");
   const canManageUsers = permissionSet.has("management.users.manage");
+  const canManageRoles = permissionSet.has("management.roles.manage");
   const canViewAllExamHistory = permissionSet.has("management.exam_history.view");
   const canViewOwnExamHistory = permissionSet.has("system.exam_history.view");
   const canViewExamHistory = canViewAllExamHistory || canViewOwnExamHistory;
@@ -68,10 +69,8 @@ export function AuthProvider({ children }) {
       if (key === "exam.take" || key === "exam.manage") allowedTabKeys.add("exam");
       if (key === "system.report") allowedTabKeys.add("summary");
       if (key === "system.exam_history" || key === "management.exam_history") allowedTabKeys.add("exam-history");
-      if (key === "management.users") {
-        allowedTabKeys.add("user-management");
-        allowedTabKeys.add("role-permission");
-      }
+      if (key === "management.users") allowedTabKeys.add("user-management");
+      if (key === "management.roles") allowedTabKeys.add("role-permission");
     });
     return Array.from(allowedTabKeys);
   }, [currentUser, sidebarItems]);
@@ -157,6 +156,16 @@ export function AuthProvider({ children }) {
       }
     })();
   }, [currentUserKey, canManageUsers, toUserMap]);
+
+  // Load role data when user has roles.manage but not users.manage
+  useEffect(() => {
+    if (!currentUserKey || canManageUsers || !canManageRoles) return;
+    void fetchRoleOptionsAdmin()
+      .then((roleResult) => {
+        setAdminRoles(Array.isArray(roleResult?.roles) ? roleResult.roles : []);
+      })
+      .catch(() => {});
+  }, [currentUserKey, canManageUsers, canManageRoles]);
 
   const handleLoginFromBackend = async ({ username, password }) => {
     try {
@@ -263,6 +272,7 @@ export function AuthProvider({ children }) {
     canManageExams,
     canViewAllExams,
     canManageUsers,
+    canManageRoles,
     canViewAllExamHistory,
     canViewOwnExamHistory,
     canViewExamHistory,
