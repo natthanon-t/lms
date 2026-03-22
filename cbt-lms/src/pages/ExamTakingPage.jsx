@@ -272,7 +272,8 @@ export default function ExamTakingPage() {
     setShowEndConfirm(true);
   };
 
-  const answeredCount = Object.keys(answers).filter((key) => answers[key] !== "" && answers[key] != null).length;
+  const isAnswered = (id) => answers[id] != null && answers[id] !== "";
+  const answeredCount = Object.keys(answers).filter(isAnswered).length;
   const answeredPercent = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
 
   return (
@@ -311,13 +312,13 @@ export default function ExamTakingPage() {
 
         <div className="exam-nav-strip" ref={navStripRef}>
           {orderedQuestions.map((q, idx) => {
-            const isAnswered = answers[q.id] != null && answers[q.id] !== "";
+            const answered = isAnswered(q.id);
             const isCurrent = idx === currentIndex;
             return (
               <button
                 key={q.id}
                 type="button"
-                className={`exam-nav-pill${isCurrent ? " exam-nav-pill-current" : ""}${isAnswered && !isCurrent ? " exam-nav-pill-answered" : ""}`}
+                className={`exam-nav-pill${isCurrent ? " exam-nav-pill-current" : ""}${answered && !isCurrent ? " exam-nav-pill-answered" : ""}`}
                 onClick={() => setCurrentIndex(idx)}
               >
                 {idx + 1}
