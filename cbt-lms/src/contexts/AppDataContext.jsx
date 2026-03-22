@@ -31,16 +31,8 @@ import {
   updateCourseStatusApi,
   upsertCourseApi,
 } from "../services/courseApiService";
-import {
-  changeProfilePassword,
-  createUserAdmin,
-  fetchDefaultResetPasswordAdmin,
-  resetUserPasswordAdmin,
-  updateProfile,
-  updateProfileName,
-  updateUserAdmin,
-} from "../services/userApiService";
 import { useAuth } from "./AuthContext";
+import { useUserActions } from "../hooks/useUserActions";
 
 const AppDataContext = createContext(null);
 
@@ -463,140 +455,16 @@ export function AppDataProvider({ children }) {
     }
   };
 
-  // ─── User/profile handlers ────────────────────────────────────────────────
-
-  const handleSaveName = async (name) => {
-    if (!currentUserKey) return { success: false, message: "ไม่พบผู้ใช้ที่ล็อกอิน" };
-    try {
-      const payload = await updateProfileName(name);
-      const user = payload?.user ?? {};
-      const username = String(user?.username ?? currentUserKey).trim().toLowerCase();
-      setUsers((prev) => ({
-        ...prev,
-        [username]: {
-          ...(prev[username] ?? {}),
-          name: user?.name ?? name,
-          employeeCode: user?.employee_code ?? prev[username]?.employeeCode ?? "",
-          role: user?.role ?? prev[username]?.role ?? "ผู้ใช้งาน",
-          status: user?.status ?? prev[username]?.status ?? "active",
-        },
-      }));
-      return { success: true, message: "บันทึกชื่อเรียบร้อย" };
-    } catch (error) {
-      return { success: false, message: error?.message ?? "ไม่สามารถบันทึกชื่อได้" };
-    }
-  };
-
-  const handleSaveProfile = async ({ name, employeeCode }) => {
-    if (!currentUserKey) return { success: false, message: "ไม่พบผู้ใช้ที่ล็อกอิน" };
-    try {
-      const payload = await updateProfile({ name, employeeCode });
-      const user = payload?.user ?? {};
-      const username = String(user?.username ?? currentUserKey).trim().toLowerCase();
-      setUsers((prev) => ({
-        ...prev,
-        [username]: {
-          ...(prev[username] ?? {}),
-          name: user?.name ?? name,
-          employeeCode: user?.employee_code ?? employeeCode ?? prev[username]?.employeeCode ?? "",
-          role: user?.role ?? prev[username]?.role ?? "ผู้ใช้งาน",
-          status: user?.status ?? prev[username]?.status ?? "active",
-        },
-      }));
-      return { success: true, message: "บันทึกข้อมูลเรียบร้อย" };
-    } catch (error) {
-      return { success: false, message: error?.message ?? "ไม่สามารถบันทึกข้อมูลได้" };
-    }
-  };
-
-  const handleChangePassword = async (username, currentPassword, nextPassword) => {
-    if (!username || username !== currentUserKey) return { success: false, message: "ไม่สามารถเปลี่ยนรหัสผ่านได้" };
-    try {
-      await changeProfilePassword(currentPassword, nextPassword);
-      return { success: true, message: "เปลี่ยนรหัสผ่านเรียบร้อย" };
-    } catch (error) {
-      return { success: false, message: error?.message ?? "ไม่สามารถเปลี่ยนรหัสผ่านได้" };
-    }
-  };
-
-  const handleResetUserPassword = async (username) => {
-    try {
-      const resolvedPassword = String(defaultUserPassword ?? "").trim() || (await fetchDefaultResetPasswordAdmin());
-      await resetUserPasswordAdmin(username, resolvedPassword);
-      setDefaultUserPassword(resolvedPassword);
-      await refreshUsersForAdmin();
-      return { success: true, message: `รีเซ็ตรหัสผ่านของ ${username} สำเร็จ` };
-    } catch (error) {
-      return { success: false, message: error?.message ?? "รีเซ็ตรหัสผ่านไม่สำเร็จ" };
-    }
-  };
-
-  const handleCreateUser = async ({ name, username, employeeCode, role, status, password }) => {
-    try {
-      const resolvedPassword =
-        String(password ?? "").trim() ||
-        String(defaultUserPassword ?? "").trim() ||
-        (await fetchDefaultResetPasswordAdmin());
-      const payload = await createUserAdmin({ name, username, employeeCode, role, status, password: resolvedPassword });
-      setDefaultUserPassword((prev) => prev || resolvedPassword);
-      const user = payload?.user ?? {};
-      const normalizedUsername = String(user?.username ?? username).trim().toLowerCase();
-      if (normalizedUsername) {
-        setUsers((prev) => ({
-          ...prev,
-          [normalizedUsername]: {
-            name: user?.name ?? name,
-            employeeCode: user?.employee_code ?? employeeCode ?? "",
-            role: user?.role ?? role ?? "ผู้ใช้งาน",
-            status: user?.status ?? status ?? "active",
-          },
-        }));
-      }
-      return { success: true, message: `เพิ่มผู้ใช้ ${normalizedUsername} เรียบร้อย` };
-    } catch (error) {
-      return { success: false, message: error?.message ?? "ไม่สามารถเพิ่มผู้ใช้ได้" };
-    }
-  };
-
-  const handleUpdateUserRole = async (username, role) => {
-    try {
-      await updateUserAdmin(username, { role });
-      patchUserState(username, { role });
-      return { success: true };
-    } catch (error) {
-      return { success: false, message: error?.message ?? "ไม่สามารถอัปเดตตำแหน่งได้" };
-    }
-  };
-
-  const handleUpdateUserStatus = async (username, status) => {
-    try {
-      await updateUserAdmin(username, { status });
-      patchUserState(username, { status });
-      return { success: true };
-    } catch (error) {
-      return { success: false, message: error?.message ?? "ไม่สามารถอัปเดตสถานะได้" };
-    }
-  };
-
-  const handleUpdateUserProfileByAdmin = async (username, payload) => {
-    try {
-      const response = await updateUserAdmin(username, payload);
-      const user = response?.user ?? {};
-      setUsers((prev) => ({
-        ...prev,
-        [username]: {
-          ...(prev[username] ?? {}),
-          name: user?.name ?? payload?.name ?? prev[username]?.name ?? username,
-          employeeCode: user?.employee_code ?? payload?.employee_code ?? prev[username]?.employeeCode ?? "",
-          role: user?.role ?? prev[username]?.role ?? "ผู้ใช้งาน",
-          status: user?.status ?? prev[username]?.status ?? "active",
-        },
-      }));
-      return { success: true, message: `อัปเดตข้อมูลของ ${username} สำเร็จ` };
-    } catch (error) {
-      return { success: false, message: error?.message ?? "ไม่สามารถอัปเดตข้อมูลผู้ใช้ได้" };
-    }
-  };
+  const {
+    handleSaveName,
+    handleSaveProfile,
+    handleChangePassword,
+    handleResetUserPassword,
+    handleCreateUser,
+    handleUpdateUserRole,
+    handleUpdateUserStatus,
+    handleUpdateUserProfileByAdmin,
+  } = useUserActions({ currentUserKey, setUsers, patchUserState, defaultUserPassword, setDefaultUserPassword, refreshUsersForAdmin });
 
   const value = {
     examples,
