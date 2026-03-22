@@ -58,17 +58,18 @@ func ListCourses(limit, offset int) ([]Course, int, error) {
 			ids = append(ids, id)
 		}
 		srRows, err := db.Query(`SELECT course_id, skill, points FROM course_skill_rewards WHERE course_id = ANY($1)`, ids)
-		if err == nil {
-			defer srRows.Close()
-			for srRows.Next() {
-				var courseID, skill string
-				var points int
-				if err := srRows.Scan(&courseID, &skill, &points); err != nil {
-					continue
-				}
-				if idx, ok := courseIdx[courseID]; ok {
-					courses[idx].SkillRewards = append(courses[idx].SkillRewards, SkillReward{Skill: skill, Points: points})
-				}
+		if err != nil {
+			return nil, 0, fmt.Errorf("cannot load skill rewards: %w", err)
+		}
+		defer srRows.Close()
+		for srRows.Next() {
+			var courseID, skill string
+			var points int
+			if err := srRows.Scan(&courseID, &skill, &points); err != nil {
+				return nil, 0, fmt.Errorf("cannot scan skill reward: %w", err)
+			}
+			if idx, ok := courseIdx[courseID]; ok {
+				courses[idx].SkillRewards = append(courses[idx].SkillRewards, SkillReward{Skill: skill, Points: points})
 			}
 		}
 	}

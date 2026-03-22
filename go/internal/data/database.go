@@ -15,6 +15,7 @@ var db *sql.DB
 var employeeCodePattern = regexp.MustCompile(`^[A-Z0-9]{4}-[A-Z0-9]{2}-[A-Z0-9]{4}$`)
 
 var ErrForbidden = errors.New("forbidden")
+var ErrInvalidStatus = errors.New("status must be active or inactive")
 
 // IsDuplicateKey returns true when err is a PostgreSQL unique-constraint violation (code 23505).
 func IsDuplicateKey(err error) bool {

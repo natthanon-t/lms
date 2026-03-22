@@ -321,8 +321,8 @@ func (h *Handler) UpdateUserByAdmin(c *fiber.Ctx) error {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fiber.NewError(fiber.StatusNotFound, "user not found")
 		}
-		if strings.Contains(strings.ToLower(err.Error()), "invalid status") {
-			return fiber.NewError(fiber.StatusBadRequest, "status must be active or inactive")
+		if errors.Is(err, data.ErrInvalidStatus) {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
 		}
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot update user")
 	}

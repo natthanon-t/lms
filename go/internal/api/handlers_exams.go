@@ -92,6 +92,19 @@ func (h *Handler) UpsertExam(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "status must be active, inprogress, or inactive")
 	}
 
+	if req.NumberOfQuestions < 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "numberOfQuestions must be >= 0")
+	}
+	if req.DefaultTime < 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "defaultTime must be >= 0")
+	}
+	if req.MaxAttempts < 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "maxAttempts must be >= 0")
+	}
+	if len(req.Questions) > 500 {
+		return fiber.NewError(fiber.StatusBadRequest, "too many questions (max 500)")
+	}
+
 	if req.DomainPercentages == nil {
 		req.DomainPercentages = map[string]int{}
 	}

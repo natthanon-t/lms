@@ -13,6 +13,55 @@ type ExamAttemptFilter struct {
 	ExamTitle string // exact exam title filter
 }
 
+// filterBuilder helps build dynamic WHERE clauses with parameterized placeholders.
+type filterBuilder struct {
+	where string
+	args  []any
+	idx   int
+}
+
+func newFilterBuilder(baseWhere string, baseArgs ...any) *filterBuilder {
+	return &filterBuilder{where: baseWhere, args: baseArgs, idx: len(baseArgs) + 1}
+}
+
+func (fb *filterBuilder) add(clause string, args ...any) {
+	placeholders := make([]any, len(args))
+	for i := range args {
+		placeholders[i] = fb.idx
+		fb.idx++
+	}
+	fb.where += fmt.Sprintf(clause, placeholders...)
+	fb.args = append(fb.args, args...)
+}
+
+// applyUserSearch adds search filter for user-facing queries (search by exam title).
+func (fb *filterBuilder) applyUserSearch(f ExamAttemptFilter) {
+	if f.Search != "" {
+		fb.add(` AND e.title ILIKE $%d`, "%"+f.Search+"%")
+	}
+	if f.ExamTitle != "" {
+		fb.add(` AND e.title = $%d`, f.ExamTitle)
+	}
+}
+
+// applyAdminSearch adds search filter for admin queries (search by user name/employee code).
+func (fb *filterBuilder) applyAdminSearch(f ExamAttemptFilter) {
+	if f.Search != "" {
+		fb.add(` AND (u.name ILIKE $%d OR u.employee_code ILIKE $%d)`, "%"+f.Search+"%", "%"+f.Search+"%")
+	}
+	if f.ExamTitle != "" {
+		fb.add(` AND e.title = $%d`, f.ExamTitle)
+	}
+}
+
+// limitOffset appends LIMIT and OFFSET placeholders and args.
+func (fb *filterBuilder) limitOffset(limit, offset int) string {
+	clause := fmt.Sprintf(` LIMIT $%d OFFSET $%d`, fb.idx, fb.idx+1)
+	fb.args = append(fb.args, limit, offset)
+	fb.idx += 2
+	return clause
+}
+
 func CheckExamAttemptLimit(examID, username string) (maxAttempts int, currentCount int, err error) {
 	err = db.QueryRow(`
 		SELECT e.max_attempts, COUNT(ea.id)
@@ -141,7 +190,7 @@ func GetUserExamAttempts(username, examID string) ([]ExamAttempt, error) {
 			attempts[i].ID,
 		)
 		if err != nil {
-			continue
+			return nil, fmt.Errorf("cannot load attempt answers for attempt %d: %w", attempts[i].ID, err)
 		}
 		details := make([]ExamAttemptAnswer, 0)
 		for ansRows.Next() {
@@ -153,7 +202,8 @@ func GetUserExamAttempts(username, examID string) ([]ExamAttempt, error) {
 				&d.AnswerKey, &d.Explanation,
 				&d.Selected, &d.IsCorrect,
 			); err != nil {
-				continue
+				ansRows.Close()
+				return nil, fmt.Errorf("cannot scan attempt answer: %w", err)
 			}
 			d.Choices = []string{choiceA, choiceB, choiceC, choiceD}
 			details = append(details, d)
@@ -215,36 +265,24 @@ func GetMyExamAttemptDetails(username string, attemptID int64) ([]ExamAttemptAns
 
 // GetMyAllExamAttempts returns paginated exam attempts for a user across all exams, with exam title.
 func GetMyAllExamAttempts(username string, limit, offset int, f ExamAttemptFilter) ([]AdminExamAttempt, int, error) {
-	where := `WHERE ea.username = $1`
-	args := []any{username}
-	idx := 2
-	if f.Search != "" {
-		where += fmt.Sprintf(` AND e.title ILIKE $%d`, idx)
-		args = append(args, "%"+f.Search+"%")
-		idx++
-	}
-	if f.ExamTitle != "" {
-		where += fmt.Sprintf(` AND e.title = $%d`, idx)
-		args = append(args, f.ExamTitle)
-		idx++
-	}
+	fb := newFilterBuilder(`WHERE ea.username = $1`, username)
+	fb.applyUserSearch(f)
 
 	var total int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM exam_attempts ea JOIN exams e ON e.id = ea.exam_id `+where, args...).Scan(&total); err != nil {
+	if err := db.QueryRow(`SELECT COUNT(*) FROM exam_attempts ea JOIN exams e ON e.id = ea.exam_id `+fb.where, fb.args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	query := fmt.Sprintf(`
+	lo := fb.limitOffset(limit, offset)
+	query := `
 		SELECT ea.id, ea.exam_id, ea.correct_count, ea.total_questions, ea.score_percent::float8,
 		       ea.started_at, ea.finished_at, e.title
 		FROM exam_attempts ea
 		JOIN exams e ON e.id = ea.exam_id
-		%s
-		ORDER BY ea.started_at DESC
-		LIMIT $%d OFFSET $%d`, where, idx, idx+1)
-	args = append(args, limit, offset)
+		` + fb.where + `
+		ORDER BY ea.started_at DESC` + lo
 
-	rows, err := db.Query(query, args...)
+	rows, err := db.Query(query, fb.args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -258,7 +296,7 @@ func GetMyAllExamAttempts(username string, limit, offset int, f ExamAttemptFilte
 			&a.ID, &a.ExamID, &a.CorrectCount, &a.TotalQuestions, &a.ScorePercent,
 			&a.StartedAt, &finishedAt, &a.ExamTitle,
 		); err != nil {
-			continue
+			return nil, 0, fmt.Errorf("cannot scan exam attempt: %w", err)
 		}
 		if finishedAt.Valid {
 			a.FinishedAt = &finishedAt.Time
@@ -296,7 +334,7 @@ func GradeAndSaveExamAttempt(examID, username string, rawAnswers []struct{ Quest
 		var choiceA, choiceB, choiceC, choiceD string
 		if err := qRows.Scan(&q.ID, &q.Domain, &q.QuestionType, &q.Question,
 			&choiceA, &choiceB, &choiceC, &choiceD, &q.AnswerKey, &q.Explanation); err != nil {
-			continue
+			return ExamAttempt{}, nil, fmt.Errorf("cannot scan exam question: %w", err)
 		}
 		q.Choices = []string{choiceA, choiceB, choiceC, choiceD}
 		questions[q.ID] = q
@@ -358,27 +396,17 @@ func GradeAndSaveExamAttempt(examID, username string, rawAnswers []struct{ Quest
 
 // GetAllExamAttemptsAdmin returns paginated exam attempts across all users for admin view.
 func GetAllExamAttemptsAdmin(limit, offset int, f ExamAttemptFilter) ([]AdminExamAttempt, int, error) {
-	where := `WHERE 1=1`
-	args := []any{}
-	idx := 1
-	if f.Search != "" {
-		where += fmt.Sprintf(` AND (u.name ILIKE $%d OR u.employee_code ILIKE $%d)`, idx, idx)
-		args = append(args, "%"+f.Search+"%")
-		idx++
-	}
-	if f.ExamTitle != "" {
-		where += fmt.Sprintf(` AND e.title = $%d`, idx)
-		args = append(args, f.ExamTitle)
-		idx++
-	}
+	fb := newFilterBuilder(`WHERE 1=1`)
+	fb.applyAdminSearch(f)
 
 	var total int
-	countQuery := `SELECT COUNT(*) FROM exam_attempts ea JOIN users u ON u.username = ea.username JOIN exams e ON e.id = ea.exam_id ` + where
-	if err := db.QueryRow(countQuery, args...).Scan(&total); err != nil {
+	countQuery := `SELECT COUNT(*) FROM exam_attempts ea JOIN users u ON u.username = ea.username JOIN exams e ON e.id = ea.exam_id ` + fb.where
+	if err := db.QueryRow(countQuery, fb.args...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	query := fmt.Sprintf(`
+	lo := fb.limitOffset(limit, offset)
+	query := `
 		SELECT ea.id, ea.username, u.name, u.employee_code,
 		       ea.exam_id, e.title,
 		       ea.correct_count, ea.total_questions, ea.score_percent::float8,
@@ -386,12 +414,10 @@ func GetAllExamAttemptsAdmin(limit, offset int, f ExamAttemptFilter) ([]AdminExa
 		FROM exam_attempts ea
 		JOIN users u ON u.username = ea.username
 		JOIN exams e ON e.id = ea.exam_id
-		%s
-		ORDER BY COALESCE(ea.finished_at, ea.started_at) DESC
-		LIMIT $%d OFFSET $%d`, where, idx, idx+1)
-	args = append(args, limit, offset)
+		` + fb.where + `
+		ORDER BY COALESCE(ea.finished_at, ea.started_at) DESC` + lo
 
-	rows, err := db.Query(query, args...)
+	rows, err := db.Query(query, fb.args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -419,19 +445,8 @@ func GetAllExamAttemptsAdmin(limit, offset int, f ExamAttemptFilter) ([]AdminExa
 
 // GetExamAttemptStatsAdmin returns aggregate statistics for all exam attempts (with optional filters).
 func GetExamAttemptStatsAdmin(f ExamAttemptFilter) (ExamAttemptAggregateStats, error) {
-	where := `WHERE 1=1`
-	args := []any{}
-	idx := 1
-	if f.Search != "" {
-		where += fmt.Sprintf(` AND (u.name ILIKE $%d OR u.employee_code ILIKE $%d)`, idx, idx)
-		args = append(args, "%"+f.Search+"%")
-		idx++
-	}
-	if f.ExamTitle != "" {
-		where += fmt.Sprintf(` AND e.title = $%d`, idx)
-		args = append(args, f.ExamTitle)
-		idx++
-	}
+	fb := newFilterBuilder(`WHERE 1=1`)
+	fb.applyAdminSearch(f)
 	var s ExamAttemptAggregateStats
 	err := db.QueryRow(`
 		SELECT COUNT(*),
@@ -439,32 +454,21 @@ func GetExamAttemptStatsAdmin(f ExamAttemptFilter) (ExamAttemptAggregateStats, e
 		       COALESCE(AVG(ea.score_percent), 0)::float8
 		FROM exam_attempts ea
 		JOIN users u ON u.username = ea.username
-		JOIN exams e ON e.id = ea.exam_id `+where, args...).Scan(&s.Total, &s.PassCount, &s.AvgScore)
+		JOIN exams e ON e.id = ea.exam_id `+fb.where, fb.args...).Scan(&s.Total, &s.PassCount, &s.AvgScore)
 	return s, err
 }
 
 // GetMyExamAttemptStats returns aggregate statistics for a specific user's exam attempts (with optional filters).
 func GetMyExamAttemptStats(username string, f ExamAttemptFilter) (ExamAttemptAggregateStats, error) {
-	where := `WHERE ea.username = $1`
-	args := []any{username}
-	idx := 2
-	if f.Search != "" {
-		where += fmt.Sprintf(` AND e.title ILIKE $%d`, idx)
-		args = append(args, "%"+f.Search+"%")
-		idx++
-	}
-	if f.ExamTitle != "" {
-		where += fmt.Sprintf(` AND e.title = $%d`, idx)
-		args = append(args, f.ExamTitle)
-		idx++
-	}
+	fb := newFilterBuilder(`WHERE ea.username = $1`, username)
+	fb.applyUserSearch(f)
 	var s ExamAttemptAggregateStats
 	err := db.QueryRow(`
 		SELECT COUNT(*),
 		       COUNT(*) FILTER (WHERE ea.score_percent >= 70),
 		       COALESCE(AVG(ea.score_percent), 0)::float8
 		FROM exam_attempts ea
-		JOIN exams e ON e.id = ea.exam_id `+where, args...).Scan(&s.Total, &s.PassCount, &s.AvgScore)
+		JOIN exams e ON e.id = ea.exam_id `+fb.where, fb.args...).Scan(&s.Total, &s.PassCount, &s.AvgScore)
 	return s, err
 }
 
@@ -485,9 +489,10 @@ func GetExamAttemptDistinctTitles(username string) ([]string, error) {
 	var titles []string
 	for rows.Next() {
 		var t string
-		if err := rows.Scan(&t); err == nil {
-			titles = append(titles, t)
+		if err := rows.Scan(&t); err != nil {
+			return nil, fmt.Errorf("cannot scan exam title: %w", err)
 		}
+		titles = append(titles, t)
 	}
 	return titles, rows.Err()
 }

@@ -1,6 +1,9 @@
 package data
 
-import "fmt"
+import (
+	"database/sql"
+	"fmt"
+)
 
 func RecordScoreEvent(username, reason, courseID string, score int) error {
 	_, err := db.Exec(
@@ -33,7 +36,9 @@ func AddSkillScore(username, skill string, delta int) error {
 
 func GetUserScores(username string) (total int, skills map[string]int, err error) {
 	skills = make(map[string]int)
-	_ = db.QueryRow(`SELECT total FROM user_scores WHERE username = $1`, username).Scan(&total)
+	if err := db.QueryRow(`SELECT total FROM user_scores WHERE username = $1`, username).Scan(&total); err != nil && err != sql.ErrNoRows {
+		return 0, nil, fmt.Errorf("cannot get total score: %w", err)
+	}
 
 	rows, err := db.Query(`SELECT skill, points FROM user_skill_scores WHERE username = $1`, username)
 	if err != nil {
@@ -44,7 +49,7 @@ func GetUserScores(username string) (total int, skills map[string]int, err error
 		var skill string
 		var points int
 		if err := rows.Scan(&skill, &points); err != nil {
-			continue
+			return total, nil, fmt.Errorf("cannot scan skill score: %w", err)
 		}
 		skills[skill] = points
 	}
@@ -69,7 +74,9 @@ func AwardCourseCompletion(username, courseID string) (int, []SkillReward, error
 	}
 
 	var courseScore int
-	_ = db.QueryRow(`SELECT course_completion_score FROM courses WHERE id = $1`, courseID).Scan(&courseScore)
+	if err := db.QueryRow(`SELECT course_completion_score FROM courses WHERE id = $1`, courseID).Scan(&courseScore); err != nil && err != sql.ErrNoRows {
+		return 0, nil, fmt.Errorf("cannot get course score: %w", err)
+	}
 	if courseScore > 0 {
 		if err := AddTotalScore(username, courseScore); err != nil {
 			return 0, nil, fmt.Errorf("cannot add total score: %w", err)
@@ -88,9 +95,11 @@ func AwardCourseCompletion(username, courseID string) (int, []SkillReward, error
 	for rows.Next() {
 		var r SkillReward
 		if err := rows.Scan(&r.Skill, &r.Points); err != nil {
-			continue
+			return courseScore, nil, fmt.Errorf("cannot scan skill reward: %w", err)
 		}
-		_ = AddSkillScore(username, r.Skill, r.Points)
+		if err := AddSkillScore(username, r.Skill, r.Points); err != nil {
+			return courseScore, nil, fmt.Errorf("cannot add skill score for %s: %w", r.Skill, err)
+		}
 		rewards = append(rewards, r)
 	}
 	return courseScore, rewards, rows.Err()
@@ -123,7 +132,9 @@ func MarkSubtopicComplete(username, courseID, subtopicID string) (awardedScore i
 	}
 
 	var score int
-	_ = db.QueryRow(`SELECT subtopic_completion_score FROM courses WHERE id = $1`, courseID).Scan(&score)
+	if err := db.QueryRow(`SELECT subtopic_completion_score FROM courses WHERE id = $1`, courseID).Scan(&score); err != nil && err != sql.ErrNoRows {
+		return 0, fmt.Errorf("cannot get subtopic score: %w", err)
+	}
 	if score > 0 {
 		if err := AddTotalScore(username, score); err != nil {
 			return 0, fmt.Errorf("cannot add total score: %w", err)
@@ -178,7 +189,7 @@ func GetLearningProgress(username string) (map[string]CourseProgress, error) {
 	for rows.Next() {
 		var courseID, subtopicID string
 		if err := rows.Scan(&courseID, &subtopicID); err != nil {
-			continue
+			return nil, fmt.Errorf("cannot scan subtopic progress: %w", err)
 		}
 		cp := getOrCreateCourseProgress(result, courseID)
 		cp.CompletedSubtopics[subtopicID] = true
@@ -197,7 +208,7 @@ func GetLearningProgress(username string) (map[string]CourseProgress, error) {
 		var courseID, subtopicID, questionID, typedAnswer string
 		var isCorrect bool
 		if err := answerRows.Scan(&courseID, &subtopicID, &questionID, &typedAnswer, &isCorrect); err != nil {
-			continue
+			return nil, fmt.Errorf("cannot scan subtopic answer: %w", err)
 		}
 		cp := getOrCreateCourseProgress(result, courseID)
 		if cp.Answers[subtopicID] == nil {
@@ -219,7 +230,7 @@ func GetLearningProgress(username string) (map[string]CourseProgress, error) {
 		var courseID, subtopicID string
 		var secondsSpent int
 		if err := timeRows.Scan(&courseID, &subtopicID, &secondsSpent); err != nil {
-			continue
+			return nil, fmt.Errorf("cannot scan subtopic time: %w", err)
 		}
 		cp := getOrCreateCourseProgress(result, courseID)
 		cp.TimeSpent[subtopicID] = secondsSpent

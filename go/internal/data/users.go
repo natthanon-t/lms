@@ -3,7 +3,6 @@ package data
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
@@ -142,7 +141,7 @@ func UpdateUserByUsername(username, name, role, status, employeeCode string) (Au
 		nextStatus = strings.ToLower(strings.TrimSpace(target.Status))
 	}
 	if nextStatus != "active" && nextStatus != "inactive" {
-		return AuthUserRecord{}, fmt.Errorf("invalid status")
+		return AuthUserRecord{}, ErrInvalidStatus
 	}
 
 	nextEmployeeCode := target.EmployeeCode

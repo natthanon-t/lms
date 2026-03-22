@@ -62,17 +62,18 @@ func ListExams(limit, offset int) ([]Exam, int, error) {
 			ids = append(ids, id)
 		}
 		dpRows, err := db.Query(`SELECT exam_id, domain, percentage FROM exam_domain_percentages WHERE exam_id = ANY($1)`, ids)
-		if err == nil {
-			defer dpRows.Close()
-			for dpRows.Next() {
-				var examID, domain string
-				var pct int
-				if err := dpRows.Scan(&examID, &domain, &pct); err != nil {
-					continue
-				}
-				if idx, ok := examIdx[examID]; ok {
-					exams[idx].DomainPercentages[domain] = pct
-				}
+		if err != nil {
+			return nil, 0, fmt.Errorf("cannot load domain percentages: %w", err)
+		}
+		defer dpRows.Close()
+		for dpRows.Next() {
+			var examID, domain string
+			var pct int
+			if err := dpRows.Scan(&examID, &domain, &pct); err != nil {
+				return nil, 0, fmt.Errorf("cannot scan domain percentage: %w", err)
+			}
+			if idx, ok := examIdx[examID]; ok {
+				exams[idx].DomainPercentages[domain] = pct
 			}
 		}
 	}
@@ -100,15 +101,17 @@ func GetExam(id string) (*Exam, error) {
 
 	e.DomainPercentages = map[string]int{}
 	dpRows, err := db.Query(`SELECT domain, percentage FROM exam_domain_percentages WHERE exam_id = $1`, id)
-	if err == nil {
-		defer dpRows.Close()
-		for dpRows.Next() {
-			var domain string
-			var pct int
-			if err := dpRows.Scan(&domain, &pct); err == nil {
-				e.DomainPercentages[domain] = pct
-			}
+	if err != nil {
+		return nil, fmt.Errorf("cannot load domain percentages: %w", err)
+	}
+	defer dpRows.Close()
+	for dpRows.Next() {
+		var domain string
+		var pct int
+		if err := dpRows.Scan(&domain, &pct); err != nil {
+			return nil, fmt.Errorf("cannot scan domain percentage: %w", err)
 		}
+		e.DomainPercentages[domain] = pct
 	}
 
 	e.Questions = []ExamQuestion{}
@@ -117,21 +120,22 @@ func GetExam(id string) (*Exam, error) {
 		       choice_a, choice_b, choice_c, choice_d,
 		       answer_key, explanation
 		FROM exam_questions WHERE exam_id = $1 ORDER BY id`, id)
-	if err == nil {
-		defer qRows.Close()
-		for qRows.Next() {
-			var q ExamQuestion
-			var choiceA, choiceB, choiceC, choiceD string
-			if err := qRows.Scan(
-				&q.ID, &q.ExamID, &q.Domain, &q.QuestionType, &q.Question,
-				&choiceA, &choiceB, &choiceC, &choiceD,
-				&q.AnswerKey, &q.Explanation,
-			); err != nil {
-				continue
-			}
-			q.Choices = []string{choiceA, choiceB, choiceC, choiceD}
-			e.Questions = append(e.Questions, q)
+	if err != nil {
+		return nil, fmt.Errorf("cannot load questions: %w", err)
+	}
+	defer qRows.Close()
+	for qRows.Next() {
+		var q ExamQuestion
+		var choiceA, choiceB, choiceC, choiceD string
+		if err := qRows.Scan(
+			&q.ID, &q.ExamID, &q.Domain, &q.QuestionType, &q.Question,
+			&choiceA, &choiceB, &choiceC, &choiceD,
+			&q.AnswerKey, &q.Explanation,
+		); err != nil {
+			return nil, fmt.Errorf("cannot scan question: %w", err)
 		}
+		q.Choices = []string{choiceA, choiceB, choiceC, choiceD}
+		e.Questions = append(e.Questions, q)
 	}
 
 	return &e, nil
@@ -157,15 +161,17 @@ func GetExamPublic(id string) (*PublicExam, error) {
 
 	e.DomainPercentages = map[string]int{}
 	dpRows, err := db.Query(`SELECT domain, percentage FROM exam_domain_percentages WHERE exam_id = $1`, id)
-	if err == nil {
-		defer dpRows.Close()
-		for dpRows.Next() {
-			var domain string
-			var pct int
-			if err := dpRows.Scan(&domain, &pct); err == nil {
-				e.DomainPercentages[domain] = pct
-			}
+	if err != nil {
+		return nil, fmt.Errorf("cannot load domain percentages: %w", err)
+	}
+	defer dpRows.Close()
+	for dpRows.Next() {
+		var domain string
+		var pct int
+		if err := dpRows.Scan(&domain, &pct); err != nil {
+			return nil, fmt.Errorf("cannot scan domain percentage: %w", err)
 		}
+		e.DomainPercentages[domain] = pct
 	}
 
 	return &e, nil
