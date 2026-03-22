@@ -15,9 +15,10 @@ const shuffleArray = (items) => {
 
 const formatTime = (seconds) => {
   const safe = Math.max(0, seconds);
-  const mm = String(Math.floor(safe / 60)).padStart(2, "0");
+  const hh = Math.floor(safe / 3600);
+  const mm = String(Math.floor((safe % 3600) / 60)).padStart(2, "0");
   const ss = String(safe % 60).padStart(2, "0");
-  return `${mm}:${ss}`;
+  return hh > 0 ? `${hh}:${mm}:${ss}` : `${mm}:${ss}`;
 };
 
 const allocateDomainCounts = (totalQuestions, domainPercentages) => {

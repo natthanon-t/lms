@@ -118,7 +118,14 @@ func UpsertCourse(c Course, callerUsername string, isAdmin bool) (Course, error)
 		c.AllowedUsernames = []string{}
 	}
 
-	err = db.QueryRow(`
+	// Use a transaction for the multi-step upsert
+	tx, err := db.Begin()
+	if err != nil {
+		return Course{}, err
+	}
+	defer tx.Rollback()
+
+	err = tx.QueryRow(`
 		INSERT INTO courses (id, title, creator, owner_username, status, visibility, allowed_usernames,
 		                     description, image, content,
 		                     skill_points, subtopic_completion_score, course_completion_score)
@@ -152,19 +159,23 @@ func UpsertCourse(c Course, callerUsername string, isAdmin bool) (Course, error)
 		return Course{}, err
 	}
 
-	if _, err := db.Exec(`DELETE FROM course_skill_rewards WHERE course_id = $1`, c.ID); err != nil {
-		return c, err
+	if _, err := tx.Exec(`DELETE FROM course_skill_rewards WHERE course_id = $1`, c.ID); err != nil {
+		return Course{}, err
 	}
 	for _, sr := range c.SkillRewards {
 		if strings.TrimSpace(sr.Skill) == "" {
 			continue
 		}
-		if _, err := db.Exec(
+		if _, err := tx.Exec(
 			`INSERT INTO course_skill_rewards (course_id, skill, points) VALUES ($1,$2,$3)`,
 			c.ID, sr.Skill, sr.Points,
 		); err != nil {
-			return c, err
+			return Course{}, err
 		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return Course{}, err
 	}
 
 	return c, nil

@@ -146,20 +146,16 @@ func (h *Handler) Refresh(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "user is inactive")
 	}
 
-	if err := data.RevokeRefreshToken(currentHash); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "cannot rotate refresh token")
-	}
-
 	nextRefreshToken, nextRefreshHash, err := auth.GenerateRefreshToken()
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot generate refresh token")
 	}
 	nextRefreshExpiresAt := time.Now().Add(time.Duration(h.cfg.RefreshTTL) * time.Hour)
-	if err := data.CreateRefreshToken(user.ID, nextRefreshHash, nextRefreshExpiresAt); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "cannot store refresh token")
+	if err := data.RotateRefreshToken(currentHash, user.ID, nextRefreshHash, nextRefreshExpiresAt); err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot rotate refresh token")
 	}
 
-	permissions, err := auth.PermissionsForRole(user.Role)
+	permissions, err := data.PermissionsForUser(user.ID)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot load permissions")
 	}

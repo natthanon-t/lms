@@ -1,10 +1,13 @@
 package data
 
-func RecordScoreEvent(username, reason, courseID string, score int) {
-	_, _ = db.Exec(
+import "fmt"
+
+func RecordScoreEvent(username, reason, courseID string, score int) error {
+	_, err := db.Exec(
 		`INSERT INTO user_score_events (username, score, reason, course_id) VALUES ($1, $2, $3, NULLIF($4, ''))`,
 		username, score, reason, courseID,
 	)
+	return err
 }
 
 func AddTotalScore(username string, delta int) error {
@@ -68,8 +71,12 @@ func AwardCourseCompletion(username, courseID string) (int, []SkillReward, error
 	var courseScore int
 	_ = db.QueryRow(`SELECT course_completion_score FROM courses WHERE id = $1`, courseID).Scan(&courseScore)
 	if courseScore > 0 {
-		_ = AddTotalScore(username, courseScore)
-		RecordScoreEvent(username, "course_complete", courseID, courseScore)
+		if err := AddTotalScore(username, courseScore); err != nil {
+			return 0, nil, fmt.Errorf("cannot add total score: %w", err)
+		}
+		if err := RecordScoreEvent(username, "course_complete", courseID, courseScore); err != nil {
+			return 0, nil, fmt.Errorf("cannot record score event: %w", err)
+		}
 	}
 
 	rows, err := db.Query(`SELECT skill, points FROM course_skill_rewards WHERE course_id = $1`, courseID)
@@ -118,8 +125,12 @@ func MarkSubtopicComplete(username, courseID, subtopicID string) (awardedScore i
 	var score int
 	_ = db.QueryRow(`SELECT subtopic_completion_score FROM courses WHERE id = $1`, courseID).Scan(&score)
 	if score > 0 {
-		_ = AddTotalScore(username, score)
-		RecordScoreEvent(username, "subtopic_complete", courseID, score)
+		if err := AddTotalScore(username, score); err != nil {
+			return 0, fmt.Errorf("cannot add total score: %w", err)
+		}
+		if err := RecordScoreEvent(username, "subtopic_complete", courseID, score); err != nil {
+			return 0, fmt.Errorf("cannot record score event: %w", err)
+		}
 	}
 	return score, nil
 }

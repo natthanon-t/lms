@@ -39,7 +39,7 @@ func RolePermissionsMap() (map[string][]string, error) {
 	return data.GetRolePermissionsMap()
 }
 
-func RequirePermissions(permissions ...string) fiber.Handler {
+func RequireAnyPermission(permissions ...string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		role := currentUserRole(c)
 		grantedPermissions, err := data.GetPermissionsByRole(role)

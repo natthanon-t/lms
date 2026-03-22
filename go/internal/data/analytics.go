@@ -1,6 +1,9 @@
 package data
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type DailyExamStat struct {
 	Day  string `json:"day"`
@@ -160,13 +163,15 @@ func getMonthlyCompletions() ([]int, error) {
 
 func getCourseStatus() ([]CourseStatusStat, error) {
 	var totalLearners int
-	_ = db.QueryRow(`
+	if err := db.QueryRow(`
 		SELECT COUNT(*) FROM users u
 		WHERE u.status = 'active'
 		  AND u.role_code NOT IN (
 			SELECT DISTINCT role_code FROM role_permissions
 			WHERE permission_code = 'management.users.manage'
-		  )`).Scan(&totalLearners)
+		  )`).Scan(&totalLearners); err != nil {
+		return nil, fmt.Errorf("cannot count learners: %w", err)
+	}
 
 	rows, err := db.Query(`
 		SELECT

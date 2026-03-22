@@ -266,8 +266,14 @@ func (h *Handler) GetMyExamAttempts(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot get attempts")
 	}
-	stats, _ := data.GetMyExamAttemptStats(username, f)
-	titles, _ := data.GetExamAttemptDistinctTitles(username)
+	stats, err := data.GetMyExamAttemptStats(username, f)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot get attempt stats")
+	}
+	titles, err := data.GetExamAttemptDistinctTitles(username)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot get exam titles")
+	}
 	return c.JSON(fiber.Map{
 		"attempts":   attempts,
 		"pagination": paginationMeta(total, limit, page),
@@ -306,8 +312,14 @@ func (h *Handler) GetAllExamAttemptsAdmin(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot get attempts")
 	}
-	stats, _ := data.GetExamAttemptStatsAdmin(f)
-	titles, _ := data.GetExamAttemptDistinctTitles("")
+	stats, err := data.GetExamAttemptStatsAdmin(f)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot get attempt stats")
+	}
+	titles, err := data.GetExamAttemptDistinctTitles("")
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot get exam titles")
+	}
 	return c.JSON(fiber.Map{
 		"attempts":   attempts,
 		"pagination": paginationMeta(total, limit, page),

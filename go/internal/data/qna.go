@@ -1,5 +1,7 @@
 package data
 
+import "fmt"
+
 func GetCourseQnA(courseID string) ([]QnAQuestion, error) {
 	rows, err := db.Query(`
 		SELECT q.id, q.course_id, q.subtopic_id, q.username, u.name, q.question, q.created_at
@@ -40,7 +42,7 @@ func GetCourseQnA(courseID string) ([]QnAQuestion, error) {
 		WHERE q.course_id = $1
 		ORDER BY r.created_at ASC`, courseID)
 	if err != nil {
-		return questions, nil // return questions without replies on error
+		return nil, fmt.Errorf("cannot load replies: %w", err)
 	}
 	defer replyRows.Close()
 
