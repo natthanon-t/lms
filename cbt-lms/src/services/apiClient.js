@@ -1,10 +1,14 @@
-import { getAccessToken, refreshAuth } from "./authService";
+import { refreshAuth } from "./authService";
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5020";
 
+export const getCsrfToken = () => {
+  const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : "";
+};
+
 export const authHeaders = () => ({
   "Content-Type": "application/json",
-  Authorization: `Bearer ${getAccessToken()}`,
 });
 
 /* Singleton refresh lock: prevents concurrent refresh calls */
@@ -26,20 +30,25 @@ export const request = async (path, options = {}) => {
 
   if (isGet && inflight.has(key)) return inflight.get(key);
 
+  const buildFetchOptions = () => {
+    const csrfHeaders = !isGet ? { "X-CSRF-Token": getCsrfToken() } : {};
+    return {
+      ...options,
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...options.headers, ...csrfHeaders },
+    };
+  };
+
   const promise = (async () => {
-    const response = await fetch(`${API_BASE_URL}${path}`, options);
+    const response = await fetch(`${API_BASE_URL}${path}`, buildFetchOptions());
     const payload = await response.json().catch(() => ({}));
 
     // Auto-refresh on 401 and retry once (skip auth endpoints to avoid loops)
     if (response.status === 401 && !path.startsWith("/api/auth/")) {
       try {
         await tryRefreshToken();
-        // Rebuild headers with new token
-        const retryOptions = {
-          ...options,
-          headers: { ...options.headers, Authorization: `Bearer ${getAccessToken()}` },
-        };
-        const retryResponse = await fetch(`${API_BASE_URL}${path}`, retryOptions);
+        // After refresh, cookies are updated; rebuild CSRF header
+        const retryResponse = await fetch(`${API_BASE_URL}${path}`, buildFetchOptions());
         const retryPayload = await retryResponse.json().catch(() => ({}));
         if (!retryResponse.ok) {
           const err = new Error(retryPayload?.message ?? "request failed");

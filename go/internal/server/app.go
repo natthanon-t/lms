@@ -14,9 +14,10 @@ func newFiberApp(cfg config.AppConfig) *fiber.App {
 	})
 	app.Use(helmet.New())
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: cfg.CORSOrigins,
-		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS,PATCH",
-		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+		AllowOrigins:     cfg.CORSOrigins,
+		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS,PATCH",
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-CSRF-Token",
+		AllowCredentials: true,
 	}))
 	return app
 }

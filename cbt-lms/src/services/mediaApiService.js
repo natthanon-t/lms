@@ -1,16 +1,12 @@
-import { API_BASE_URL, authHeaders, request } from "./apiClient";
-import { getAccessToken } from "./authService";
+import { API_BASE_URL, authHeaders, getCsrfToken, request } from "./apiClient";
 
 const toAbsoluteUrl = (path) => (path ? `${API_BASE_URL}${path}` : "");
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
 
 export const fetchAvatarApi = async () => {
-  const payload = await request("/api/profile/avatar", {
-    headers: authHeaders(),
-  });
-  const raw = payload?.data_url ?? "";
-  return raw.startsWith("/uploads/") ? toAbsoluteUrl(raw) : raw;
+  const payload = await request("/api/profile/avatar");
+  return payload?.data_url ?? "";
 };
 
 export const updateAvatarApi = async (dataUrl) =>
@@ -55,7 +51,8 @@ export const uploadCourseAttachmentApi = async (courseId, file) => {
   // Use fetch directly — do NOT set Content-Type (browser sets multipart boundary automatically)
   const response = await fetch(`${API_BASE_URL}/api/courses/${encodeURIComponent(courseId)}/attachments`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${getAccessToken()}` },
+    headers: { "X-CSRF-Token": getCsrfToken() },
+    credentials: "include",
     body: formData,
   });
   const payload = await response.json().catch(() => ({}));

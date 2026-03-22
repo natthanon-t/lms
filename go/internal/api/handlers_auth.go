@@ -3,8 +3,13 @@ package api
 import (
 	"backend/internal/auth"
 	"backend/internal/data"
+	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
+	"encoding/hex"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -98,22 +103,28 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot load user permissions")
 	}
 
+	csrfToken, err := generateCSRFToken()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot generate csrf token")
+	}
+	setAuthCookies(c, accessToken, h.cfg.AccessTTL, refreshToken, h.cfg.RefreshTTL, csrfToken, isSecureCookie(h.cfg.CORSOrigins))
+
 	return c.JSON(fiber.Map{
-		"message":       "login success",
-		"token":         accessToken,
-		"refresh_token": refreshToken,
-		"token_type":    "Bearer",
-		"expires_in":    h.cfg.AccessTTL * 60,
-		"user":          userPayload,
+		"message":    "login success",
+		"expires_in": h.cfg.AccessTTL * 60,
+		"user":       userPayload,
 	})
 }
 
 func (h *Handler) Refresh(c *fiber.Ctx) error {
-	var req refreshRequest
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
+	rawToken := c.Cookies("refresh_token")
+	if rawToken == "" {
+		// Fallback: read from request body for backward compatibility
+		var req refreshRequest
+		if err := c.BodyParser(&req); err == nil {
+			rawToken = strings.TrimSpace(req.RefreshToken)
+		}
 	}
-	rawToken := strings.TrimSpace(req.RefreshToken)
 	if rawToken == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "refresh token is required")
 	}
@@ -163,31 +174,34 @@ func (h *Handler) Refresh(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot load user permissions")
 	}
 
+	csrfToken, err := generateCSRFToken()
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, "cannot generate csrf token")
+	}
+	setAuthCookies(c, accessToken, h.cfg.AccessTTL, nextRefreshToken, h.cfg.RefreshTTL, csrfToken, isSecureCookie(h.cfg.CORSOrigins))
+
 	return c.JSON(fiber.Map{
-		"message":       "refresh success",
-		"token":         accessToken,
-		"refresh_token": nextRefreshToken,
-		"token_type":    "Bearer",
-		"expires_in":    h.cfg.AccessTTL * 60,
-		"user":          userPayload,
+		"message":    "refresh success",
+		"expires_in": h.cfg.AccessTTL * 60,
+		"user":       userPayload,
 	})
 }
 
 func (h *Handler) Logout(c *fiber.Ctx) error {
-	var req logoutRequest
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
-	}
-
-	rawToken := strings.TrimSpace(req.RefreshToken)
+	rawToken := c.Cookies("refresh_token")
 	if rawToken == "" {
-		return c.JSON(fiber.Map{"message": "logout success"})
+		// Fallback: read from request body for backward compatibility
+		var req logoutRequest
+		if err := c.BodyParser(&req); err == nil {
+			rawToken = strings.TrimSpace(req.RefreshToken)
+		}
 	}
 
-	if err := data.RevokeRefreshToken(auth.HashRefreshToken(rawToken)); err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "logout failed")
+	if rawToken != "" {
+		_ = data.RevokeRefreshToken(auth.HashRefreshToken(rawToken))
 	}
 
+	clearAuthCookies(c, isSecureCookie(h.cfg.CORSOrigins))
 	return c.JSON(fiber.Map{"message": "logout success"})
 }
 
@@ -224,10 +238,21 @@ func (h *Handler) GetAvatar(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
 	}
-	dataURL, err := data.GetAvatar(username)
+	urlPath, err := data.GetAvatar(username)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot get avatar")
 	}
+	if urlPath == "" {
+		return c.JSON(fiber.Map{"data_url": ""})
+	}
+	// Read the file and return as data URL (avatars are no longer served statically)
+	fsPath := strings.TrimPrefix(urlPath, "/")
+	fileData, err := os.ReadFile(fsPath)
+	if err != nil {
+		return c.JSON(fiber.Map{"data_url": ""})
+	}
+	mime := mimeFromExt(filepath.Ext(fsPath))
+	dataURL := "data:" + mime + ";base64," + base64.StdEncoding.EncodeToString(fileData)
 	return c.JSON(fiber.Map{"data_url": dataURL})
 }
 
@@ -245,8 +270,16 @@ func (h *Handler) UpdateAvatar(c *fiber.Ctx) error {
 	if len(req.DataURL) > maxAvatarBytes {
 		return fiber.NewError(fiber.StatusRequestEntityTooLarge, "avatar must not exceed 2 MB")
 	}
+	// Validate image magic bytes
+	decoded, err := decodeDataURL(req.DataURL)
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid image data")
+	}
+	if err := validateImageBytes(decoded); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "file is not a valid image")
+	}
 	filename := username + extFromDataURL(req.DataURL)
-	url, err := saveDataURLToFile("uploads/avatars", filename, req.DataURL)
+	url, err := saveBytesToFile("uploads/avatars", filename, decoded)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot save avatar file")
 	}
@@ -254,4 +287,56 @@ func (h *Handler) UpdateAvatar(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "cannot save avatar")
 	}
 	return c.JSON(fiber.Map{"data_url": url})
+}
+
+// ── Cookie helpers for httpOnly token storage ────────────────────────────────
+
+func generateCSRFToken() (string, error) {
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(buf), nil
+}
+
+func isSecureCookie(origins string) bool {
+	return strings.Contains(origins, "https://")
+}
+
+func setAuthCookies(c *fiber.Ctx, accessToken string, accessTTL int, refreshToken string, refreshTTL int, csrfToken string, secure bool) {
+	sameSite := "Lax"
+	c.Cookie(&fiber.Cookie{
+		Name:     "access_token",
+		Value:    accessToken,
+		HTTPOnly: true,
+		Secure:   secure,
+		SameSite: sameSite,
+		Path:     "/",
+		MaxAge:   accessTTL * 60,
+	})
+	c.Cookie(&fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		HTTPOnly: true,
+		Secure:   secure,
+		SameSite: sameSite,
+		Path:     "/api/auth",
+		MaxAge:   refreshTTL * 3600,
+	})
+	c.Cookie(&fiber.Cookie{
+		Name:     "csrf_token",
+		Value:    csrfToken,
+		HTTPOnly: false,
+		Secure:   secure,
+		SameSite: sameSite,
+		Path:     "/",
+		MaxAge:   refreshTTL * 3600,
+	})
+}
+
+func clearAuthCookies(c *fiber.Ctx, secure bool) {
+	sameSite := "Lax"
+	c.Cookie(&fiber.Cookie{Name: "access_token", Value: "", HTTPOnly: true, Secure: secure, SameSite: sameSite, Path: "/", MaxAge: -1})
+	c.Cookie(&fiber.Cookie{Name: "refresh_token", Value: "", HTTPOnly: true, Secure: secure, SameSite: sameSite, Path: "/api/auth", MaxAge: -1})
+	c.Cookie(&fiber.Cookie{Name: "csrf_token", Value: "", Secure: secure, SameSite: sameSite, Path: "/", MaxAge: -1})
 }

@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
-  clearTokens,
   fetchMyPermissions,
   loginAuth,
   logoutAuth,
@@ -101,10 +100,8 @@ export function AuthProvider({ children }) {
               try { localStorage.setItem(avatarStorageKey(username), dataUrl); } catch { /* ignore */ }
           })
           .catch(() => {});
-      } catch (err) {
-        if (err?.status === 401 || err?.status === 403) {
-          clearTokens();
-        }
+      } catch {
+        // Auth cookies are cleared by the server; nothing to do client-side
       } finally {
         if (mounted) setAuthBootstrapped(true);
       }

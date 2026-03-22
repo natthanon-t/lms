@@ -328,13 +328,9 @@ export default function ProfilePage() {
     if (!file) return;
     try {
       const dataUrl = await fileToDataUrl(file);
-      const payload = await updateAvatarApi(dataUrl);
-      const raw = String(payload?.data_url ?? "");
-      const resolved = raw.startsWith("/uploads/")
-        ? `${import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5020"}${raw}`
-        : raw || dataUrl;
-      try { localStorage.setItem(avatarKey(username), resolved); } catch { /* ignore */ }
-      setAvatar(resolved);
+      await updateAvatarApi(dataUrl);
+      try { localStorage.setItem(avatarKey(username), dataUrl); } catch { /* ignore */ }
+      setAvatar(dataUrl);
     } catch {
       // ignore upload errors
     }

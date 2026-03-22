@@ -11,10 +11,27 @@ import (
 	jwtware "github.com/gofiber/jwt/v2"
 )
 
+// csrfProtection validates the double-submit cookie pattern on state-changing requests.
+func csrfProtection() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		method := c.Method()
+		if method == "GET" || method == "HEAD" || method == "OPTIONS" {
+			return c.Next()
+		}
+		cookie := c.Cookies("csrf_token")
+		header := c.Get("X-CSRF-Token")
+		if cookie == "" || header == "" || cookie != header {
+			return fiber.NewError(fiber.StatusForbidden, "invalid CSRF token")
+		}
+		return c.Next()
+	}
+}
+
 func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 	handler := api.NewHandler(cfg)
 
-	app.Static("/uploads", "./uploads")
+	// Only serve course files statically; avatars are served via authenticated API
+	app.Static("/uploads/courses", "./uploads/courses")
 
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"status": "ok"})
@@ -66,8 +83,10 @@ func registerRoutes(app *fiber.App, cfg config.AppConfig) {
 
 	protected := api.Group("")
 	protected.Use(jwtware.New(jwtware.Config{
-		SigningKey: []byte(cfg.JWTSecret),
+		SigningKey:   []byte(cfg.JWTSecret),
+		TokenLookup: "cookie:access_token",
 	}))
+	protected.Use(csrfProtection())
 
 	authProtected := protected.Group("/auth")
 	authProtected.Get("/me", handler.Me)

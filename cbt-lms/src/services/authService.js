@@ -1,14 +1,13 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5020";
-const ACCESS_TOKEN_KEY = "cbt_auth_access_token";
-const REFRESH_TOKEN_KEY = "cbt_auth_refresh_token";
-
-const toHeaders = (token) => ({
-  "Content-Type": "application/json",
-  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-});
+import { API_BASE_URL, getCsrfToken } from "./apiClient";
 
 const request = async (path, options = {}) => {
-  const response = await fetch(`${API_BASE_URL}${path}`, options);
+  const method = (options.method ?? "GET").toUpperCase();
+  const csrfHeaders = method !== "GET" ? { "X-CSRF-Token": getCsrfToken() } : {};
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    credentials: "include",
+    headers: { "Content-Type": "application/json", ...options.headers, ...csrfHeaders },
+  });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     const err = new Error(payload?.message ?? "request failed");
@@ -18,37 +17,15 @@ const request = async (path, options = {}) => {
   return payload;
 };
 
-export const saveTokens = (accessToken, refreshToken) => {
-  if (accessToken) {
-    window.localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  }
-  if (refreshToken) {
-    window.localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-  }
-};
-
-export const clearTokens = () => {
-  window.localStorage.removeItem(ACCESS_TOKEN_KEY);
-  window.localStorage.removeItem(REFRESH_TOKEN_KEY);
-};
-
-export const getAccessToken = () => window.localStorage.getItem(ACCESS_TOKEN_KEY) ?? "";
-export const getRefreshToken = () => window.localStorage.getItem(REFRESH_TOKEN_KEY) ?? "";
-
-export const loginAuth = async ({ username, password }) => {
-  const payload = await request("/api/auth/login", {
+export const loginAuth = async ({ username, password }) =>
+  request("/api/auth/login", {
     method: "POST",
-    headers: toHeaders(),
     body: JSON.stringify({ username, password }),
   });
-  saveTokens(payload.token, payload.refresh_token);
-  return payload;
-};
 
 export const registerAuth = async ({ name, username, employeeCode, password }) =>
   request("/api/auth/register", {
     method: "POST",
-    headers: toHeaders(),
     body: JSON.stringify({
       name,
       username,
@@ -57,49 +34,24 @@ export const registerAuth = async ({ name, username, employeeCode, password }) =
     }),
   });
 
-export const refreshAuth = async () => {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) {
-    throw new Error("missing refresh token");
-  }
-  const payload = await request("/api/auth/refresh", {
-    method: "POST",
-    headers: toHeaders(),
-    body: JSON.stringify({ refresh_token: refreshToken }),
-  });
-  saveTokens(payload.token, payload.refresh_token);
-  return payload;
-};
+export const refreshAuth = async () =>
+  request("/api/auth/refresh", { method: "POST" });
 
 export const meAuth = async () =>
-  request("/api/auth/me", {
-    method: "GET",
-    headers: toHeaders(getAccessToken()),
-  });
+  request("/api/auth/me", { method: "GET" });
 
 export const fetchMyPermissions = async () =>
-  request("/api/auth/permissions", {
-    method: "GET",
-    headers: toHeaders(getAccessToken()),
-  });
+  request("/api/auth/permissions", { method: "GET" });
 
 export const fetchLoginDates = async () => {
-  const payload = await request("/api/auth/login-dates", {
-    method: "GET",
-    headers: toHeaders(getAccessToken()),
-  });
+  const payload = await request("/api/auth/login-dates", { method: "GET" });
   return payload.dates ?? [];
 };
 
 export const logoutAuth = async () => {
-  const refreshToken = getRefreshToken();
   try {
-    await request("/api/auth/logout", {
-      method: "POST",
-      headers: toHeaders(),
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    });
+    await request("/api/auth/logout", { method: "POST" });
   } finally {
-    clearTokens();
+    // Cookies are cleared by the server via Set-Cookie
   }
 };
